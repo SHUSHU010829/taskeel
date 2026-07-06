@@ -1,0 +1,37 @@
+# Example: call the taskeel deploy-hook after a successful deploy.
+#
+# Copy this into each tracked repo (e.g. owner/bibi-bot) as
+# .github/workflows/deploy-hook.yml and add these secrets:
+#   TASKEEL_DEPLOY_URL     e.g. https://taskeel.vercel.app/api/deploy-hook
+#   DEPLOY_HOOK_SECRET     matches DEPLOY_HOOK_SECRET on the taskeel app
+#   TASKEEL_OWNER_ID       the taskeel user's owner_id (auth.uid uuid)
+#
+# The branch is taken from GITHUB_REF; repo from GITHUB_REPOSITORY.
+
+name: notify-taskeel
+
+on:
+  # Fire after your own deploy workflow finishes successfully.
+  workflow_run:
+    workflows: ['deploy']
+    types: [completed]
+
+jobs:
+  notify:
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping taskeel deploy-hook
+        run: |
+          curl -sS -X POST "$TASKEEL_DEPLOY_URL" \
+            -H "Content-Type: application/json" \
+            -H "x-deploy-secret: $DEPLOY_HOOK_SECRET" \
+            -d "$(jq -n \
+                  --arg repo "$GITHUB_REPOSITORY" \
+                  --arg branch "${GITHUB_REF#refs/heads/}" \
+                  --arg owner "$TASKEEL_OWNER_ID" \
+                  '{repo:$repo, branch:$branch, owner_id:$owner}')"
+        env:
+          TASKEEL_DEPLOY_URL: ${{ secrets.TASKEEL_DEPLOY_URL }}
+          DEPLOY_HOOK_SECRET: ${{ secrets.DEPLOY_HOOK_SECRET }}
+          TASKEEL_OWNER_ID: ${{ secrets.TASKEEL_OWNER_ID }}
