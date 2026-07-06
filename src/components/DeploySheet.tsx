@@ -1,6 +1,7 @@
 'use client';
 
 import type { TaskWithProjects } from '@/lib/types';
+import StatusDot from './StatusDot';
 
 // Slide-over that aggregates everything waiting to deploy: each
 // ready_to_deploy task with its still-pending project branches, plus
@@ -41,6 +42,7 @@ export default function DeploySheet({
           {pending.map(({ task, links }) => (
             <div className="deploy-card" key={task.id}>
               <div className="deploy-card-title">
+                <StatusDot ds={task.dev_state} sm />
                 <span>{task.title}</span>
                 {task.needs_backend && (
                   <span className="badge-backend">後端</span>

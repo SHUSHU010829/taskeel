@@ -6,9 +6,10 @@ import {
   DEV_STATE_META,
   type DevState,
 } from '@/lib/types';
+import StatusDot from './StatusDot';
 
-// The small dev-state circle at the left of each row. Click to open a
-// popover and switch state; choosing `blocked` reveals a reason input.
+// The dev-state indicator at the left of each row. Click to open a popover
+// and switch state; choosing `blocked` reveals a reason input.
 export default function DevStateControl({
   value,
   blockedReason,
@@ -40,7 +41,7 @@ export default function DevStateControl({
   return (
     <div ref={ref} style={{ position: 'relative', display: 'flex' }}>
       <button
-        className={`dev-state ds-${value}`}
+        className="dev-state"
         title={
           value === 'blocked' && blockedReason
             ? `卡住：${blockedReason}`
@@ -51,17 +52,11 @@ export default function DevStateControl({
           setOpen((o) => !o);
         }}
       >
-        {value === 'blocked' ? (
-          <span className="ds-x" style={{ position: 'relative', width: 13, height: 13 }}>
-            <span className="ds-circle" />
-          </span>
-        ) : (
-          <span className="ds-circle" />
-        )}
+        <StatusDot ds={value} />
       </button>
 
       {open && (
-        <div className="popover" style={{ top: 22, left: 0 }}>
+        <div className="popover" style={{ top: 24, left: 0 }}>
           {DEV_STATE_ORDER.map((s) => (
             <button
               key={s}
@@ -76,21 +71,7 @@ export default function DevStateControl({
                 }
               }}
             >
-              <span
-                className={`dev-state ds-${s}`}
-                style={{ pointerEvents: 'none' }}
-              >
-                {s === 'blocked' ? (
-                  <span
-                    className="ds-x"
-                    style={{ position: 'relative', width: 13, height: 13 }}
-                  >
-                    <span className="ds-circle" />
-                  </span>
-                ) : (
-                  <span className="ds-circle" />
-                )}
-              </span>
+              <StatusDot ds={s} sm />
               {DEV_STATE_META[s].label}
             </button>
           ))}

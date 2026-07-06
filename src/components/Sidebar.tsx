@@ -7,6 +7,7 @@ import {
   type Project,
   type Workspace,
 } from '@/lib/types';
+import StatusDot from './StatusDot';
 
 export type View = 'board' | 'history';
 
@@ -46,6 +47,8 @@ export default function Sidebar({
 
   return (
     <aside className="sidebar">
+      <div className="brand">◆ taskeel</div>
+
       {/* workspace switcher */}
       <div className="ws-switcher">
         <button className="ws-button" onClick={() => setMenuOpen((o) => !o)}>
@@ -163,15 +166,7 @@ export default function Sidebar({
         <div className="sidebar-label">開發狀態</div>
         {DEV_STATE_ORDER.map((s) => (
           <div className="legend-item" key={s}>
-            <span className={`dev-state ds-${s}`} style={{ pointerEvents: 'none' }}>
-              {s === 'blocked' ? (
-                <span className="ds-x" style={{ position: 'relative', width: 13, height: 13 }}>
-                  <span className="ds-circle" />
-                </span>
-              ) : (
-                <span className="ds-circle" />
-              )}
-            </span>
+            <StatusDot ds={s} sm />
             {DEV_STATE_META[s].label}
           </div>
         ))}

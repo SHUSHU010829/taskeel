@@ -75,9 +75,9 @@ export const STATUS_META: Record<
   TaskStatus,
   { label: string; color: string }
 > = {
-  inbox: { label: '暫存區', color: '#8A8F98' },
-  active: { label: '進行中', color: '#5E6AD2' },
-  notify_backend: { label: '等後端', color: '#E2B33E' },
+  inbox: { label: '暫存區', color: '#6B7280' },
+  active: { label: '進行中', color: '#E5A00D' },
+  notify_backend: { label: '等後端', color: '#26B5CE' },
   ready_to_deploy: { label: '待部署', color: '#4CB782' },
   archived: { label: '已歸檔', color: '#6E7178' },
 };
@@ -98,12 +98,14 @@ export const DEV_STATE_ORDER: DevState[] = [
   'blocked',
 ];
 
+// `ring`: 0 = faint hollow ring, 1 = full ring + filled center,
+// 0<r<1 = partial arc (spinner). `pulse`/`cross` toggle animation / X mark.
 export const DEV_STATE_META: Record<
   DevState,
-  { label: string; color: string }
+  { label: string; color: string; ring: number; pulse?: boolean; cross?: boolean }
 > = {
-  idle: { label: '未開始', color: '#6E7178' },
-  spec_ready: { label: '已規劃完成', color: '#4C8DF5' },
-  claude: { label: 'Claude 處理中', color: '#E2B33E' },
-  blocked: { label: '卡住', color: '#EB5757' },
+  idle: { label: '未開始', color: '#6B7280', ring: 0 },
+  spec_ready: { label: '已規劃完成', color: '#5E6AD2', ring: 1 },
+  claude: { label: 'Claude 處理中', color: '#E5A00D', ring: 0.6, pulse: true },
+  blocked: { label: '卡住', color: '#EB5757', ring: 1, cross: true },
 };

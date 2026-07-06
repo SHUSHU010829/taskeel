@@ -10,6 +10,7 @@ import {
   type TaskCategory,
   type TaskWithProjects,
 } from '@/lib/types';
+import StatusDot from './StatusDot';
 
 export interface TaskDraft {
   title: string;
@@ -111,15 +112,7 @@ export default function TaskEditor({
                 className={`option${devState === s ? ' selected' : ''}`}
                 onClick={() => setDevState(s)}
               >
-                <span className={`dev-state ds-${s}`} style={{ pointerEvents: 'none' }}>
-                  {s === 'blocked' ? (
-                    <span className="ds-x" style={{ position: 'relative', width: 13, height: 13 }}>
-                      <span className="ds-circle" />
-                    </span>
-                  ) : (
-                    <span className="ds-circle" />
-                  )}
-                </span>
+                <StatusDot ds={s} sm />
                 {DEV_STATE_META[s].label}
               </button>
             ))}

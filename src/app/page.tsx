@@ -22,7 +22,7 @@ export default async function HomePage() {
   if (!workspaces || workspaces.length === 0) {
     await supabase.from('workspaces').insert([
       { owner_id: user.id, name: '個人', color: '#5E6AD2' },
-      { owner_id: user.id, name: '工作', color: '#4CB782' },
+      { owner_id: user.id, name: '工作', color: '#26B5CE' },
     ]);
     const seeded = await supabase
       .from('workspaces')

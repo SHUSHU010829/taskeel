@@ -76,12 +76,20 @@ a {
   width: 208px;
   flex-shrink: 0;
   border-right: 1px solid var(--border);
-  background: var(--bg);
+  background: #0a0b0d;
   display: flex;
   flex-direction: column;
   padding: 12px 8px;
   gap: 4px;
   overflow-y: auto;
+}
+
+.brand {
+  font-size: 14px;
+  font-weight: 600;
+  color: #fff;
+  letter-spacing: 0.2px;
+  padding: 4px 8px 8px;
 }
 
 .main {
@@ -466,10 +474,8 @@ a {
 }
 
 /* ---------- dev-state indicator ---------- */
+/* Visuals live in <StatusDot> (SVG). This is just the clickable wrapper. */
 .dev-state {
-  position: relative;
-  width: 16px;
-  height: 16px;
   border: none;
   background: transparent;
   padding: 0;
@@ -479,67 +485,14 @@ a {
   justify-content: center;
 }
 
-.ds-circle {
-  width: 13px;
-  height: 13px;
-  border-radius: 50%;
-  border: 1.5px solid currentColor;
-}
-
-.ds-idle {
-  color: #6e7178;
-}
-
-.ds-spec_ready {
-  color: #4c8df5;
-}
-
-.ds-spec_ready .ds-circle {
-  background: currentColor;
-}
-
-.ds-claude {
-  color: #e2b33e;
-}
-
-.ds-claude .ds-circle {
-  background: currentColor;
-  animation: breathe 1.4s ease-in-out infinite;
-}
-
-.ds-blocked {
-  color: #eb5757;
-}
-
-@keyframes breathe {
+@keyframes pulse {
   0%,
   100% {
-    opacity: 0.35;
-    transform: scale(0.82);
+    opacity: 1;
   }
   50% {
-    opacity: 1;
-    transform: scale(1);
+    opacity: 0.45;
   }
-}
-
-/* small x drawn for blocked */
-.ds-x::before,
-.ds-x::after {
-  content: '';
-  position: absolute;
-  width: 7px;
-  height: 1.5px;
-  background: currentColor;
-  border-radius: 1px;
-}
-
-.ds-x::before {
-  transform: rotate(45deg);
-}
-
-.ds-x::after {
-  transform: rotate(-45deg);
 }
 
 /* ---------- popovers ---------- */
