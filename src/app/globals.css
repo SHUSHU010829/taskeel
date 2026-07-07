@@ -173,6 +173,23 @@ a {
   background: var(--bg-active);
 }
 
+.ws-menu-row {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.ws-edit {
+  opacity: 0;
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
+}
+
+.ws-menu-row:hover .ws-edit {
+  opacity: 1;
+}
+
 .dot {
   width: 8px;
   height: 8px;
@@ -726,21 +743,21 @@ a {
   background: rgba(0, 0, 0, 0.55);
   z-index: 40;
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: center;
-  padding-top: 10vh;
+  padding: 24px;
 }
 
 .modal {
   width: 640px;
   max-width: calc(100vw - 32px);
-  max-height: 80vh;
+  max-height: 88vh;
   overflow-y: auto;
   background: var(--bg-elevated);
   border: 1px solid var(--border-strong);
   border-radius: var(--radius-lg);
   box-shadow: 0 16px 48px rgba(0, 0, 0, 0.6);
-  padding: 20px;
+  padding: 24px;
 }
 
 .modal-title-input {
@@ -760,7 +777,7 @@ a {
 
 .modal-desc {
   width: 100%;
-  min-height: 180px;
+  min-height: max(200px, 38vh);
   resize: vertical;
   background: transparent;
   border: none;

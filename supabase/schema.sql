@@ -29,22 +29,23 @@ create table projects (
   created_at   timestamptz not null default now()
 );
 
--- ---------- STATUSES (單一狀態軸：看板分欄 + 圖示，可自訂) ----------
+-- ---------- STATUSES (單一狀態軸：看板分欄 + 圖示，每 workspace 一組) ----------
 -- style: ring | dashed | half | filled | spinner | check | cross | dot
 create table task_statuses (
-  id         uuid primary key default gen_random_uuid(),
-  owner_id   uuid not null references auth.users(id) on delete cascade,
-  name       text not null,
-  color      text not null default '#6B7280',
-  style      text not null default 'ring',
-  position   int  not null default 0,
-  is_default boolean not null default false,  -- 快速捕捉落點
-  is_deploy  boolean not null default false,  -- 部署清單抓這區
-  is_archive boolean not null default false,  -- 不進看板、進部署歷史、CI 歸檔目標
-  created_at timestamptz not null default now()
+  id           uuid primary key default gen_random_uuid(),
+  owner_id     uuid not null references auth.users(id) on delete cascade,
+  workspace_id uuid not null references workspaces(id) on delete cascade,
+  name         text not null,
+  color        text not null default '#6B7280',
+  style        text not null default 'ring',
+  position     int  not null default 0,
+  is_default   boolean not null default false,  -- 快速捕捉落點
+  is_deploy    boolean not null default false,  -- 部署清單抓這區
+  is_archive   boolean not null default false,  -- 不進看板、進部署歷史、CI 歸檔目標
+  created_at   timestamptz not null default now()
 );
-create unique index task_statuses_one_default on task_statuses (owner_id) where is_default;
-create unique index task_statuses_one_archive on task_statuses (owner_id) where is_archive;
+create unique index task_statuses_ws_one_default on task_statuses (workspace_id) where is_default;
+create unique index task_statuses_ws_one_archive on task_statuses (workspace_id) where is_archive;
 
 -- ---------- TASKS ----------
 create table tasks (
@@ -86,7 +87,7 @@ create index on tasks (workspace_id, status_id);
 create index on projects (workspace_id);
 create index on projects (repo);
 create index on task_projects (project_id, branch);
-create index on task_statuses (owner_id, position);
+create index on task_statuses (workspace_id, position);
 
 -- ============================================================
 -- ROW LEVEL SECURITY
@@ -145,11 +146,12 @@ create or replace function archive_branch(p_repo text, p_branch text, p_owner uu
 returns jsonb as $$
 declare
   v_project_id uuid;
+  v_workspace_id uuid;
   v_archive_status uuid;
   v_marked int := 0;
   v_archived int := 0;
 begin
-  select pr.id into v_project_id
+  select pr.id, pr.workspace_id into v_project_id, v_workspace_id
   from projects pr
   join workspaces w on w.id = pr.workspace_id
   where pr.repo = p_repo and w.owner_id = p_owner
@@ -160,7 +162,7 @@ begin
   end if;
 
   select id into v_archive_status
-  from task_statuses where owner_id = p_owner and is_archive limit 1;
+  from task_statuses where workspace_id = v_workspace_id and is_archive limit 1;
 
   update task_projects tp
     set deploy_status = 'deployed', deployed_at = now()
@@ -174,6 +176,7 @@ begin
     update tasks t
       set status_id = v_archive_status, archived_at = now()
       where t.owner_id = p_owner
+        and t.workspace_id = v_workspace_id
         and (t.status_id is distinct from v_archive_status)
         and t.id in (
           select task_id from task_projects

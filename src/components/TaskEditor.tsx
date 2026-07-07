@@ -7,8 +7,10 @@ import {
   type StatusRow,
   type TaskCategory,
   type TaskWithProjects,
+  type Workspace,
 } from '@/lib/types';
 import StatusDot from './StatusDot';
+import ConfirmDialog from './ConfirmDialog';
 
 export interface TaskDraft {
   title: string;
@@ -26,14 +28,20 @@ export default function TaskEditor({
   task,
   projects,
   statuses,
+  workspaces,
+  currentWorkspaceId,
   onSave,
+  onMoveWorkspace,
   onClose,
   onDelete,
 }: {
   task: TaskWithProjects | null;
   projects: Project[];
   statuses: StatusRow[];
+  workspaces: Workspace[];
+  currentWorkspaceId: string | null;
   onSave: (draft: TaskDraft) => void;
+  onMoveWorkspace: (wsId: string) => void;
   onClose: () => void;
   onDelete?: () => void;
 }) {
@@ -57,6 +65,7 @@ export default function TaskEditor({
   // Reading-first: existing tasks open with settings collapsed; new tasks
   // expand so you can fill them in.
   const [showSettings, setShowSettings] = useState(task === null);
+  const [moveTo, setMoveTo] = useState<Workspace | null>(null);
 
   const selected = statuses.find((s) => s.id === statusId);
   const isBlocked = selected?.style === 'cross';
@@ -147,6 +156,27 @@ export default function TaskEditor({
 
         {showSettings && (
         <>
+        {/* workspace (move) — existing tasks only */}
+        {task && workspaces.length > 1 && (
+          <div className="field">
+            <div className="field-label">工作區</div>
+            <div className="option-row">
+              {workspaces.map((w) => (
+                <button
+                  key={w.id}
+                  className={`option${w.id === currentWorkspaceId ? ' selected' : ''}`}
+                  onClick={() => {
+                    if (w.id !== currentWorkspaceId) setMoveTo(w);
+                  }}
+                >
+                  <span className="dot" style={{ background: w.color }} />
+                  {w.name}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* status */}
         <div className="field">
           <div className="field-label">狀態</div>
@@ -269,6 +299,20 @@ export default function TaskEditor({
           </button>
         </div>
       </div>
+
+      {moveTo && (
+        <ConfirmDialog
+          title="搬移工作區"
+          message={`把此任務搬到「${moveTo.name}」？\n專案與分支關聯會被清除（專案綁定各自的工作區），並套用該工作區的預設狀態。`}
+          confirmLabel="搬移"
+          onConfirm={() => {
+            const id = moveTo.id;
+            setMoveTo(null);
+            onMoveWorkspace(id);
+          }}
+          onCancel={() => setMoveTo(null)}
+        />
+      )}
     </div>
   );
 }

@@ -20,6 +20,8 @@ export default function Sidebar({
   workspaces,
   currentWorkspace,
   onSwitchWorkspace,
+  onAddWorkspace,
+  onEditWorkspace,
   projects,
   statuses,
   view,
@@ -37,6 +39,8 @@ export default function Sidebar({
   workspaces: Workspace[];
   currentWorkspace: Workspace | null;
   onSwitchWorkspace: (ws: Workspace) => void;
+  onAddWorkspace: () => void;
+  onEditWorkspace: (ws: Workspace) => void;
   projects: Project[];
   statuses: StatusRow[];
   view: View;
@@ -99,18 +103,41 @@ export default function Sidebar({
           {menuOpen && (
             <div className="ws-menu">
               {workspaces.map((ws) => (
-                <button
-                  key={ws.id}
-                  className="ws-menu-item"
-                  onClick={() => {
-                    onSwitchWorkspace(ws);
-                    setMenuOpen(false);
-                  }}
-                >
-                  <span className="dot" style={{ background: ws.color }} />
-                  {ws.name}
-                </button>
+                <div className="ws-menu-row" key={ws.id}>
+                  <button
+                    className="ws-menu-item"
+                    style={{ flex: 1 }}
+                    onClick={() => {
+                      onSwitchWorkspace(ws);
+                      setMenuOpen(false);
+                    }}
+                  >
+                    <span className="dot" style={{ background: ws.color }} />
+                    {ws.name}
+                  </button>
+                  <button
+                    className="icon-btn ws-edit"
+                    title="編輯工作區"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onEditWorkspace(ws);
+                      setMenuOpen(false);
+                    }}
+                  >
+                    ✎
+                  </button>
+                </div>
               ))}
+              <button
+                className="ws-menu-item"
+                style={{ color: 'var(--text-dim)' }}
+                onClick={() => {
+                  onAddWorkspace();
+                  setMenuOpen(false);
+                }}
+              >
+                ＋ 新增工作區
+              </button>
             </div>
           )}
         </div>
@@ -215,12 +242,7 @@ export default function Sidebar({
             </div>
           ))}
 
-          <div
-            className="acct"
-            ref={acctRef}
-            onMouseEnter={() => setAcctOpen(true)}
-            onMouseLeave={() => setAcctOpen(false)}
-          >
+          <div className="acct" ref={acctRef}>
             <button
               className="acct-button"
               onClick={() => setAcctOpen((o) => !o)}

@@ -35,10 +35,11 @@ export interface Project {
   created_at: string;
 }
 
-// A status = one board column + its icon. One set per user.
+// A status = one board column + its icon. One set per workspace.
 export interface StatusRow {
   id: string;
   owner_id: string;
+  workspace_id: string;
   name: string;
   color: string;
   style: StatusStyle;
