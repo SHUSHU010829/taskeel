@@ -8,7 +8,9 @@ import {
   type DevStateStyle,
   type StatusRow,
 } from '@/lib/types';
+import { useEnterSubmit } from '@/lib/useEnterSubmit';
 import StatusDot from './StatusDot';
+import ConfirmDialog from './ConfirmDialog';
 
 export interface StatusManagerHandlers {
   addStatus: (name: string) => void;
@@ -143,6 +145,9 @@ export default function StatusManager({
   const [newName, setNewName] = useState('');
   const [dragId, setDragId] = useState<string | null>(null);
   const [overId, setOverId] = useState<string | null>(null);
+  const [confirm, setConfirm] = useState<{ message: string; onYes: () => void } | null>(
+    null
+  );
 
   function submitNew() {
     if (!newName.trim()) return;
@@ -263,10 +268,12 @@ export default function StatusManager({
                   className="icon-btn"
                   disabled={s.is_default || s.is_archive}
                   title={s.is_default || s.is_archive ? '預設／歸檔狀態不可刪除' : '刪除'}
-                  onClick={() => {
-                    if (confirm(`刪除狀態「${s.name}」？該狀態的任務會移到預設區。`))
-                      handlers.deleteStatus(s.id);
-                  }}
+                  onClick={() =>
+                    setConfirm({
+                      message: `刪除狀態「${s.name}」？該狀態的任務會移到預設區。`,
+                      onYes: () => handlers.deleteStatus(s.id),
+                    })
+                  }
                 >
                   ✕
                 </button>
@@ -334,10 +341,12 @@ export default function StatusManager({
                   className="icon-btn"
                   disabled={d.is_default}
                   title={d.is_default ? '預設狀態不可刪除' : '刪除'}
-                  onClick={() => {
-                    if (confirm(`刪除開發狀態「${d.name}」？相關任務會移到預設。`))
-                      handlers.deleteDevState(d.id);
-                  }}
+                  onClick={() =>
+                    setConfirm({
+                      message: `刪除開發狀態「${d.name}」？相關任務會移到預設。`,
+                      onYes: () => handlers.deleteDevState(d.id),
+                    })
+                  }
                 >
                   ✕
                 </button>
@@ -352,13 +361,27 @@ export default function StatusManager({
             placeholder={tab === 'flow' ? '新增流程狀態…' : '新增開發狀態…'}
             value={newName}
             onChange={(e) => setNewName(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && submitNew()}
+            {...useEnterSubmit(submitNew)}
           />
           <button className="btn btn-primary" onClick={submitNew}>
             新增
           </button>
         </div>
       </div>
+
+      {confirm && (
+        <ConfirmDialog
+          title="刪除狀態"
+          message={confirm.message}
+          confirmLabel="刪除"
+          danger
+          onConfirm={() => {
+            confirm.onYes();
+            setConfirm(null);
+          }}
+          onCancel={() => setConfirm(null)}
+        />
+      )}
     </div>
   );
 }

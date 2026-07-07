@@ -73,7 +73,7 @@ a {
 }
 
 .sidebar {
-  width: 208px;
+  width: 248px;
   flex-shrink: 0;
   border-right: 1px solid var(--border);
   background: #0a0b0d;
@@ -895,6 +895,50 @@ a {
   background: rgba(94, 106, 210, 0.18);
   border-color: var(--accent);
   color: var(--text);
+}
+
+/* ---------- confirm dialog ---------- */
+.confirm-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.confirm-box {
+  width: 380px;
+  max-width: 100%;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.6);
+  padding: 20px;
+}
+
+.confirm-title {
+  font-size: 15px;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.confirm-message {
+  color: var(--text-dim);
+  font-size: 13px;
+  white-space: pre-line;
+}
+
+.btn-danger {
+  background: #eb5757;
+  border-color: #eb5757;
+  color: #fff;
+}
+
+.btn-danger:hover {
+  background: #f26b6b;
 }
 
 /* ---------- error banner ---------- */

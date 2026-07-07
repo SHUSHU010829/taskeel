@@ -2,6 +2,8 @@
 
 import { useState } from 'react';
 import type { Project } from '@/lib/types';
+import { useEnterSubmit } from '@/lib/useEnterSubmit';
+import ConfirmDialog from './ConfirmDialog';
 
 const PRESET_COLORS = [
   '#5E6AD2',
@@ -29,6 +31,7 @@ export default function ProjectEditor({
   const [name, setName] = useState(project.name);
   const [repo, setRepo] = useState(project.repo ?? '');
   const [color, setColor] = useState(project.color);
+  const [confirming, setConfirming] = useState(false);
 
   function save() {
     if (!name.trim()) return;
@@ -48,7 +51,7 @@ export default function ProjectEditor({
           placeholder="專案名稱"
           value={name}
           onChange={(e) => setName(e.target.value)}
-          onKeyDown={(e) => e.key === 'Enter' && save()}
+          {...useEnterSubmit(save)}
         />
 
         <div className="field">
@@ -58,7 +61,7 @@ export default function ProjectEditor({
             placeholder="owner/bibi-bot"
             value={repo}
             onChange={(e) => setRepo(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && save()}
+            {...useEnterSubmit(save)}
           />
         </div>
 
@@ -85,15 +88,7 @@ export default function ProjectEditor({
           <button
             className="btn btn-ghost"
             style={{ marginRight: 'auto', color: '#EB5757' }}
-            onClick={() => {
-              if (
-                confirm(
-                  `刪除專案「${project.name}」？\n該專案在所有任務上的分支關聯也會一併移除（任務本身保留）。`
-                )
-              ) {
-                onDelete();
-              }
-            }}
+            onClick={() => setConfirming(true)}
           >
             刪除
           </button>
@@ -109,6 +104,20 @@ export default function ProjectEditor({
           </button>
         </div>
       </div>
+
+      {confirming && (
+        <ConfirmDialog
+          title="刪除專案"
+          message={`刪除專案「${project.name}」？\n該專案在所有任務上的分支關聯也會一併移除（任務本身保留）。`}
+          confirmLabel="刪除"
+          danger
+          onConfirm={() => {
+            setConfirming(false);
+            onDelete();
+          }}
+          onCancel={() => setConfirming(false)}
+        />
+      )}
     </div>
   );
 }

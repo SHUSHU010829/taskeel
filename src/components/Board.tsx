@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
+import { useEnterSubmit } from '@/lib/useEnterSubmit';
 import {
   DEFAULT_STATUSES,
   DEFAULT_DEV_STATES,
@@ -54,7 +55,6 @@ export default function Board({
   const [error, setError] = useState<string | null>(null);
   const [capture, setCapture] = useState('');
   const captureRef = useRef<HTMLInputElement>(null);
-  const composingRef = useRef(false);
   const seedWsRef = useRef(false);
   const seedStatusRef = useRef(false);
   const seedDevRef = useRef(false);
@@ -564,21 +564,12 @@ export default function Board({
               value={capture}
               placeholder="快速捕捉：打一行字 Enter 丟進暫存區…"
               onChange={(e) => setCapture(e.target.value)}
-              onCompositionStart={() => {
-                composingRef.current = true;
-              }}
-              onCompositionEnd={() => {
-                composingRef.current = false;
-              }}
-              onKeyDown={(e) => {
-                if (e.key !== 'Enter') return;
-                if (composingRef.current || e.nativeEvent.isComposing) return;
-                e.preventDefault();
+              {...useEnterSubmit(() => {
                 const v = capture;
                 if (!v.trim()) return;
                 setCapture('');
                 quickCapture(v);
-              }}
+              })}
             />
             <span className="kbd">c</span>
           </div>

@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import type { DevStateRow, Project, Workspace } from '@/lib/types';
+import { useEnterSubmit } from '@/lib/useEnterSubmit';
 import StatusDot from './StatusDot';
 
 export type View = 'board' | 'history';
@@ -151,7 +152,7 @@ export default function Sidebar({
               autoFocus
               value={name}
               onChange={(e) => setName(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && submitProject()}
+              {...useEnterSubmit(submitProject)}
             />
             <input
               className="text-input"
@@ -159,7 +160,7 @@ export default function Sidebar({
               placeholder="repo（選填，如 owner/bibi-bot）"
               value={repo}
               onChange={(e) => setRepo(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && submitProject()}
+              {...useEnterSubmit(submitProject)}
             />
             <button
               className="btn btn-primary"
