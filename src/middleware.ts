@@ -57,8 +57,8 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  // Run on everything except static assets and the deploy-hook API.
+  // Run on everything except static assets, PWA files, and the deploy-hook API.
   matcher: [
-    '/((?!_next/static|_next/image|favicon.ico|api/deploy-hook|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+    '/((?!_next/static|_next/image|favicon.ico|api/deploy-hook|sw.js|manifest.webmanifest|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
   ],
 };
