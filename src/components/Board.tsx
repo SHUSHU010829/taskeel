@@ -632,6 +632,7 @@ export default function Board({
         <StatusManager
           statuses={wsStatuses}
           handlers={statusHandlers}
+          workspaceName={currentWs?.name}
           onClose={() => setStatusMgrOpen(false)}
         />
       )}

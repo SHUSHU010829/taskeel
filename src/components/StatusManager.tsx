@@ -138,10 +138,12 @@ function StyleSelect({
 export default function StatusManager({
   statuses,
   handlers,
+  workspaceName,
   onClose,
 }: {
   statuses: StatusRow[];
   handlers: StatusManagerHandlers;
+  workspaceName?: string;
   onClose: () => void;
 }) {
   const [newName, setNewName] = useState('');
@@ -167,7 +169,15 @@ export default function StatusManager({
     <div className="overlay" onMouseDown={onClose}>
       <div className="modal" style={{ width: 620 }} onMouseDown={(e) => e.stopPropagation()}>
         <div style={{ display: 'flex', alignItems: 'center', marginBottom: 12 }}>
-          <div className="modal-heading">狀態設定</div>
+          <div className="modal-heading">
+            狀態設定
+            {workspaceName && (
+              <span style={{ color: 'var(--text-faint)', fontWeight: 400 }}>
+                {' '}
+                · {workspaceName}
+              </span>
+            )}
+          </div>
           <div className="spacer" />
           <button className="icon-btn" onClick={onClose}>
             ✕

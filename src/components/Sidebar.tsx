@@ -155,6 +155,16 @@ export default function Sidebar({
         >
           部署歷史
         </button>
+        <button
+          className="nav-item"
+          title="編輯目前工作區的狀態"
+          onClick={() => {
+            onOpenStatusManager();
+            onClose();
+          }}
+        >
+          ⚙ 狀態設定
+        </button>
 
         {/* projects */}
         <div className="sidebar-section">
@@ -271,16 +281,6 @@ export default function Sidebar({
                     ))}
                   </div>
                 </div>
-                <button
-                  className="ws-menu-item"
-                  onClick={() => {
-                    onOpenStatusManager();
-                    setAcctOpen(false);
-                    onClose();
-                  }}
-                >
-                  ⚙ 狀態設定
-                </button>
                 <button
                   className="ws-menu-item"
                   onClick={() => {
