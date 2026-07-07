@@ -1,34 +1,33 @@
 'use client';
 
-import {
-  CATEGORY_META,
-  STATUS_ORDER,
-  type DevState,
-  type TaskWithProjects,
-} from '@/lib/types';
+import { CATEGORY_META, type DevStateRow, type TaskWithProjects } from '@/lib/types';
 import DevStateControl from './DevStateControl';
 
 // One task row in the grouped board list.
 export default function TaskRow({
   task,
+  devStates,
+  canBack,
+  canFwd,
   onOpen,
   onDevState,
   onMove,
 }: {
   task: TaskWithProjects;
+  devStates: DevStateRow[];
+  canBack: boolean;
+  canFwd: boolean;
   onOpen: () => void;
-  onDevState: (next: DevState, reason: string | null) => void;
+  onDevState: (nextId: string, reason: string | null) => void;
   onMove: (dir: -1 | 1) => void;
 }) {
   const cat = task.category ? CATEGORY_META[task.category] : null;
-  const idx = STATUS_ORDER.indexOf(task.status);
-  const canBack = idx > 0;
-  const canFwd = idx >= 0 && idx < STATUS_ORDER.length - 1;
 
   return (
     <div className="task-row">
       <DevStateControl
-        value={task.dev_state}
+        devStates={devStates}
+        valueId={task.dev_state_id}
         blockedReason={task.blocked_reason}
         onChange={onDevState}
       />
@@ -63,9 +62,7 @@ export default function TaskRow({
               style={{ background: link.project.color, width: 6, height: 6 }}
             />
             {link.project.name}
-            {link.branch && (
-              <span className="branch">⎇ {link.branch}</span>
-            )}
+            {link.branch && <span className="branch">⎇ {link.branch}</span>}
             {link.deploy_status === 'deployed' && <span>✓</span>}
           </span>
         ))}

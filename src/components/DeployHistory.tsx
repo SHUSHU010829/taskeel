@@ -4,6 +4,7 @@ import { useState } from 'react';
 import {
   CATEGORY_META,
   type Project,
+  type StatusRow,
   type TaskWithProjects,
 } from '@/lib/types';
 
@@ -11,20 +12,21 @@ import {
 export default function DeployHistory({
   tasks,
   projects,
+  statuses,
 }: {
   tasks: TaskWithProjects[];
   projects: Project[];
+  statuses: StatusRow[];
 }) {
   const [filter, setFilter] = useState<string | null>(null);
+  const archiveIds = new Set(
+    statuses.filter((s) => s.is_archive).map((s) => s.id)
+  );
 
   const archived = tasks
-    .filter((t) => t.status === 'archived')
-    .filter(
-      (t) => !filter || t.links.some((l) => l.project_id === filter)
-    )
-    .sort((a, b) =>
-      (b.archived_at ?? '').localeCompare(a.archived_at ?? '')
-    );
+    .filter((t) => t.status_id && archiveIds.has(t.status_id))
+    .filter((t) => !filter || t.links.some((l) => l.project_id === filter))
+    .sort((a, b) => (b.archived_at ?? '').localeCompare(a.archived_at ?? ''));
 
   return (
     <div>
@@ -59,9 +61,7 @@ export default function DeployHistory({
               )}
               <span className="history-title">{t.title}</span>
               <span className="history-time">
-                {t.archived_at
-                  ? new Date(t.archived_at).toLocaleString()
-                  : ''}
+                {t.archived_at ? new Date(t.archived_at).toLocaleString() : ''}
               </span>
             </div>
             <div className="history-meta">

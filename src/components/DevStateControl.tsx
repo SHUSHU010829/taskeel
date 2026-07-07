@@ -1,23 +1,22 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import {
-  DEV_STATE_ORDER,
-  DEV_STATE_META,
-  type DevState,
-} from '@/lib/types';
+import type { DevStateRow } from '@/lib/types';
 import StatusDot from './StatusDot';
 
-// The dev-state indicator at the left of each row. Click to open a popover
-// and switch state; choosing `blocked` reveals a reason input.
+// The dev-state indicator at the left of each row. Click to open a popover and
+// switch state. States with the `cross` style (i.e. "blocked") reveal a reason
+// input.
 export default function DevStateControl({
-  value,
+  devStates,
+  valueId,
   blockedReason,
   onChange,
 }: {
-  value: DevState;
+  devStates: DevStateRow[];
+  valueId: string | null;
   blockedReason: string | null;
-  onChange: (next: DevState, reason: string | null) => void;
+  onChange: (nextId: string, reason: string | null) => void;
 }) {
   const [open, setOpen] = useState(false);
   const [reason, setReason] = useState(blockedReason ?? '');
@@ -36,47 +35,50 @@ export default function DevStateControl({
     return () => document.removeEventListener('mousedown', onDoc);
   }, [open]);
 
-  const meta = DEV_STATE_META[value];
+  const current = devStates.find((d) => d.id === valueId) ?? devStates[0];
+  const isBlocked = current?.style === 'cross';
+
+  if (!current) {
+    return <span className="dev-state" style={{ width: 17 }} />;
+  }
 
   return (
     <div ref={ref} style={{ position: 'relative', display: 'flex' }}>
       <button
         className="dev-state"
         title={
-          value === 'blocked' && blockedReason
-            ? `卡住：${blockedReason}`
-            : meta.label
+          isBlocked && blockedReason ? `${current.name}：${blockedReason}` : current.name
         }
         onClick={(e) => {
           e.stopPropagation();
           setOpen((o) => !o);
         }}
       >
-        <StatusDot ds={value} />
+        <StatusDot color={current.color} style={current.style} />
       </button>
 
       {open && (
         <div className="popover" style={{ top: 24, left: 0 }}>
-          {DEV_STATE_ORDER.map((s) => (
+          {devStates.map((d) => (
             <button
-              key={s}
+              key={d.id}
               className="popover-item"
               onClick={(e) => {
                 e.stopPropagation();
-                if (s === 'blocked') {
-                  onChange('blocked', reason || null);
+                if (d.style === 'cross') {
+                  onChange(d.id, reason || null);
                 } else {
-                  onChange(s, null);
+                  onChange(d.id, null);
                   setOpen(false);
                 }
               }}
             >
-              <StatusDot ds={s} sm />
-              {DEV_STATE_META[s].label}
+              <StatusDot color={d.color} style={d.style} sm />
+              {d.name}
             </button>
           ))}
 
-          {value === 'blocked' && (
+          {isBlocked && (
             <input
               autoFocus
               placeholder="卡在什麼？（如：等 Twitch API 回覆）"
@@ -85,11 +87,11 @@ export default function DevStateControl({
               onChange={(e) => setReason(e.target.value)}
               onKeyDown={(e) => {
                 if (e.key === 'Enter') {
-                  onChange('blocked', reason || null);
+                  onChange(current.id, reason || null);
                   setOpen(false);
                 }
               }}
-              onBlur={() => onChange('blocked', reason || null)}
+              onBlur={() => onChange(current.id, reason || null)}
             />
           )}
         </div>

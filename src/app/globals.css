@@ -820,6 +820,48 @@ a {
   color: var(--text);
 }
 
+/* ---------- status manager ---------- */
+.status-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 0;
+  border-top: 1px solid var(--border);
+}
+
+.status-row .text-input {
+  flex: 1;
+}
+
+.status-row .reorder {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.status-row .reorder .move-btn {
+  width: 18px;
+  height: 14px;
+  border: 1px solid var(--border);
+}
+
+.role-chip {
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
+  border: 1px solid var(--border-strong);
+  border-radius: 4px;
+  background: transparent;
+  color: var(--text-faint);
+  font-size: 12px;
+}
+
+.role-chip.on {
+  background: rgba(94, 106, 210, 0.18);
+  border-color: var(--accent);
+  color: var(--text);
+}
+
 /* ---------- error banner ---------- */
 .error-banner {
   display: flex;

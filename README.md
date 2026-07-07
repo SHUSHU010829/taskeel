@@ -10,7 +10,7 @@ Linear (deep-grey base, hairline borders, restrained purple accent).
 - **Quick capture** — type a line, press Enter, it lands in the workspace inbox. Press `c` anywhere to focus the capture box.
 - **Per-project branches** — one task can span multiple projects, each with its own repo and git branch.
 - **Batched deploy → archive** — CI pings a webhook when a branch ships; that `(project, branch)` is marked deployed. A task is archived only once *all* its projects have deployed.
-- **Two independent axes** — flow `status` (inbox → active → notify_backend → ready_to_deploy → archived) and `dev_state` (idle / spec_ready / claude / blocked), shown as a clickable status circle per row.
+- **Two independent axes** — flow status (the board columns) and dev state (the clickable status circle per row). Both are **user-editable**: add / rename / recolour / reorder / delete them under **狀態設定** in the sidebar. Flow statuses carry three roles (★ default capture bucket, ⇧ deploy stage, ✔ archive); dev states pick a shape (ring / filled / spinner / cross — a `cross` state shows the "blocked reason" field).
 - **Workspaces** — 個人 / 工作, each with its own projects and tasks (seeded on first login).
 - **Deploy history** — archived tasks become a read-only, filterable changelog.
 - **Realtime** — capture on your phone, the board updates on your laptop.
@@ -22,6 +22,12 @@ Linear (deep-grey base, hairline borders, restrained purple accent).
 Create a project, then run [`supabase/schema.sql`](supabase/schema.sql) in the
 SQL Editor. It creates the tables, enums, RLS policies, the realtime
 publication, and the `archive_branch(repo, branch, owner)` function.
+
+**Already have a project from an earlier version?** Flow status and dev state
+moved from Postgres enums to editable tables (`task_statuses` / `dev_states`).
+Run [`supabase/migrations/0001_custom_statuses.sql`](supabase/migrations/0001_custom_statuses.sql)
+once — it creates the tables, seeds your defaults, backfills existing tasks,
+and drops the old enum columns.
 
 Enable an auth provider — **magic link (email OTP)** is what the login page uses.
 

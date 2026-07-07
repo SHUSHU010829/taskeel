@@ -1,20 +1,28 @@
 'use client';
 
-import type { TaskWithProjects } from '@/lib/types';
+import type { DevStateRow, StatusRow, TaskWithProjects } from '@/lib/types';
 import StatusDot from './StatusDot';
 
-// Slide-over that aggregates everything waiting to deploy: each
-// ready_to_deploy task with its still-pending project branches, plus
-// deploy reminders and backend flags. Actual archiving is CI-driven.
+// Slide-over aggregating everything waiting to deploy: each task in a
+// deploy-stage status with its still-pending project branches, plus deploy
+// reminders and backend flags. Actual archiving is CI-driven.
 export default function DeploySheet({
   tasks,
+  statuses,
+  devStates,
   onClose,
 }: {
   tasks: TaskWithProjects[];
+  statuses: StatusRow[];
+  devStates: DevStateRow[];
   onClose: () => void;
 }) {
+  const deployIds = new Set(
+    statuses.filter((s) => s.is_deploy).map((s) => s.id)
+  );
+
   const pending = tasks
-    .filter((t) => t.status === 'ready_to_deploy')
+    .filter((t) => t.status_id && deployIds.has(t.status_id))
     .map((t) => ({
       task: t,
       links: t.links.filter((l) => l.deploy_status === 'pending'),
@@ -39,32 +47,35 @@ export default function DeploySheet({
           {pending.length === 0 && (
             <div className="empty">沒有待部署的任務。</div>
           )}
-          {pending.map(({ task, links }) => (
-            <div className="deploy-card" key={task.id}>
-              <div className="deploy-card-title">
-                <StatusDot ds={task.dev_state} sm />
-                <span>{task.title}</span>
-                {task.needs_backend && (
-                  <span className="badge-backend">後端</span>
+          {pending.map(({ task, links }) => {
+            const dev = devStates.find((d) => d.id === task.dev_state_id);
+            return (
+              <div className="deploy-card" key={task.id}>
+                <div className="deploy-card-title">
+                  {dev && <StatusDot color={dev.color} style={dev.style} sm />}
+                  <span>{task.title}</span>
+                  {task.needs_backend && (
+                    <span className="badge-backend">後端</span>
+                  )}
+                </div>
+                <div className="history-meta">
+                  {links.map((l) => (
+                    <span key={l.project_id} className="chip">
+                      <span
+                        className="dot"
+                        style={{ background: l.project.color, width: 6, height: 6 }}
+                      />
+                      {l.project.name}
+                      {l.branch && <span className="branch">⎇ {l.branch}</span>}
+                    </span>
+                  ))}
+                </div>
+                {task.deploy_notes.trim() && (
+                  <div className="deploy-note">⚠ {task.deploy_notes}</div>
                 )}
               </div>
-              <div className="history-meta">
-                {links.map((l) => (
-                  <span key={l.project_id} className="chip">
-                    <span
-                      className="dot"
-                      style={{ background: l.project.color, width: 6, height: 6 }}
-                    />
-                    {l.project.name}
-                    {l.branch && <span className="branch">⎇ {l.branch}</span>}
-                  </span>
-                ))}
-              </div>
-              {task.deploy_notes.trim() && (
-                <div className="deploy-note">⚠ {task.deploy_notes}</div>
-              )}
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
     </>

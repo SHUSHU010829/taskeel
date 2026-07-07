@@ -1,20 +1,20 @@
 'use client';
 
-import { DEV_STATE_META, type DevState } from '@/lib/types';
+import type { DevStateStyle } from '@/lib/types';
 
-// The dev-state indicator, rendered as an SVG (ported from the prototype):
-//   idle       — faint hollow ring
-//   spec_ready — full ring + filled center
-//   claude     — partial arc (spinner), breathing pulse
-//   blocked    — full ring + cross
+// The dev-state indicator, rendered as an SVG. Driven by a colour + style so
+// user-defined dev states still render:
+//   ring    — faint hollow ring        filled — ring + filled center
+//   spinner — partial arc, breathing   cross  — ring + cross
 export default function StatusDot({
-  ds,
+  color,
+  style = 'ring',
   sm = false,
 }: {
-  ds: DevState;
+  color: string;
+  style?: DevStateStyle;
   sm?: boolean;
 }) {
-  const v = DEV_STATE_META[ds];
   const sz = sm ? 10 : 13;
 
   return (
@@ -33,30 +33,30 @@ export default function StatusDot({
         width={sz}
         height={sz}
         viewBox="0 0 14 14"
-        style={v.pulse ? { animation: 'pulse 1.6s ease-in-out infinite' } : undefined}
+        style={style === 'spinner' ? { animation: 'pulse 1.6s ease-in-out infinite' } : undefined}
       >
         <circle
           cx="7"
           cy="7"
           r="6"
           fill="none"
-          stroke={v.color}
+          stroke={color}
           strokeWidth="1.5"
-          opacity={v.ring < 1 ? 0.35 : 1}
+          opacity={style === 'ring' || style === 'spinner' ? 0.4 : 1}
         />
-        {v.ring >= 1 && <circle cx="7" cy="7" r="3" fill={v.color} />}
-        {v.ring > 0 && v.ring < 1 && (
+        {style === 'filled' && <circle cx="7" cy="7" r="3" fill={color} />}
+        {style === 'spinner' && (
           <path
             d="M7 7 L7 1 A6 6 0 0 1 12.2 4"
             fill="none"
-            stroke={v.color}
+            stroke={color}
             strokeWidth="2.5"
           />
         )}
-        {v.cross && (
+        {style === 'cross' && (
           <path
             d="M4.5 4.5 L9.5 9.5 M9.5 4.5 L4.5 9.5"
-            stroke={v.color}
+            stroke={color}
             strokeWidth="1.6"
           />
         )}

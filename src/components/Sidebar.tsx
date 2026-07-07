@@ -1,12 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import {
-  DEV_STATE_ORDER,
-  DEV_STATE_META,
-  type Project,
-  type Workspace,
-} from '@/lib/types';
+import type { DevStateRow, Project, Workspace } from '@/lib/types';
 import StatusDot from './StatusDot';
 
 export type View = 'board' | 'history';
@@ -16,10 +11,12 @@ export default function Sidebar({
   currentWorkspace,
   onSwitchWorkspace,
   projects,
+  devStates,
   view,
   onSetView,
   onAddProject,
   onEditProject,
+  onOpenStatusManager,
   userEmail,
   onSignOut,
 }: {
@@ -27,10 +24,12 @@ export default function Sidebar({
   currentWorkspace: Workspace | null;
   onSwitchWorkspace: (ws: Workspace) => void;
   projects: Project[];
+  devStates: DevStateRow[];
   view: View;
   onSetView: (v: View) => void;
   onAddProject: (name: string, repo: string) => void;
   onEditProject: (p: Project) => void;
+  onOpenStatusManager: () => void;
   userEmail: string;
   onSignOut: () => void;
 }) {
@@ -92,6 +91,9 @@ export default function Sidebar({
         onClick={() => onSetView('history')}
       >
         部署歷史
+      </button>
+      <button className="nav-item" onClick={onOpenStatusManager}>
+        狀態設定
       </button>
 
       {/* projects */}
@@ -173,10 +175,10 @@ export default function Sidebar({
       {/* footer: legend + account */}
       <div className="sidebar-footer">
         <div className="sidebar-label">開發狀態</div>
-        {DEV_STATE_ORDER.map((s) => (
-          <div className="legend-item" key={s}>
-            <StatusDot ds={s} sm />
-            {DEV_STATE_META[s].label}
+        {devStates.map((d) => (
+          <div className="legend-item" key={d.id}>
+            <StatusDot color={d.color} style={d.style} sm />
+            {d.name}
           </div>
         ))}
         <div

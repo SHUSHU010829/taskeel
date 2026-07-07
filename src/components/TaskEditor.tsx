@@ -3,10 +3,9 @@
 import { useState } from 'react';
 import {
   CATEGORY_META,
-  DEV_STATE_ORDER,
-  DEV_STATE_META,
-  type DevState,
+  type DevStateRow,
   type Project,
+  type StatusRow,
   type TaskCategory,
   type TaskWithProjects,
 } from '@/lib/types';
@@ -15,8 +14,9 @@ import StatusDot from './StatusDot';
 export interface TaskDraft {
   title: string;
   description: string;
+  status_id: string | null;
   category: TaskCategory | null;
-  dev_state: DevState;
+  dev_state_id: string | null;
   blocked_reason: string | null;
   needs_backend: boolean;
   deploy_notes: string;
@@ -27,34 +27,46 @@ export interface TaskDraft {
 export default function TaskEditor({
   task,
   projects,
+  statuses,
+  devStates,
   onSave,
   onClose,
   onDelete,
 }: {
   task: TaskWithProjects | null;
   projects: Project[];
+  statuses: StatusRow[];
+  devStates: DevStateRow[];
   onSave: (draft: TaskDraft) => void;
   onClose: () => void;
   onDelete?: () => void;
 }) {
+  const defaultStatus = statuses.find((s) => s.is_default) ?? statuses[0];
+  const defaultDev = devStates.find((d) => d.is_default) ?? devStates[0];
+
   const [title, setTitle] = useState(task?.title ?? '');
   const [description, setDescription] = useState(task?.description ?? '');
+  const [statusId, setStatusId] = useState<string | null>(
+    task?.status_id ?? defaultStatus?.id ?? null
+  );
   const [category, setCategory] = useState<TaskCategory | null>(
     task?.category ?? null
   );
-  const [devState, setDevState] = useState<DevState>(task?.dev_state ?? 'idle');
-  const [blockedReason, setBlockedReason] = useState(
-    task?.blocked_reason ?? ''
+  const [devStateId, setDevStateId] = useState<string | null>(
+    task?.dev_state_id ?? defaultDev?.id ?? null
   );
+  const [blockedReason, setBlockedReason] = useState(task?.blocked_reason ?? '');
   const [needsBackend, setNeedsBackend] = useState(task?.needs_backend ?? false);
   const [deployNotes, setDeployNotes] = useState(task?.deploy_notes ?? '');
 
-  // Map of project_id -> branch for the currently selected projects.
   const [branches, setBranches] = useState<Record<string, string>>(() => {
     const m: Record<string, string> = {};
     task?.links.forEach((l) => (m[l.project_id] = l.branch ?? ''));
     return m;
   });
+
+  const selectedDev = devStates.find((d) => d.id === devStateId);
+  const isBlocked = selectedDev?.style === 'cross';
 
   function toggleProject(id: string) {
     setBranches((prev) => {
@@ -70,9 +82,10 @@ export default function TaskEditor({
     onSave({
       title: title.trim(),
       description,
+      status_id: statusId,
       category,
-      dev_state: devState,
-      blocked_reason: devState === 'blocked' ? blockedReason || null : null,
+      dev_state_id: devStateId,
+      blocked_reason: isBlocked ? blockedReason || null : null,
       needs_backend: needsBackend,
       deploy_notes: deployNotes,
       links: Object.entries(branches).map(([project_id, branch]) => ({
@@ -102,22 +115,39 @@ export default function TaskEditor({
           onChange={(e) => setDescription(e.target.value)}
         />
 
+        {/* flow status */}
+        <div className="field">
+          <div className="field-label">流程狀態</div>
+          <div className="option-row">
+            {statuses.map((s) => (
+              <button
+                key={s.id}
+                className={`option${statusId === s.id ? ' selected' : ''}`}
+                onClick={() => setStatusId(s.id)}
+              >
+                <span className="dot" style={{ background: s.color }} />
+                {s.name}
+              </button>
+            ))}
+          </div>
+        </div>
+
         {/* dev state */}
         <div className="field">
           <div className="field-label">開發狀態</div>
           <div className="option-row">
-            {DEV_STATE_ORDER.map((s) => (
+            {devStates.map((d) => (
               <button
-                key={s}
-                className={`option${devState === s ? ' selected' : ''}`}
-                onClick={() => setDevState(s)}
+                key={d.id}
+                className={`option${devStateId === d.id ? ' selected' : ''}`}
+                onClick={() => setDevStateId(d.id)}
               >
-                <StatusDot ds={s} sm />
-                {DEV_STATE_META[s].label}
+                <StatusDot color={d.color} style={d.style} sm />
+                {d.name}
               </button>
             ))}
           </div>
-          {devState === 'blocked' && (
+          {isBlocked && (
             <input
               className="text-input"
               style={{ marginTop: 8 }}

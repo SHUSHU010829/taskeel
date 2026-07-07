@@ -1,19 +1,13 @@
 // ============================================================
 // taskeel — shared domain types (mirrors supabase/schema.sql)
+// Flow statuses and dev states are user-editable rows (not enums).
 // ============================================================
-
-export type TaskStatus =
-  | 'inbox'
-  | 'active'
-  | 'notify_backend'
-  | 'ready_to_deploy'
-  | 'archived';
 
 export type TaskCategory = 'hotfix' | 'feature' | 'wishlist';
 
-export type DevState = 'idle' | 'spec_ready' | 'claude' | 'blocked';
-
 export type DeployStatus = 'pending' | 'deployed';
+
+export type DevStateStyle = 'ring' | 'filled' | 'spinner' | 'cross';
 
 export interface Workspace {
   id: string;
@@ -32,6 +26,31 @@ export interface Project {
   created_at: string;
 }
 
+// A flow status (board column). One set per user (shared across workspaces).
+export interface StatusRow {
+  id: string;
+  owner_id: string;
+  name: string;
+  color: string;
+  position: number;
+  is_default: boolean; // quick capture lands here
+  is_deploy: boolean; // shown in the deploy sheet
+  is_archive: boolean; // hidden from board; deploy-archive target; history
+  created_at: string;
+}
+
+// A development state (the status circle).
+export interface DevStateRow {
+  id: string;
+  owner_id: string;
+  name: string;
+  color: string;
+  style: DevStateStyle;
+  position: number;
+  is_default: boolean; // quick capture starts here
+  created_at: string;
+}
+
 export interface TaskProject {
   task_id: string;
   project_id: string;
@@ -46,9 +65,9 @@ export interface Task {
   owner_id: string;
   title: string;
   description: string;
-  status: TaskStatus;
+  status_id: string | null;
   category: TaskCategory | null;
-  dev_state: DevState;
+  dev_state_id: string | null;
   blocked_reason: string | null;
   needs_backend: boolean;
   deploy_notes: string;
@@ -62,25 +81,7 @@ export interface TaskWithProjects extends Task {
   links: Array<TaskProject & { project: Project }>;
 }
 
-// ---------- display metadata ----------
-
-export const STATUS_ORDER: TaskStatus[] = [
-  'inbox',
-  'active',
-  'notify_backend',
-  'ready_to_deploy',
-];
-
-export const STATUS_META: Record<
-  TaskStatus,
-  { label: string; color: string }
-> = {
-  inbox: { label: '暫存區', color: '#6B7280' },
-  active: { label: '進行中', color: '#E5A00D' },
-  notify_backend: { label: '等後端', color: '#26B5CE' },
-  ready_to_deploy: { label: '待部署', color: '#4CB782' },
-  archived: { label: '已歸檔', color: '#6E7178' },
-};
+// ---------- category (still a fixed set) ----------
 
 export const CATEGORY_META: Record<
   TaskCategory,
@@ -91,21 +92,41 @@ export const CATEGORY_META: Record<
   wishlist: { label: 'wishlist', color: '#5E6AD2' },
 };
 
-export const DEV_STATE_ORDER: DevState[] = [
-  'idle',
-  'spec_ready',
-  'claude',
-  'blocked',
+// ---------- seed defaults (used when a user has none yet) ----------
+
+export const DEFAULT_STATUSES: Array<
+  Pick<StatusRow, 'name' | 'color' | 'is_default' | 'is_deploy' | 'is_archive'>
+> = [
+  { name: '暫存區', color: '#6B7280', is_default: true, is_deploy: false, is_archive: false },
+  { name: '進行中', color: '#E5A00D', is_default: false, is_deploy: false, is_archive: false },
+  { name: '等後端', color: '#26B5CE', is_default: false, is_deploy: false, is_archive: false },
+  { name: '待部署', color: '#4CB782', is_default: false, is_deploy: true, is_archive: false },
+  { name: '已歸檔', color: '#6E7178', is_default: false, is_deploy: false, is_archive: true },
 ];
 
-// `ring`: 0 = faint hollow ring, 1 = full ring + filled center,
-// 0<r<1 = partial arc (spinner). `pulse`/`cross` toggle animation / X mark.
-export const DEV_STATE_META: Record<
-  DevState,
-  { label: string; color: string; ring: number; pulse?: boolean; cross?: boolean }
-> = {
-  idle: { label: '未開始', color: '#6B7280', ring: 0 },
-  spec_ready: { label: '已規劃完成', color: '#5E6AD2', ring: 1 },
-  claude: { label: 'Claude 處理中', color: '#E5A00D', ring: 0.6, pulse: true },
-  blocked: { label: '卡住', color: '#EB5757', ring: 1, cross: true },
-};
+export const DEFAULT_DEV_STATES: Array<
+  Pick<DevStateRow, 'name' | 'color' | 'style'>
+> = [
+  { name: '未開始', color: '#6B7280', style: 'ring' },
+  { name: '已規劃完成', color: '#5E6AD2', style: 'filled' },
+  { name: 'Claude 處理中', color: '#E5A00D', style: 'spinner' },
+  { name: '卡住', color: '#EB5757', style: 'cross' },
+];
+
+export const STATUS_COLORS = [
+  '#6B7280',
+  '#5E6AD2',
+  '#26B5CE',
+  '#4CB782',
+  '#E5A00D',
+  '#EB5757',
+  '#B57EDC',
+  '#F2994A',
+];
+
+export const DEV_STATE_STYLES: { value: DevStateStyle; label: string }[] = [
+  { value: 'ring', label: '空心圈' },
+  { value: 'filled', label: '實心' },
+  { value: 'spinner', label: 'spinner' },
+  { value: 'cross', label: '打叉' },
+];
