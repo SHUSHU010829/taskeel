@@ -32,10 +32,15 @@ Copy `.env.example` to `.env.local` and fill in:
 | var | purpose | public |
 |---|---|---|
 | `NEXT_PUBLIC_SUPABASE_URL` | project URL | yes |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | anon key | yes |
-| `SUPABASE_SERVICE_ROLE_KEY` | deploy-hook, bypasses RLS | **no, server only** |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | **Publishable key** (`sb_publishable_…`) | yes |
+| `SUPABASE_SERVICE_ROLE_KEY` | **Secret key** (`sb_secret_…`), deploy-hook, bypasses RLS | **no, server only** |
 | `DEPLOY_HOOK_SECRET` | webhook auth | no |
 | `DISCORD_WEBHOOK_URL` | optional deploy notifications | no |
+
+Keys come from Supabase → **Settings → API Keys**. Supabase's newer
+publishable/secret keys replace the legacy anon/service_role keys; the variable
+names above are unchanged — paste the new key values in. The Project URL is in
+the top-right **Connect** button or Settings → General.
 
 ### 3. Run
 
