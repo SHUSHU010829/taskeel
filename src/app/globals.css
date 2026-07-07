@@ -36,8 +36,8 @@ body {
   background: var(--bg);
   color: var(--text);
   font-family: var(--font);
-  font-size: 13px;
-  line-height: 1.5;
+  font-size: 15px;
+  line-height: 1.55;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
 }
@@ -247,7 +247,75 @@ a {
   gap: 8px;
   padding: 3px 8px;
   color: var(--text-faint);
-  font-size: 12px;
+  font-size: 13px;
+}
+
+/* ---------- account menu ---------- */
+.acct {
+  position: relative;
+  margin-top: 12px;
+}
+
+.acct-button {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text-dim);
+}
+
+.acct-button:hover {
+  background: var(--bg-hover);
+  color: var(--text);
+}
+
+.acct-avatar {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: #fff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.acct-email {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 13px;
+}
+
+.acct-menu {
+  position: absolute;
+  bottom: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+  padding: 4px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+  z-index: 20;
+}
+
+/* ---------- mobile drawer ---------- */
+.hamburger {
+  display: none;
+  font-size: 18px;
+}
+
+.sidebar-backdrop {
+  display: none;
 }
 
 /* ---------- buttons ---------- */
@@ -320,17 +388,44 @@ a {
   border-bottom: 1px solid var(--border);
 }
 
+.capture-plus {
+  color: var(--text-faint);
+  font-size: 16px;
+  flex-shrink: 0;
+}
+
 .quick-capture input {
   flex: 1;
+  min-width: 0;
   background: transparent;
   border: none;
   outline: none;
   color: var(--text);
   padding: 4px 0;
+  font-size: 15px;
 }
 
 .quick-capture input::placeholder {
   color: var(--text-faint);
+}
+
+.capture-send {
+  flex-shrink: 0;
+  padding: 5px 12px;
+  border: none;
+  border-radius: var(--radius);
+  background: var(--accent);
+  color: #fff;
+  font-weight: 500;
+}
+
+.capture-send:hover:not(:disabled) {
+  background: var(--accent-hover);
+}
+
+.capture-send:disabled {
+  opacity: 0.4;
+  cursor: default;
 }
 
 .kbd {
@@ -368,7 +463,7 @@ a {
 
 .group-title {
   font-weight: 600;
-  font-size: 12px;
+  font-size: 13px;
 }
 
 .task-row {
@@ -418,7 +513,7 @@ a {
   padding: 2px 7px;
   border: 1px solid var(--border);
   border-radius: 10px;
-  font-size: 11px;
+  font-size: 12px;
   color: var(--text-dim);
   white-space: nowrap;
 }
@@ -803,6 +898,12 @@ a {
   color: var(--text-faint);
 }
 
+.empty-row {
+  padding: 8px 16px 8px 42px;
+  color: var(--text-faint);
+  font-size: 13px;
+}
+
 .icon-btn {
   width: 28px;
   height: 28px;
@@ -992,4 +1093,106 @@ a {
   font-size: 12px;
   background: rgba(94, 106, 210, 0.12);
   color: var(--text);
+}
+
+/* ============================================================
+   MOBILE — main flow on a phone is quick-capture into the inbox
+   ============================================================ */
+@media (max-width: 720px) {
+  .hamburger {
+    display: inline-flex;
+  }
+
+  /* sidebar becomes a slide-in drawer */
+  .sidebar {
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    width: 84vw;
+    max-width: 320px;
+    z-index: 50;
+    transform: translateX(-100%);
+    transition: transform 0.2s ease;
+    box-shadow: 0 0 48px rgba(0, 0, 0, 0.6);
+  }
+
+  .sidebar.open {
+    transform: none;
+  }
+
+  .sidebar-backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 49;
+  }
+
+  /* touch has no hover — keep row controls visible */
+  .move-btns,
+  .project-edit {
+    opacity: 1;
+  }
+
+  .move-btn {
+    width: 28px;
+    height: 28px;
+  }
+
+  /* prominent, thumb-friendly quick capture; 16px input stops iOS zoom */
+  .quick-capture {
+    padding: 12px;
+    gap: 10px;
+    position: sticky;
+    top: 0;
+    z-index: 5;
+    background: var(--bg);
+  }
+
+  .quick-capture input {
+    font-size: 16px;
+    padding: 8px 0;
+  }
+
+  .capture-send {
+    padding: 9px 16px;
+    font-size: 15px;
+  }
+
+  .quick-capture .kbd {
+    display: none;
+  }
+
+  /* roomier tap targets */
+  .task-row {
+    padding: 11px 12px;
+    gap: 8px;
+  }
+
+  .group-header {
+    padding: 9px 12px;
+  }
+
+  .topbar {
+    padding: 0 12px;
+    gap: 10px;
+  }
+
+  /* full-width overlays */
+  .modal {
+    width: 100%;
+    padding: 16px;
+  }
+
+  .sheet {
+    width: 100%;
+  }
+
+  .text-input,
+  .textarea,
+  .modal-title-input,
+  .modal-desc {
+    font-size: 16px;
+  }
 }

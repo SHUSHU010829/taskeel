@@ -52,6 +52,7 @@ export default function Board({
   const [editingProject, setEditingProject] = useState<Project | null>(null);
   const [statusMgrOpen, setStatusMgrOpen] = useState(false);
   const [deployOpen, setDeployOpen] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [capture, setCapture] = useState('');
   const captureRef = useRef<HTMLInputElement>(null);
@@ -237,6 +238,13 @@ export default function Board({
     });
     if (error) return report('新增任務失敗', error);
     loadTasks();
+  }
+
+  function submitCapture() {
+    const v = capture;
+    if (!v.trim()) return;
+    setCapture('');
+    quickCapture(v);
   }
 
   async function saveTask(draft: TaskDraft) {
@@ -516,6 +524,8 @@ export default function Board({
   return (
     <div className="app">
       <Sidebar
+        open={sidebarOpen}
+        onClose={() => setSidebarOpen(false)}
         workspaces={workspaces}
         currentWorkspace={currentWs}
         onSwitchWorkspace={setCurrentWs}
@@ -538,6 +548,13 @@ export default function Board({
           </div>
         )}
         <div className="topbar">
+          <button
+            className="hamburger icon-btn"
+            title="選單"
+            onClick={() => setSidebarOpen(true)}
+          >
+            ☰
+          </button>
           <span className="breadcrumb">
             {currentWs?.name} · {view === 'board' ? '任務看板' : '部署歷史'}
           </span>
@@ -559,19 +576,22 @@ export default function Board({
 
         {view === 'board' && (
           <div className="quick-capture">
+            <span className="capture-plus">＋</span>
             <input
               ref={captureRef}
               value={capture}
-              placeholder="快速捕捉：打一行字 Enter 丟進暫存區…"
+              placeholder="快速捕捉：打一行字丟進暫存區…"
               onChange={(e) => setCapture(e.target.value)}
-              {...enterSubmit(() => {
-                const v = capture;
-                if (!v.trim()) return;
-                setCapture('');
-                quickCapture(v);
-              })}
+              {...enterSubmit(submitCapture)}
             />
             <span className="kbd">c</span>
+            <button
+              className="capture-send"
+              onClick={submitCapture}
+              disabled={!capture.trim()}
+            >
+              丟入
+            </button>
           </div>
         )}
 
@@ -649,15 +669,18 @@ function BoardList({
   onDevState: (t: TaskWithProjects, id: string, r: string | null) => void;
   onMove: (t: TaskWithProjects, dir: -1 | 1) => void;
 }) {
-  if (tasks.length === 0) {
-    return <div className="empty">還沒有任務。用上方快速捕捉丟第一筆吧。</div>;
+  if (boardStatuses.length === 0) {
+    return (
+      <div className="empty">
+        還沒有流程狀態。到左側「狀態設定」新增。
+      </div>
+    );
   }
 
   return (
     <>
       {boardStatuses.map((status, i) => {
         const items = tasks.filter((t) => t.status_id === status.id);
-        if (items.length === 0) return null;
         return (
           <div className="group" key={status.id}>
             <div className="group-header">
@@ -665,18 +688,22 @@ function BoardList({
               <span className="group-title">{status.name}</span>
               <span className="badge-count">{items.length}</span>
             </div>
-            {items.map((task) => (
-              <TaskRow
-                key={task.id}
-                task={task}
-                devStates={devStates}
-                canBack={i > 0}
-                canFwd={i < boardStatuses.length - 1}
-                onOpen={() => onOpen(task)}
-                onDevState={(id, r) => onDevState(task, id, r)}
-                onMove={(dir) => onMove(task, dir)}
-              />
-            ))}
+            {items.length === 0 ? (
+              <div className="empty-row">—</div>
+            ) : (
+              items.map((task) => (
+                <TaskRow
+                  key={task.id}
+                  task={task}
+                  devStates={devStates}
+                  canBack={i > 0}
+                  canFwd={i < boardStatuses.length - 1}
+                  onOpen={() => onOpen(task)}
+                  onDevState={(id, r) => onDevState(task, id, r)}
+                  onMove={(dir) => onMove(task, dir)}
+                />
+              ))
+            )}
           </div>
         );
       })}
