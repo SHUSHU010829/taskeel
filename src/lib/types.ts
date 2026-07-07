@@ -103,14 +103,22 @@ export const DEFAULT_STATUSES: Array<
 ];
 
 export const STATUS_COLORS = [
-  '#6B7280',
-  '#5E6AD2',
-  '#26B5CE',
-  '#4CB782',
-  '#E5A00D',
-  '#EB5757',
-  '#B57EDC',
-  '#F2994A',
+  '#8A8F98', // slate
+  '#6B7280', // gray
+  '#5E6AD2', // indigo
+  '#7C8CF8', // periwinkle
+  '#4C8DF5', // blue
+  '#26B5CE', // cyan
+  '#3DB9A0', // teal
+  '#4CB782', // green
+  '#8FC740', // lime
+  '#E5C044', // yellow
+  '#E5A00D', // amber
+  '#F2994A', // orange
+  '#EB5757', // red
+  '#F2688E', // pink
+  '#B57EDC', // purple
+  '#9B59B6', // magenta
 ];
 
 export const STATUS_STYLES: { value: StatusStyle; label: string }[] = [

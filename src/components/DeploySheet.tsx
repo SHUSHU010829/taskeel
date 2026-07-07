@@ -1,5 +1,6 @@
 'use client';
 
+import { GitBranch, TriangleAlert, X } from 'lucide-react';
 import type { StatusRow, TaskWithProjects } from '@/lib/types';
 import StatusDot from './StatusDot';
 
@@ -38,7 +39,7 @@ export default function DeploySheet({
           </span>
           <div className="spacer" />
           <button className="icon-btn" onClick={onClose}>
-            ✕
+            <X size={16} />
           </button>
         </div>
         <div className="sheet-body">
@@ -64,12 +65,18 @@ export default function DeploySheet({
                         style={{ background: l.project.color, width: 6, height: 6 }}
                       />
                       {l.project.name}
-                      {l.branch && <span className="branch">⎇ {l.branch}</span>}
+                      {l.branch && (
+                        <span className="branch">
+                          <GitBranch size={11} /> {l.branch}
+                        </span>
+                      )}
                     </span>
                   ))}
                 </div>
                 {task.deploy_notes.trim() && (
-                  <div className="deploy-note">⚠ {task.deploy_notes}</div>
+                  <div className="deploy-note">
+                    <TriangleAlert size={13} /> {task.deploy_notes}
+                  </div>
                 )}
               </div>
             );

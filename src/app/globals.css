@@ -91,11 +91,28 @@ a {
 }
 
 .brand {
+  display: flex;
+  align-items: center;
+  gap: 6px;
   font-size: 0.9333rem;
   font-weight: 600;
   color: #fff;
   letter-spacing: 0.2px;
   padding: 4px 8px 8px;
+}
+
+.brand svg {
+  color: var(--accent);
+}
+
+/* let icons inside text chips sit on the row */
+.branch,
+.settings-toggle,
+.capture-plus,
+.summary-chip .branch {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
 }
 
 .main {
@@ -1040,6 +1057,9 @@ a {
 }
 
 .deploy-note {
+  display: flex;
+  align-items: center;
+  gap: 5px;
   margin-top: 6px;
   padding: 6px 8px;
   border-radius: 4px;

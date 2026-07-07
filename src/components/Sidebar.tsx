@@ -1,6 +1,18 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import {
+  ChevronDown,
+  Diamond,
+  GitBranch,
+  LayoutList,
+  LogOut,
+  Pencil,
+  Pin,
+  Plus,
+  Rocket,
+  Settings,
+} from 'lucide-react';
 import type { Project, StatusRow, Workspace } from '@/lib/types';
 import { enterSubmit } from '@/lib/useEnterSubmit';
 import StatusDot from './StatusDot';
@@ -96,7 +108,10 @@ export default function Sidebar({
     <>
       {open && <div className="sidebar-backdrop" onClick={onClose} />}
       <aside className={`sidebar${open ? ' open' : ''}`}>
-        <div className="brand">◆ taskeel</div>
+        <div className="brand">
+          <Diamond size={15} fill="currentColor" />
+          taskeel
+        </div>
 
         {/* workspace switcher */}
         <div className="ws-switcher">
@@ -107,9 +122,9 @@ export default function Sidebar({
             />
             <span style={{ flex: 1 }}>{currentWorkspace?.name ?? '—'}</span>
             {currentWorkspace && pinnedWsId === currentWorkspace.id && (
-              <span style={{ fontSize: '0.75em' }} title="已釘選">📌</span>
+              <Pin size={12} fill="currentColor" style={{ color: 'var(--accent)' }} />
             )}
-            <span style={{ color: 'var(--text-faint)' }}>▾</span>
+            <ChevronDown size={14} style={{ color: 'var(--text-faint)' }} />
           </button>
           {menuOpen && (
             <div className="ws-menu">
@@ -134,7 +149,7 @@ export default function Sidebar({
                       onTogglePin(ws.id);
                     }}
                   >
-                    📌
+                    <Pin size={14} fill={pinnedWsId === ws.id ? 'currentColor' : 'none'} />
                   </button>
                   <button
                     className="icon-btn ws-edit"
@@ -145,19 +160,19 @@ export default function Sidebar({
                       setMenuOpen(false);
                     }}
                   >
-                    ✎
+                    <Pencil size={14} />
                   </button>
                 </div>
               ))}
               <button
                 className="ws-menu-item"
-                style={{ color: 'var(--text-dim)' }}
+                style={{ color: 'var(--text-dim)', gap: 6 }}
                 onClick={() => {
                   onAddWorkspace();
                   setMenuOpen(false);
                 }}
               >
-                ＋ 新增工作區
+                <Plus size={14} /> 新增工作區
               </button>
             </div>
           )}
@@ -168,12 +183,14 @@ export default function Sidebar({
           className={`nav-item${view === 'board' ? ' active' : ''}`}
           onClick={() => go('board')}
         >
+          <LayoutList size={15} />
           任務看板
         </button>
         <button
           className={`nav-item${view === 'history' ? ' active' : ''}`}
           onClick={() => go('history')}
         >
+          <Rocket size={15} />
           部署歷史
         </button>
         <button
@@ -184,7 +201,8 @@ export default function Sidebar({
             onClose();
           }}
         >
-          ⚙ 狀態設定
+          <Settings size={15} />
+          狀態設定
         </button>
 
         {/* projects */}
@@ -200,7 +218,7 @@ export default function Sidebar({
               title="新專案"
               onClick={() => setAdding((a) => !a)}
             >
-              +
+              <Plus size={14} />
             </button>
           </div>
           {projects.map((p) => (
@@ -223,11 +241,8 @@ export default function Sidebar({
                 {p.name}
               </span>
               {p.repo && (
-                <span
-                  style={{ fontSize: 10, color: 'var(--text-faint)' }}
-                  title={p.repo}
-                >
-                  ⎇
+                <span title={p.repo} style={{ display: 'inline-flex', color: 'var(--text-faint)' }}>
+                  <GitBranch size={12} />
                 </span>
               )}
               <button
@@ -238,7 +253,7 @@ export default function Sidebar({
                   onEditProject(p);
                 }}
               >
-                ✎
+                <Pencil size={13} />
               </button>
             </div>
           ))}
@@ -293,7 +308,7 @@ export default function Sidebar({
               <span className="acct-email" title={userEmail}>
                 {userEmail}
               </span>
-              <span style={{ color: 'var(--text-faint)' }}>⚙</span>
+              <Settings size={15} style={{ color: 'var(--text-faint)' }} />
             </button>
             {acctOpen && (
               <div className="acct-menu">
@@ -313,12 +328,13 @@ export default function Sidebar({
                 </div>
                 <button
                   className="ws-menu-item"
+                  style={{ gap: 8 }}
                   onClick={() => {
                     setAcctOpen(false);
                     onSignOut();
                   }}
                 >
-                  ⇥ 登出
+                  <LogOut size={14} /> 登出
                 </button>
               </div>
             )}

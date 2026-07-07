@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { GitBranch } from 'lucide-react';
 import {
   CATEGORY_META,
   type Project,
@@ -72,7 +73,11 @@ export default function DeployHistory({
                     style={{ background: l.project.color, width: 6, height: 6 }}
                   />
                   {l.project.name}
-                  {l.branch && <span className="branch">⎇ {l.branch}</span>}
+                  {l.branch && (
+                    <span className="branch">
+                      <GitBranch size={11} /> {l.branch}
+                    </span>
+                  )}
                   {l.deployed_at && (
                     <span className="branch">
                       · {new Date(l.deployed_at).toLocaleDateString()}

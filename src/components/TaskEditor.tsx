@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { ChevronDown, ChevronUp, GitBranch } from 'lucide-react';
 import {
   CATEGORY_META,
   type Project,
@@ -123,7 +124,15 @@ export default function TaskEditor({
             className="settings-toggle"
             onClick={() => setShowSettings((s) => !s)}
           >
-            {showSettings ? '收合設定 ▴' : '設定 ▾'}
+            {showSettings ? (
+              <>
+                收合設定 <ChevronUp size={13} />
+              </>
+            ) : (
+              <>
+                設定 <ChevronDown size={13} />
+              </>
+            )}
           </button>
           {!showSettings && (
             <div className="settings-summary" onClick={() => setShowSettings(true)}>
@@ -146,7 +155,11 @@ export default function TaskEditor({
                 <span className="summary-chip" key={p.id}>
                   <span className="dot" style={{ background: p.color, width: 6, height: 6 }} />
                   {p.name}
-                  {branches[p.id] && <span className="branch">⎇ {branches[p.id]}</span>}
+                  {branches[p.id] && (
+                    <span className="branch">
+                      <GitBranch size={11} /> {branches[p.id]}
+                    </span>
+                  )}
                 </span>
               ))}
               {task?.needs_backend && <span className="badge-backend">後端</span>}
@@ -244,7 +257,9 @@ export default function TaskEditor({
             .filter((p) => p.id in branches)
             .map((p) => (
               <div className="branch-field" key={p.id}>
-                <span className="proj-name">{p.name} ⎇</span>
+                <span className="proj-name" style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                  {p.name} <GitBranch size={12} />
+                </span>
                 <input
                   className="text-input"
                   placeholder="分支名稱（如 feat/gacha）"

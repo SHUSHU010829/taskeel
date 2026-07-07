@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { Menu, Plus, X, TriangleAlert } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { enterSubmit } from '@/lib/useEnterSubmit';
 import {
@@ -568,13 +569,16 @@ export default function Board({
       <div className="main">
         {error && (
           <div className="error-banner" onClick={() => setError(null)}>
-            ⚠ {error}
-            <span style={{ marginLeft: 'auto', opacity: 0.7 }}>點此關閉 ✕</span>
+            <TriangleAlert size={14} />
+            {error}
+            <span style={{ marginLeft: 'auto', opacity: 0.7, display: 'inline-flex', gap: 4, alignItems: 'center' }}>
+              點此關閉 <X size={12} />
+            </span>
           </div>
         )}
         <div className="topbar">
           <button className="hamburger icon-btn" title="選單" onClick={() => setSidebarOpen(true)}>
-            ☰
+            <Menu size={18} />
           </button>
           <span className="breadcrumb">
             {currentWs?.name} · {view === 'board' ? '任務看板' : '部署歷史'}
@@ -587,7 +591,7 @@ export default function Board({
             >
               <span className="dot" style={{ background: filteredProject.color }} />
               {filteredProject.name}
-              <span style={{ color: 'var(--text-faint)' }}>✕</span>
+              <X size={13} style={{ color: 'var(--text-faint)' }} />
             </button>
           )}
           <div className="spacer" />
@@ -606,7 +610,9 @@ export default function Board({
 
         {view === 'board' && (
           <div className="quick-capture">
-            <span className="capture-plus">＋</span>
+            <span className="capture-plus">
+              <Plus size={16} />
+            </span>
             <input
               ref={captureRef}
               value={capture}

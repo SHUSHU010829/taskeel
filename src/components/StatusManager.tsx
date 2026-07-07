@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { Archive, ChevronDown, GripVertical, Rocket, Star, X } from 'lucide-react';
 import {
   STATUS_COLORS,
   STATUS_STYLES,
@@ -48,7 +49,7 @@ function ColorButton({ color, onPick }: { color: string; onPick: (c: string) => 
       />
       {open && (
         <div className="popover" style={{ top: 26, left: 0, minWidth: 0 }}>
-          <div style={{ display: 'flex', gap: 6, padding: 4 }}>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, padding: 4, width: 176 }}>
             {STATUS_COLORS.map((c) => (
               <button
                 key={c}
@@ -109,7 +110,7 @@ function StyleSelect({
       <button className="select-btn" onClick={toggle}>
         <StatusDot color={color} style={value} sm />
         <span style={{ flex: 1, textAlign: 'left' }}>{cur?.label}</span>
-        <span className="caret">▾</span>
+        <ChevronDown size={13} className="caret" />
       </button>
       {open && (
         <div
@@ -180,11 +181,11 @@ export default function StatusManager({
           </div>
           <div className="spacer" />
           <button className="icon-btn" onClick={onClose}>
-            ✕
+            <X size={16} />
           </button>
         </div>
         <div className="field-label" style={{ marginTop: 0 }}>
-          一個任務只有一個狀態，決定看板分欄與圖示。角色：★預設落點 · ⇧待部署 · ✔歸檔。
+          一個任務只有一個狀態，決定看板分欄與圖示。右側三顆：星號＝預設落點、火箭＝待部署、封存＝歸檔。
           圖示為「打叉」的狀態會顯示卡住原因欄。拖曳左側握把排序。
         </div>
 
@@ -211,7 +212,7 @@ export default function StatusManager({
                 setOverId(null);
               }}
             >
-              ⠿
+              <GripVertical size={16} />
             </span>
             <ColorButton color={s.color} onPick={(c) => handlers.updateStatus(s.id, { color: c })} />
             <input
@@ -230,24 +231,24 @@ export default function StatusManager({
             />
             <button
               className={`role-chip${s.is_default ? ' on' : ''}`}
-              title="快速捕捉落點"
+              title="預設落點（快速捕捉丟這區）"
               onClick={() => handlers.updateStatus(s.id, { is_default: true })}
             >
-              ★
+              <Star size={14} fill={s.is_default ? 'currentColor' : 'none'} />
             </button>
             <button
               className={`role-chip${s.is_deploy ? ' on' : ''}`}
-              title="部署清單抓這區"
+              title="待部署（部署清單抓這區）"
               onClick={() => handlers.updateStatus(s.id, { is_deploy: !s.is_deploy })}
             >
-              ⇧
+              <Rocket size={14} />
             </button>
             <button
               className={`role-chip${s.is_archive ? ' on' : ''}`}
               title="歸檔（進部署歷史）"
               onClick={() => handlers.updateStatus(s.id, { is_archive: true })}
             >
-              ✔
+              <Archive size={14} />
             </button>
             <button
               className="icon-btn"
@@ -260,7 +261,7 @@ export default function StatusManager({
                 })
               }
             >
-              ✕
+              <X size={15} />
             </button>
           </div>
         ))}

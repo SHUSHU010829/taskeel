@@ -1,5 +1,6 @@
 'use client';
 
+import { ArrowLeft, ArrowRight, Check, GitBranch } from 'lucide-react';
 import type { StatusRow, TaskCategory, TaskWithProjects } from '@/lib/types';
 import StatusControl from './StatusControl';
 import CategoryControl from './CategoryControl';
@@ -57,18 +58,22 @@ export default function TaskRow({
               style={{ background: link.project.color, width: 6, height: 6 }}
             />
             {link.project.name}
-            {link.branch && <span className="branch">⎇ {link.branch}</span>}
-            {link.deploy_status === 'deployed' && <span>✓</span>}
+            {link.branch && (
+              <span className="branch">
+                <GitBranch size={11} /> {link.branch}
+              </span>
+            )}
+            {link.deploy_status === 'deployed' && <Check size={12} />}
           </span>
         ))}
       </div>
 
       <div className="move-btns">
         <button className="move-btn" disabled={!canBack} title="上一階段" onClick={() => onMove(-1)}>
-          ←
+          <ArrowLeft size={15} />
         </button>
         <button className="move-btn" disabled={!canFwd} title="下一階段" onClick={() => onMove(1)}>
-          →
+          <ArrowRight size={15} />
         </button>
       </div>
     </div>
