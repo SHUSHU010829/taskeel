@@ -32,7 +32,7 @@ export default function Board({
   const router = useRouter();
   const supabase = useMemo(() => createClient(), []);
 
-  const [workspaces] = useState<Workspace[]>(initialWorkspaces);
+  const [workspaces, setWorkspaces] = useState<Workspace[]>(initialWorkspaces);
   const [projects, setProjects] = useState<Project[]>(initialProjects);
   const [currentWs, setCurrentWs] = useState<Workspace | null>(
     initialWorkspaces[0] ?? null
@@ -41,7 +41,43 @@ export default function Board({
   const [view, setView] = useState<View>('board');
   const [editing, setEditing] = useState<TaskWithProjects | null | 'new'>(null);
   const [deployOpen, setDeployOpen] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const captureRef = useRef<HTMLInputElement>(null);
+  const seededRef = useRef(false);
+
+  // Surface any Supabase error instead of swallowing it.
+  const report = useCallback((label: string, err: unknown) => {
+    const msg =
+      err && typeof err === 'object' && 'message' in err
+        ? (err as { message: string }).message
+        : String(err);
+    console.error(`[taskeel] ${label}:`, err);
+    setError(`${label}: ${msg}`);
+  }, []);
+
+  // First login: seed 個人 / 工作 from the browser (the client reliably carries
+  // the authenticated session, so RLS with_check passes).
+  useEffect(() => {
+    if (workspaces.length > 0 || seededRef.current) return;
+    seededRef.current = true;
+    (async () => {
+      const { data, error } = await supabase
+        .from('workspaces')
+        .insert([
+          { owner_id: userId, name: '個人', color: '#5E6AD2' },
+          { owner_id: userId, name: '工作', color: '#26B5CE' },
+        ])
+        .select('*');
+      if (error) {
+        report('建立 workspace 失敗', error);
+        return;
+      }
+      if (data && data.length) {
+        setWorkspaces(data as Workspace[]);
+        setCurrentWs((prev) => prev ?? (data[0] as Workspace));
+      }
+    })();
+  }, [workspaces.length, supabase, userId, report]);
 
   const wsProjects = useMemo(
     () => projects.filter((p) => p.workspace_id === currentWs?.id),
@@ -132,13 +168,14 @@ export default function Board({
   // ---------- mutations ----------
   async function quickCapture(title: string) {
     if (!title.trim() || !currentWs) return;
-    await supabase.from('tasks').insert({
+    const { error } = await supabase.from('tasks').insert({
       workspace_id: currentWs.id,
       owner_id: userId,
       title: title.trim(),
       status: 'inbox',
       dev_state: 'idle',
     });
+    if (error) return report('新增任務失敗', error);
     loadTasks();
   }
 
@@ -157,9 +194,13 @@ export default function Board({
     let taskId: string;
     if (editing && editing !== 'new') {
       taskId = editing.id;
-      await supabase.from('tasks').update(base).eq('id', taskId);
+      const { error } = await supabase
+        .from('tasks')
+        .update(base)
+        .eq('id', taskId);
+      if (error) return report('更新任務失敗', error);
     } else {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from('tasks')
         .insert({
           ...base,
@@ -169,7 +210,7 @@ export default function Board({
         })
         .select('id')
         .single();
-      if (!data) return;
+      if (error || !data) return report('儲存任務失敗', error);
       taskId = data.id;
     }
 
@@ -236,7 +277,7 @@ export default function Board({
 
   async function addProject(name: string, repo: string) {
     if (!currentWs) return;
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('projects')
       .insert({
         workspace_id: currentWs.id,
@@ -245,7 +286,8 @@ export default function Board({
       })
       .select('*')
       .single();
-    if (data) setProjects((prev) => [...prev, data as Project]);
+    if (error || !data) return report('新增專案失敗', error);
+    setProjects((prev) => [...prev, data as Project]);
   }
 
   async function signOut() {
@@ -276,6 +318,12 @@ export default function Board({
       />
 
       <div className="main">
+        {error && (
+          <div className="error-banner" onClick={() => setError(null)}>
+            ⚠ {error}
+            <span style={{ marginLeft: 'auto', opacity: 0.7 }}>點此關閉 ✕</span>
+          </div>
+        )}
         <div className="topbar">
           <span className="breadcrumb">
             {currentWs?.name} · {view === 'board' ? '任務看板' : '部署歷史'}

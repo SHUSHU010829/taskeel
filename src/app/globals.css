@@ -799,6 +799,19 @@ a {
   color: var(--text);
 }
 
+/* ---------- error banner ---------- */
+.error-banner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: rgba(235, 87, 87, 0.12);
+  border-bottom: 1px solid rgba(235, 87, 87, 0.3);
+  color: #ff8a8a;
+  font-size: 12px;
+  cursor: pointer;
+}
+
 /* ---------- login ---------- */
 .login-wrap {
   height: 100vh;
