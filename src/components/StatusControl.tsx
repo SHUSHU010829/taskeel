@@ -20,6 +20,7 @@ export default function StatusControl({
   onChange: (nextId: string, reason: string | null) => void;
 }) {
   const [open, setOpen] = useState(false);
+  const [up, setUp] = useState(false);
   const [reason, setReason] = useState(blockedReason ?? '');
   const ref = useRef<HTMLDivElement>(null);
 
@@ -46,6 +47,11 @@ export default function StatusControl({
         title={isBlocked && blockedReason ? `${current.name}：${blockedReason}` : current.name}
         onClick={(e) => {
           e.stopPropagation();
+          if (!open && ref.current) {
+            const r = ref.current.getBoundingClientRect();
+            const menuH = statuses.length * 34 + (isBlocked ? 44 : 0) + 8;
+            setUp(window.innerHeight - r.bottom < menuH);
+          }
           setOpen((o) => !o);
         }}
       >
@@ -53,7 +59,10 @@ export default function StatusControl({
       </button>
 
       {open && (
-        <div className="popover" style={{ top: 24, left: 0 }}>
+        <div
+          className="popover"
+          style={up ? { bottom: 24, left: 0 } : { top: 24, left: 0 }}
+        >
           {statuses.map((s) => (
             <button
               key={s.id}

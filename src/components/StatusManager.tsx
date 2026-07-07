@@ -82,6 +82,7 @@ function StyleSelect({
   onChange: (s: StatusStyle) => void;
 }) {
   const [open, setOpen] = useState(false);
+  const [up, setUp] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
     if (!open) return;
@@ -91,16 +92,30 @@ function StyleSelect({
     document.addEventListener('mousedown', h);
     return () => document.removeEventListener('mousedown', h);
   }, [open]);
+
+  function toggle() {
+    if (!open && ref.current) {
+      const r = ref.current.getBoundingClientRect();
+      const menuH = STATUS_STYLES.length * 36 + 8;
+      // open upward when there isn't room below
+      setUp(window.innerHeight - r.bottom < menuH);
+    }
+    setOpen((o) => !o);
+  }
+
   const cur = STATUS_STYLES.find((s) => s.value === value);
   return (
     <div ref={ref} style={{ position: 'relative', width: 116, flex: 'none' }}>
-      <button className="select-btn" onClick={() => setOpen((o) => !o)}>
+      <button className="select-btn" onClick={toggle}>
         <StatusDot color={color} style={value} sm />
         <span style={{ flex: 1, textAlign: 'left' }}>{cur?.label}</span>
         <span className="caret">▾</span>
       </button>
       {open && (
-        <div className="popover" style={{ top: 32, left: 0, right: 0 }}>
+        <div
+          className="popover"
+          style={up ? { bottom: 'calc(100% + 4px)', left: 0, right: 0 } : { top: 32, left: 0, right: 0 }}
+        >
           {STATUS_STYLES.map((s) => (
             <button
               key={s.value}
@@ -152,9 +167,7 @@ export default function StatusManager({
     <div className="overlay" onMouseDown={onClose}>
       <div className="modal" style={{ width: 620 }} onMouseDown={(e) => e.stopPropagation()}>
         <div style={{ display: 'flex', alignItems: 'center', marginBottom: 12 }}>
-          <div className="field-label" style={{ margin: 0 }}>
-            狀態設定
-          </div>
+          <div className="modal-heading">狀態設定</div>
           <div className="spacer" />
           <button className="icon-btn" onClick={onClose}>
             ✕
