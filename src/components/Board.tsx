@@ -55,6 +55,7 @@ export default function Board({
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [capture, setCapture] = useState('');
+  const [fontPx, setFontPx] = useState(15);
   const captureRef = useRef<HTMLInputElement>(null);
   const seedWsRef = useRef(false);
   const seedStatusRef = useRef(false);
@@ -208,6 +209,26 @@ export default function Board({
       supabase.removeChannel(channel);
     };
   }, [supabase, currentWs, loadTasks, loadMeta]);
+
+  // ---------- font-size preference ----------
+  useEffect(() => {
+    try {
+      const f = localStorage.getItem('taskeel.fontPx');
+      if (f) setFontPx(parseInt(f, 10));
+    } catch {
+      // ignore
+    }
+  }, []);
+
+  function changeFont(px: number) {
+    setFontPx(px);
+    document.documentElement.style.setProperty('--app-font', `${px}px`);
+    try {
+      localStorage.setItem('taskeel.fontPx', String(px));
+    } catch {
+      // ignore
+    }
+  }
 
   // ---------- quick capture 'c' shortcut ----------
   useEffect(() => {
@@ -536,6 +557,8 @@ export default function Board({
         onAddProject={addProject}
         onEditProject={setEditingProject}
         onOpenStatusManager={() => setStatusMgrOpen(true)}
+        fontPx={fontPx}
+        onSetFont={changeFont}
         userEmail={userEmail}
         onSignOut={signOut}
       />

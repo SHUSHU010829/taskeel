@@ -31,6 +31,12 @@ export default function RootLayout({
   return (
     <html lang="zh-Hant">
       <body>
+        <script
+          dangerouslySetInnerHTML={{
+            __html:
+              "try{var f=localStorage.getItem('taskeel.fontPx');if(f)document.documentElement.style.setProperty('--app-font',f+'px')}catch(e){}",
+          }}
+        />
         {children}
         <PWARegister />
       </body>

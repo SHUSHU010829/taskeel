@@ -7,6 +7,13 @@ import StatusDot from './StatusDot';
 
 export type View = 'board' | 'history';
 
+const FONT_SIZES = [
+  { label: '小', px: 13 },
+  { label: '中', px: 15 },
+  { label: '大', px: 17 },
+  { label: '特大', px: 19 },
+];
+
 export default function Sidebar({
   open,
   onClose,
@@ -20,6 +27,8 @@ export default function Sidebar({
   onAddProject,
   onEditProject,
   onOpenStatusManager,
+  fontPx,
+  onSetFont,
   userEmail,
   onSignOut,
 }: {
@@ -35,6 +44,8 @@ export default function Sidebar({
   onAddProject: (name: string, repo: string) => void;
   onEditProject: (p: Project) => void;
   onOpenStatusManager: () => void;
+  fontPx: number;
+  onSetFont: (px: number) => void;
   userEmail: string;
   onSignOut: () => void;
 }) {
@@ -224,6 +235,20 @@ export default function Sidebar({
             </button>
             {acctOpen && (
               <div className="acct-menu">
+                <div className="font-control">
+                  <span className="font-control-label">字體大小</span>
+                  <div className="font-options">
+                    {FONT_SIZES.map((f) => (
+                      <button
+                        key={f.px}
+                        className={`font-option${fontPx === f.px ? ' on' : ''}`}
+                        onClick={() => onSetFont(f.px)}
+                      >
+                        {f.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
                 <button
                   className="ws-menu-item"
                   onClick={() => {
