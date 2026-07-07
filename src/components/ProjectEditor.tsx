@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import type { Project } from '@/lib/types';
-import { useEnterSubmit } from '@/lib/useEnterSubmit';
+import { enterSubmit } from '@/lib/useEnterSubmit';
 import ConfirmDialog from './ConfirmDialog';
 
 const PRESET_COLORS = [
@@ -51,7 +51,7 @@ export default function ProjectEditor({
           placeholder="專案名稱"
           value={name}
           onChange={(e) => setName(e.target.value)}
-          {...useEnterSubmit(save)}
+          {...enterSubmit(save)}
         />
 
         <div className="field">
@@ -61,7 +61,7 @@ export default function ProjectEditor({
             placeholder="owner/bibi-bot"
             value={repo}
             onChange={(e) => setRepo(e.target.value)}
-            {...useEnterSubmit(save)}
+            {...enterSubmit(save)}
           />
         </div>
 

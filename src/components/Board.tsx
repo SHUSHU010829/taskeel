@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
-import { useEnterSubmit } from '@/lib/useEnterSubmit';
+import { enterSubmit } from '@/lib/useEnterSubmit';
 import {
   DEFAULT_STATUSES,
   DEFAULT_DEV_STATES,
@@ -564,7 +564,7 @@ export default function Board({
               value={capture}
               placeholder="快速捕捉：打一行字 Enter 丟進暫存區…"
               onChange={(e) => setCapture(e.target.value)}
-              {...useEnterSubmit(() => {
+              {...enterSubmit(() => {
                 const v = capture;
                 if (!v.trim()) return;
                 setCapture('');

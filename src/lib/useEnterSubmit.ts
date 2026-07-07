@@ -1,20 +1,16 @@
-import { useRef } from 'react';
+import type { KeyboardEvent } from 'react';
 
-// Spread the returned props onto an <input> so pressing Enter submits — but
-// never the Enter that only confirms an IME (Chinese/Japanese/…) candidate.
-// Usage: <input {...useEnterSubmit(() => doThing())} />
-export function useEnterSubmit(onEnter: () => void) {
-  const composing = useRef(false);
+// Returns input props so pressing Enter submits — but never the Enter that only
+// confirms an IME (Chinese/Japanese/…) candidate. This is a plain function, NOT
+// a hook, so it is safe to spread inside conditionally-rendered JSX.
+//   <input {...enterSubmit(() => doThing())} />
+export function enterSubmit(onEnter: () => void) {
   return {
-    onCompositionStart: () => {
-      composing.current = true;
-    },
-    onCompositionEnd: () => {
-      composing.current = false;
-    },
-    onKeyDown: (e: React.KeyboardEvent) => {
+    onKeyDown: (e: KeyboardEvent) => {
       if (e.key !== 'Enter') return;
-      if (composing.current || e.nativeEvent.isComposing) return;
+      // isComposing (and legacy keyCode 229) is true while an IME candidate is
+      // being confirmed — don't submit then.
+      if (e.nativeEvent.isComposing || e.keyCode === 229) return;
       e.preventDefault();
       onEnter();
     },

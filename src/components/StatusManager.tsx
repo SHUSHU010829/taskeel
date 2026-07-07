@@ -8,7 +8,7 @@ import {
   type DevStateStyle,
   type StatusRow,
 } from '@/lib/types';
-import { useEnterSubmit } from '@/lib/useEnterSubmit';
+import { enterSubmit } from '@/lib/useEnterSubmit';
 import StatusDot from './StatusDot';
 import ConfirmDialog from './ConfirmDialog';
 
@@ -361,7 +361,7 @@ export default function StatusManager({
             placeholder={tab === 'flow' ? '新增流程狀態…' : '新增開發狀態…'}
             value={newName}
             onChange={(e) => setNewName(e.target.value)}
-            {...useEnterSubmit(submitNew)}
+            {...enterSubmit(submitNew)}
           />
           <button className="btn btn-primary" onClick={submitNew}>
             新增

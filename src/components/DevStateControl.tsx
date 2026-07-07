@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 import type { DevStateRow } from '@/lib/types';
-import { useEnterSubmit } from '@/lib/useEnterSubmit';
+import { enterSubmit } from '@/lib/useEnterSubmit';
 import StatusDot from './StatusDot';
 
 // The dev-state indicator at the left of each row. Click to open a popover and
@@ -86,7 +86,7 @@ export default function DevStateControl({
               value={reason}
               onClick={(e) => e.stopPropagation()}
               onChange={(e) => setReason(e.target.value)}
-              {...useEnterSubmit(() => {
+              {...enterSubmit(() => {
                 onChange(current.id, reason || null);
                 setOpen(false);
               })}
