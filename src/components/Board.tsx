@@ -417,24 +417,15 @@ export default function Board({
     loadTasks();
   }
 
-  async function reorderStatus(id: string, dir: -1 | 1) {
-    const idx = orderedStatuses.findIndex((s) => s.id === id);
-    const other = orderedStatuses[idx + dir];
-    if (!other) return;
-    const a = orderedStatuses[idx];
-    await Promise.all([
-      supabase.from('task_statuses').update({ position: other.position }).eq('id', a.id),
-      supabase.from('task_statuses').update({ position: a.position }).eq('id', other.id),
-    ]);
-    setStatuses((prev) =>
-      prev.map((s) =>
-        s.id === a.id
-          ? { ...s, position: other.position }
-          : s.id === other.id
-            ? { ...s, position: a.position }
-            : s
+  async function reorderStatuses(ids: string[]) {
+    setStatuses((prev) => prev.map((s) => ({ ...s, position: ids.indexOf(s.id) })));
+    const results = await Promise.all(
+      ids.map((id, i) =>
+        supabase.from('task_statuses').update({ position: i }).eq('id', id)
       )
     );
+    const err = results.find((r) => r.error)?.error;
+    if (err) report('排序流程狀態失敗', err);
   }
 
   async function addDevState(name: string) {
@@ -482,35 +473,26 @@ export default function Board({
     loadTasks();
   }
 
-  async function reorderDevState(id: string, dir: -1 | 1) {
-    const idx = orderedDevStates.findIndex((d) => d.id === id);
-    const other = orderedDevStates[idx + dir];
-    if (!other) return;
-    const a = orderedDevStates[idx];
-    await Promise.all([
-      supabase.from('dev_states').update({ position: other.position }).eq('id', a.id),
-      supabase.from('dev_states').update({ position: a.position }).eq('id', other.id),
-    ]);
-    setDevStates((prev) =>
-      prev.map((d) =>
-        d.id === a.id
-          ? { ...d, position: other.position }
-          : d.id === other.id
-            ? { ...d, position: a.position }
-            : d
+  async function reorderDevStates(ids: string[]) {
+    setDevStates((prev) => prev.map((d) => ({ ...d, position: ids.indexOf(d.id) })));
+    const results = await Promise.all(
+      ids.map((id, i) =>
+        supabase.from('dev_states').update({ position: i }).eq('id', id)
       )
     );
+    const err = results.find((r) => r.error)?.error;
+    if (err) report('排序開發狀態失敗', err);
   }
 
   const statusHandlers: StatusManagerHandlers = {
     addStatus,
     updateStatus,
     deleteStatus,
-    moveStatus: reorderStatus,
+    reorderStatuses,
     addDevState,
     updateDevState: updateDevStateRow,
     deleteDevState,
-    moveDevState: reorderDevState,
+    reorderDevStates,
   };
 
   async function signOut() {
