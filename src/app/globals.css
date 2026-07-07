@@ -550,6 +550,40 @@ a {
   flex-shrink: 0;
 }
 
+.cat-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  min-width: 26px;
+  justify-content: center;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: transparent;
+  color: var(--text-dim);
+  font-size: 0.8rem;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.cat-tag:hover {
+  background: var(--bg-active);
+  color: var(--text);
+}
+
+.cat-tag.empty {
+  border-style: dashed;
+  padding: 2px 8px;
+}
+
+.cat-empty-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  border: 1px dashed var(--text-faint);
+  flex-shrink: 0;
+}
+
 .chip {
   display: inline-flex;
   align-items: center;
@@ -726,14 +760,65 @@ a {
 
 .modal-desc {
   width: 100%;
-  min-height: 60px;
+  min-height: 180px;
   resize: vertical;
   background: transparent;
   border: none;
   outline: none;
-  color: var(--text-dim);
-  padding: 4px 0;
+  color: var(--text);
+  font-size: 0.95rem;
+  line-height: 1.65;
+  padding: 6px 0;
   margin-bottom: 8px;
+}
+
+.modal-desc::placeholder {
+  color: var(--text-faint);
+}
+
+/* settings collapse bar */
+.settings-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+
+.settings-toggle {
+  border: 1px solid var(--border-strong);
+  background: transparent;
+  color: var(--text-dim);
+  border-radius: var(--radius);
+  padding: 4px 10px;
+  font-size: 0.8rem;
+  flex-shrink: 0;
+}
+
+.settings-toggle:hover {
+  background: var(--bg-hover);
+  color: var(--text);
+}
+
+.settings-summary {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  cursor: pointer;
+}
+
+.summary-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 8px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  font-size: 0.8rem;
+  color: var(--text-dim);
+  white-space: nowrap;
 }
 
 .modal-heading {

@@ -54,9 +54,13 @@ export default function TaskEditor({
     task?.links.forEach((l) => (m[l.project_id] = l.branch ?? ''));
     return m;
   });
+  // Reading-first: existing tasks open with settings collapsed; new tasks
+  // expand so you can fill them in.
+  const [showSettings, setShowSettings] = useState(task === null);
 
   const selected = statuses.find((s) => s.id === statusId);
   const isBlocked = selected?.style === 'cross';
+  const selectedProjects = projects.filter((p) => p.id in branches);
 
   function toggleProject(id: string) {
     setBranches((prev) => {
@@ -104,6 +108,45 @@ export default function TaskEditor({
           onChange={(e) => setDescription(e.target.value)}
         />
 
+        {/* settings toggle + compact summary when collapsed */}
+        <div className="settings-bar">
+          <button
+            className="settings-toggle"
+            onClick={() => setShowSettings((s) => !s)}
+          >
+            {showSettings ? '收合設定 ▴' : '設定 ▾'}
+          </button>
+          {!showSettings && (
+            <div className="settings-summary" onClick={() => setShowSettings(true)}>
+              {selected && (
+                <span className="summary-chip">
+                  <StatusDot color={selected.color} style={selected.style} sm />
+                  {selected.name}
+                </span>
+              )}
+              {category && (
+                <span className="summary-chip">
+                  <span
+                    className="dot"
+                    style={{ background: CATEGORY_META[category].color, width: 6, height: 6 }}
+                  />
+                  {CATEGORY_META[category].label}
+                </span>
+              )}
+              {selectedProjects.map((p) => (
+                <span className="summary-chip" key={p.id}>
+                  <span className="dot" style={{ background: p.color, width: 6, height: 6 }} />
+                  {p.name}
+                  {branches[p.id] && <span className="branch">⎇ {branches[p.id]}</span>}
+                </span>
+              ))}
+              {task?.needs_backend && <span className="badge-backend">後端</span>}
+            </div>
+          )}
+        </div>
+
+        {showSettings && (
+        <>
         {/* status */}
         <div className="field">
           <div className="field-label">狀態</div>
@@ -205,6 +248,8 @@ export default function TaskEditor({
             onChange={(e) => setDeployNotes(e.target.value)}
           />
         </div>
+        </>
+        )}
 
         <div className="modal-actions">
           {onDelete && (

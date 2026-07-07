@@ -8,6 +8,7 @@ import {
   DEFAULT_STATUSES,
   type Project,
   type StatusRow,
+  type TaskCategory,
   type TaskWithProjects,
   type Workspace,
 } from '@/lib/types';
@@ -282,6 +283,12 @@ export default function Board({
     if (error) report('更新狀態失敗', error);
   }
 
+  async function setTaskCategory(task: TaskWithProjects, cat: TaskCategory | null) {
+    setTasks((prev) => prev.map((t) => (t.id === task.id ? { ...t, category: cat } : t)));
+    const { error } = await supabase.from('tasks').update({ category: cat }).eq('id', task.id);
+    if (error) report('更新分類失敗', error);
+  }
+
   // Move a task one column via the ← / → arrows.
   async function moveStatus(task: TaskWithProjects, dir: -1 | 1) {
     const idx = boardStatuses.findIndex((s) => s.id === task.status_id);
@@ -501,6 +508,7 @@ export default function Board({
               statuses={orderedStatuses}
               onOpen={setEditing}
               onStatus={setTaskStatus}
+              onCategory={setTaskCategory}
               onMove={moveStatus}
             />
           )}
@@ -549,6 +557,7 @@ function BoardList({
   statuses,
   onOpen,
   onStatus,
+  onCategory,
   onMove,
 }: {
   boardStatuses: StatusRow[];
@@ -556,6 +565,7 @@ function BoardList({
   statuses: StatusRow[];
   onOpen: (t: TaskWithProjects) => void;
   onStatus: (t: TaskWithProjects, id: string, r: string | null) => void;
+  onCategory: (t: TaskWithProjects, c: TaskCategory | null) => void;
   onMove: (t: TaskWithProjects, dir: -1 | 1) => void;
 }) {
   if (boardStatuses.length === 0) {
@@ -585,6 +595,7 @@ function BoardList({
                   canFwd={i < boardStatuses.length - 1}
                   onOpen={() => onOpen(task)}
                   onStatus={(id, r) => onStatus(task, id, r)}
+                  onCategory={(c) => onCategory(task, c)}
                   onMove={(dir) => onMove(task, dir)}
                 />
               ))

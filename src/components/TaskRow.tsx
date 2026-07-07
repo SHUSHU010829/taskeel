@@ -1,7 +1,8 @@
 'use client';
 
-import { CATEGORY_META, type StatusRow, type TaskWithProjects } from '@/lib/types';
+import type { StatusRow, TaskCategory, TaskWithProjects } from '@/lib/types';
 import StatusControl from './StatusControl';
+import CategoryControl from './CategoryControl';
 
 // One task row in the grouped board list.
 export default function TaskRow({
@@ -11,6 +12,7 @@ export default function TaskRow({
   canFwd,
   onOpen,
   onStatus,
+  onCategory,
   onMove,
 }: {
   task: TaskWithProjects;
@@ -19,10 +21,9 @@ export default function TaskRow({
   canFwd: boolean;
   onOpen: () => void;
   onStatus: (nextId: string, reason: string | null) => void;
+  onCategory: (next: TaskCategory | null) => void;
   onMove: (dir: -1 | 1) => void;
 }) {
-  const cat = task.category ? CATEGORY_META[task.category] : null;
-
   return (
     <div className="task-row">
       <StatusControl
@@ -32,13 +33,7 @@ export default function TaskRow({
         onChange={onStatus}
       />
 
-      {cat && (
-        <span
-          className="cat-dot"
-          style={{ background: cat.color }}
-          title={cat.label}
-        />
-      )}
+      <CategoryControl value={task.category} onChange={onCategory} />
 
       <span className="task-title" onClick={onOpen}>
         {task.title}
