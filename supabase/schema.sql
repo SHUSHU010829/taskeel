@@ -102,6 +102,18 @@ create policy "own task_projects" on task_projects
   );
 
 -- ============================================================
+-- TABLE PRIVILEGES
+-- RLS 只限制「哪些列」，表級 GRANT 決定「角色能否碰這張表」。
+-- 多數 Supabase 專案會自動授權 authenticated，但部分（較新的專案／新版 key）
+-- 不會，導致登入後仍 42501 permission denied。這裡明確授權，RLS 仍照舊隔離。
+-- ============================================================
+grant usage on schema public to anon, authenticated;
+
+grant select, insert, update, delete
+  on public.workspaces, public.projects, public.tasks, public.task_projects
+  to authenticated;
+
+-- ============================================================
 -- REALTIME — 多裝置即時同步
 -- ============================================================
 alter publication supabase_realtime add table tasks;
