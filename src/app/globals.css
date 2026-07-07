@@ -248,14 +248,55 @@ a {
   color: var(--text);
 }
 
+.project-row.active {
+  background: var(--bg-active);
+  color: var(--text);
+}
+
 .project-edit {
   opacity: 0;
+  width: 22px;
+  height: 22px;
+  flex-shrink: 0;
   font-size: 0.7333rem;
-  color: var(--text-faint);
 }
 
 .project-row:hover .project-edit {
   opacity: 1;
+}
+
+.ws-pin {
+  opacity: 0;
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
+  filter: grayscale(1);
+}
+
+.ws-menu-row:hover .ws-pin {
+  opacity: 0.7;
+}
+
+.ws-pin.on {
+  opacity: 1;
+  filter: none;
+}
+
+.filter-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px;
+  border: 1px solid var(--border-strong);
+  border-radius: 12px;
+  background: var(--bg-active);
+  color: var(--text);
+  font-size: 0.8rem;
+  white-space: nowrap;
+}
+
+.filter-chip:hover {
+  background: var(--bg-hover);
 }
 
 .sidebar-footer {

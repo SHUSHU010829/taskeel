@@ -52,6 +52,8 @@ export default function Board({
   const [error, setError] = useState<string | null>(null);
   const [capture, setCapture] = useState('');
   const [fontPx, setFontPx] = useState(15);
+  const [pinnedWsId, setPinnedWsId] = useState<string | null>(null);
+  const [projectFilter, setProjectFilter] = useState<string | null>(null);
   const captureRef = useRef<HTMLInputElement>(null);
   const seedWsRef = useRef(false);
   const seedingStatusRef = useRef<Set<string>>(new Set());
@@ -193,6 +195,35 @@ export default function Board({
       // ignore
     }
   }, []);
+
+  // ---------- pinned workspace: land here on open ----------
+  useEffect(() => {
+    try {
+      const p = localStorage.getItem('taskeel.pinnedWs');
+      if (!p) return;
+      setPinnedWsId(p);
+      const ws = initialWorkspaces.find((w) => w.id === p);
+      if (ws) setCurrentWs(ws);
+    } catch {
+      // ignore
+    }
+  }, [initialWorkspaces]);
+
+  function togglePin(wsId: string) {
+    const next = pinnedWsId === wsId ? null : wsId;
+    setPinnedWsId(next);
+    try {
+      if (next) localStorage.setItem('taskeel.pinnedWs', next);
+      else localStorage.removeItem('taskeel.pinnedWs');
+    } catch {
+      // ignore
+    }
+  }
+
+  function switchWorkspace(ws: Workspace) {
+    setCurrentWs(ws);
+    setProjectFilter(null);
+  }
 
   function changeFont(px: number) {
     setFontPx(px);
@@ -495,7 +526,10 @@ export default function Board({
 
   // ---------- derived ----------
   const archiveIds = new Set(wsStatuses.filter((s) => s.is_archive).map((s) => s.id));
-  const boardTasks = tasks.filter((t) => !t.status_id || !archiveIds.has(t.status_id));
+  const boardTasks = tasks
+    .filter((t) => !t.status_id || !archiveIds.has(t.status_id))
+    .filter((t) => !projectFilter || t.links.some((l) => l.project_id === projectFilter));
+  const filteredProject = projects.find((p) => p.id === projectFilter) ?? null;
   const deployIds = new Set(wsStatuses.filter((s) => s.is_deploy).map((s) => s.id));
   const pendingDeployCount = tasks.filter(
     (t) =>
@@ -511,10 +545,14 @@ export default function Board({
         onClose={() => setSidebarOpen(false)}
         workspaces={workspaces}
         currentWorkspace={currentWs}
-        onSwitchWorkspace={setCurrentWs}
+        onSwitchWorkspace={switchWorkspace}
         onAddWorkspace={() => setEditingWs('new')}
         onEditWorkspace={setEditingWs}
+        pinnedWsId={pinnedWsId}
+        onTogglePin={togglePin}
         projects={wsProjects}
+        projectFilter={projectFilter}
+        onFilterProject={(id) => setProjectFilter((cur) => (cur === id ? null : id))}
         statuses={wsStatuses}
         view={view}
         onSetView={setView}
@@ -541,6 +579,17 @@ export default function Board({
           <span className="breadcrumb">
             {currentWs?.name} · {view === 'board' ? '任務看板' : '部署歷史'}
           </span>
+          {view === 'board' && filteredProject && (
+            <button
+              className="filter-chip"
+              title="清除專案篩選"
+              onClick={() => setProjectFilter(null)}
+            >
+              <span className="dot" style={{ background: filteredProject.color }} />
+              {filteredProject.name}
+              <span style={{ color: 'var(--text-faint)' }}>✕</span>
+            </button>
+          )}
           <div className="spacer" />
           {view === 'board' && (
             <>

@@ -22,7 +22,11 @@ export default function Sidebar({
   onSwitchWorkspace,
   onAddWorkspace,
   onEditWorkspace,
+  pinnedWsId,
+  onTogglePin,
   projects,
+  projectFilter,
+  onFilterProject,
   statuses,
   view,
   onSetView,
@@ -41,7 +45,11 @@ export default function Sidebar({
   onSwitchWorkspace: (ws: Workspace) => void;
   onAddWorkspace: () => void;
   onEditWorkspace: (ws: Workspace) => void;
+  pinnedWsId: string | null;
+  onTogglePin: (wsId: string) => void;
   projects: Project[];
+  projectFilter: string | null;
+  onFilterProject: (id: string) => void;
   statuses: StatusRow[];
   view: View;
   onSetView: (v: View) => void;
@@ -98,6 +106,9 @@ export default function Sidebar({
               style={{ background: currentWorkspace?.color ?? '#5E6AD2' }}
             />
             <span style={{ flex: 1 }}>{currentWorkspace?.name ?? '—'}</span>
+            {currentWorkspace && pinnedWsId === currentWorkspace.id && (
+              <span style={{ fontSize: '0.75em' }} title="已釘選">📌</span>
+            )}
             <span style={{ color: 'var(--text-faint)' }}>▾</span>
           </button>
           {menuOpen && (
@@ -114,6 +125,16 @@ export default function Sidebar({
                   >
                     <span className="dot" style={{ background: ws.color }} />
                     {ws.name}
+                  </button>
+                  <button
+                    className={`icon-btn ws-pin${pinnedWsId === ws.id ? ' on' : ''}`}
+                    title={pinnedWsId === ws.id ? '取消釘選' : '釘選（每次進來預設顯示）'}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onTogglePin(ws.id);
+                    }}
+                  >
+                    📌
                   </button>
                   <button
                     className="icon-btn ws-edit"
@@ -184,11 +205,11 @@ export default function Sidebar({
           </div>
           {projects.map((p) => (
             <div
-              className="project-row"
+              className={`project-row${projectFilter === p.id ? ' active' : ''}`}
               key={p.id}
               role="button"
-              title="編輯專案"
-              onClick={() => onEditProject(p)}
+              title="只看此專案的任務"
+              onClick={() => onFilterProject(p.id)}
             >
               <span className="dot" style={{ background: p.color }} />
               <span
@@ -209,7 +230,16 @@ export default function Sidebar({
                   ⎇
                 </span>
               )}
-              <span className="project-edit">✎</span>
+              <button
+                className="icon-btn project-edit"
+                title="編輯專案"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onEditProject(p);
+                }}
+              >
+                ✎
+              </button>
             </div>
           ))}
           {adding && (
