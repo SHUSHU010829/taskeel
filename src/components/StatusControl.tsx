@@ -1,20 +1,20 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import type { DevStateRow } from '@/lib/types';
+import type { StatusRow } from '@/lib/types';
 import { enterSubmit } from '@/lib/useEnterSubmit';
 import StatusDot from './StatusDot';
 
-// The dev-state indicator at the left of each row. Click to open a popover and
-// switch state. States with the `cross` style (i.e. "blocked") reveal a reason
-// input.
-export default function DevStateControl({
-  devStates,
+// The status icon at the left of each row. Click to open a popover and switch
+// the task's status (which also moves it to that column). A status with the
+// `cross` style reveals a "blocked reason" input.
+export default function StatusControl({
+  statuses,
   valueId,
   blockedReason,
   onChange,
 }: {
-  devStates: DevStateRow[];
+  statuses: StatusRow[];
   valueId: string | null;
   blockedReason: string | null;
   onChange: (nextId: string, reason: string | null) => void;
@@ -28,28 +28,22 @@ export default function DevStateControl({
   useEffect(() => {
     if (!open) return;
     function onDoc(e: MouseEvent) {
-      if (ref.current && !ref.current.contains(e.target as Node)) {
-        setOpen(false);
-      }
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
     }
     document.addEventListener('mousedown', onDoc);
     return () => document.removeEventListener('mousedown', onDoc);
   }, [open]);
 
-  const current = devStates.find((d) => d.id === valueId) ?? devStates[0];
+  const current = statuses.find((s) => s.id === valueId) ?? statuses[0];
   const isBlocked = current?.style === 'cross';
 
-  if (!current) {
-    return <span className="dev-state" style={{ width: 17 }} />;
-  }
+  if (!current) return <span className="dev-state" style={{ width: 17 }} />;
 
   return (
     <div ref={ref} style={{ position: 'relative', display: 'flex' }}>
       <button
         className="dev-state"
-        title={
-          isBlocked && blockedReason ? `${current.name}：${blockedReason}` : current.name
-        }
+        title={isBlocked && blockedReason ? `${current.name}：${blockedReason}` : current.name}
         onClick={(e) => {
           e.stopPropagation();
           setOpen((o) => !o);
@@ -60,22 +54,22 @@ export default function DevStateControl({
 
       {open && (
         <div className="popover" style={{ top: 24, left: 0 }}>
-          {devStates.map((d) => (
+          {statuses.map((s) => (
             <button
-              key={d.id}
+              key={s.id}
               className="popover-item"
               onClick={(e) => {
                 e.stopPropagation();
-                if (d.style === 'cross') {
-                  onChange(d.id, reason || null);
+                if (s.style === 'cross') {
+                  onChange(s.id, reason || null);
                 } else {
-                  onChange(d.id, null);
+                  onChange(s.id, null);
                   setOpen(false);
                 }
               }}
             >
-              <StatusDot color={d.color} style={d.style} sm />
-              {d.name}
+              <StatusDot color={s.color} style={s.style} sm />
+              {s.name}
             </button>
           ))}
 

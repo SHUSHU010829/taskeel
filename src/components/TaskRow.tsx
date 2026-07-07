@@ -1,35 +1,35 @@
 'use client';
 
-import { CATEGORY_META, type DevStateRow, type TaskWithProjects } from '@/lib/types';
-import DevStateControl from './DevStateControl';
+import { CATEGORY_META, type StatusRow, type TaskWithProjects } from '@/lib/types';
+import StatusControl from './StatusControl';
 
 // One task row in the grouped board list.
 export default function TaskRow({
   task,
-  devStates,
+  statuses,
   canBack,
   canFwd,
   onOpen,
-  onDevState,
+  onStatus,
   onMove,
 }: {
   task: TaskWithProjects;
-  devStates: DevStateRow[];
+  statuses: StatusRow[];
   canBack: boolean;
   canFwd: boolean;
   onOpen: () => void;
-  onDevState: (nextId: string, reason: string | null) => void;
+  onStatus: (nextId: string, reason: string | null) => void;
   onMove: (dir: -1 | 1) => void;
 }) {
   const cat = task.category ? CATEGORY_META[task.category] : null;
 
   return (
     <div className="task-row">
-      <DevStateControl
-        devStates={devStates}
-        valueId={task.dev_state_id}
+      <StatusControl
+        statuses={statuses}
+        valueId={task.status_id}
         blockedReason={task.blocked_reason}
-        onChange={onDevState}
+        onChange={onStatus}
       />
 
       {cat && (
@@ -69,20 +69,10 @@ export default function TaskRow({
       </div>
 
       <div className="move-btns">
-        <button
-          className="move-btn"
-          disabled={!canBack}
-          title="上一階段"
-          onClick={() => onMove(-1)}
-        >
+        <button className="move-btn" disabled={!canBack} title="上一階段" onClick={() => onMove(-1)}>
           ←
         </button>
-        <button
-          className="move-btn"
-          disabled={!canFwd}
-          title="下一階段"
-          onClick={() => onMove(1)}
-        >
+        <button className="move-btn" disabled={!canFwd} title="下一階段" onClick={() => onMove(1)}>
           →
         </button>
       </div>

@@ -1,13 +1,22 @@
 // ============================================================
 // taskeel — shared domain types (mirrors supabase/schema.sql)
-// Flow statuses and dev states are user-editable rows (not enums).
+// A task has ONE status: it drives both the board column and the row icon.
 // ============================================================
 
 export type TaskCategory = 'hotfix' | 'feature' | 'wishlist';
 
 export type DeployStatus = 'pending' | 'deployed';
 
-export type DevStateStyle = 'ring' | 'filled' | 'spinner' | 'cross';
+// Icon styles a status can render as.
+export type StatusStyle =
+  | 'ring'
+  | 'dashed'
+  | 'half'
+  | 'filled'
+  | 'spinner'
+  | 'check'
+  | 'cross'
+  | 'dot';
 
 export interface Workspace {
   id: string;
@@ -26,28 +35,17 @@ export interface Project {
   created_at: string;
 }
 
-// A flow status (board column). One set per user (shared across workspaces).
+// A status = one board column + its icon. One set per user.
 export interface StatusRow {
   id: string;
   owner_id: string;
   name: string;
   color: string;
+  style: StatusStyle;
   position: number;
   is_default: boolean; // quick capture lands here
   is_deploy: boolean; // shown in the deploy sheet
   is_archive: boolean; // hidden from board; deploy-archive target; history
-  created_at: string;
-}
-
-// A development state (the status circle).
-export interface DevStateRow {
-  id: string;
-  owner_id: string;
-  name: string;
-  color: string;
-  style: DevStateStyle;
-  position: number;
-  is_default: boolean; // quick capture starts here
   created_at: string;
 }
 
@@ -67,8 +65,7 @@ export interface Task {
   description: string;
   status_id: string | null;
   category: TaskCategory | null;
-  dev_state_id: string | null;
-  blocked_reason: string | null;
+  blocked_reason: string | null; // shown when the status style is `cross`
   needs_backend: boolean;
   deploy_notes: string;
   created_at: string;
@@ -76,12 +73,11 @@ export interface Task {
   archived_at: string | null;
 }
 
-// A task joined with its per-project branch links (and the projects themselves).
 export interface TaskWithProjects extends Task {
   links: Array<TaskProject & { project: Project }>;
 }
 
-// ---------- category (still a fixed set) ----------
+// ---------- category (fixed set) ----------
 
 export const CATEGORY_META: Record<
   TaskCategory,
@@ -95,22 +91,14 @@ export const CATEGORY_META: Record<
 // ---------- seed defaults (used when a user has none yet) ----------
 
 export const DEFAULT_STATUSES: Array<
-  Pick<StatusRow, 'name' | 'color' | 'is_default' | 'is_deploy' | 'is_archive'>
+  Pick<StatusRow, 'name' | 'color' | 'style' | 'is_default' | 'is_deploy' | 'is_archive'>
 > = [
-  { name: '暫存區', color: '#6B7280', is_default: true, is_deploy: false, is_archive: false },
-  { name: '進行中', color: '#E5A00D', is_default: false, is_deploy: false, is_archive: false },
-  { name: '等後端', color: '#26B5CE', is_default: false, is_deploy: false, is_archive: false },
-  { name: '待部署', color: '#4CB782', is_default: false, is_deploy: true, is_archive: false },
-  { name: '已歸檔', color: '#6E7178', is_default: false, is_deploy: false, is_archive: true },
-];
-
-export const DEFAULT_DEV_STATES: Array<
-  Pick<DevStateRow, 'name' | 'color' | 'style'>
-> = [
-  { name: '未開始', color: '#6B7280', style: 'ring' },
-  { name: '已規劃完成', color: '#5E6AD2', style: 'filled' },
-  { name: 'Claude 處理中', color: '#E5A00D', style: 'spinner' },
-  { name: '卡住', color: '#EB5757', style: 'cross' },
+  { name: '暫存區', color: '#6B7280', style: 'dashed', is_default: true, is_deploy: false, is_archive: false },
+  { name: '進行中', color: '#E5A00D', style: 'half', is_default: false, is_deploy: false, is_archive: false },
+  { name: '等後端', color: '#26B5CE', style: 'spinner', is_default: false, is_deploy: false, is_archive: false },
+  { name: '卡住', color: '#EB5757', style: 'cross', is_default: false, is_deploy: false, is_archive: false },
+  { name: '待部署', color: '#4CB782', style: 'filled', is_default: false, is_deploy: true, is_archive: false },
+  { name: '已歸檔', color: '#6E7178', style: 'check', is_default: false, is_deploy: false, is_archive: true },
 ];
 
 export const STATUS_COLORS = [
@@ -124,9 +112,13 @@ export const STATUS_COLORS = [
   '#F2994A',
 ];
 
-export const DEV_STATE_STYLES: { value: DevStateStyle; label: string }[] = [
+export const STATUS_STYLES: { value: StatusStyle; label: string }[] = [
   { value: 'ring', label: '空心圈' },
+  { value: 'dashed', label: '虛線圈' },
+  { value: 'half', label: '半實心' },
   { value: 'filled', label: '實心' },
-  { value: 'spinner', label: 'spinner' },
+  { value: 'spinner', label: '轉圈' },
+  { value: 'check', label: '打勾' },
   { value: 'cross', label: '打叉' },
+  { value: 'dot', label: '圓點' },
 ];

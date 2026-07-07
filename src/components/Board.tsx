@@ -6,8 +6,6 @@ import { createClient } from '@/lib/supabase/client';
 import { enterSubmit } from '@/lib/useEnterSubmit';
 import {
   DEFAULT_STATUSES,
-  DEFAULT_DEV_STATES,
-  type DevStateRow,
   type Project,
   type StatusRow,
   type TaskWithProjects,
@@ -27,14 +25,12 @@ export default function Board({
   initialWorkspaces,
   initialProjects,
   initialStatuses,
-  initialDevStates,
 }: {
   userId: string;
   userEmail: string;
   initialWorkspaces: Workspace[];
   initialProjects: Project[];
   initialStatuses: StatusRow[];
-  initialDevStates: DevStateRow[];
 }) {
   const router = useRouter();
   const supabase = useMemo(() => createClient(), []);
@@ -42,10 +38,7 @@ export default function Board({
   const [workspaces, setWorkspaces] = useState<Workspace[]>(initialWorkspaces);
   const [projects, setProjects] = useState<Project[]>(initialProjects);
   const [statuses, setStatuses] = useState<StatusRow[]>(initialStatuses);
-  const [devStates, setDevStates] = useState<DevStateRow[]>(initialDevStates);
-  const [currentWs, setCurrentWs] = useState<Workspace | null>(
-    initialWorkspaces[0] ?? null
-  );
+  const [currentWs, setCurrentWs] = useState<Workspace | null>(initialWorkspaces[0] ?? null);
   const [tasks, setTasks] = useState<TaskWithProjects[]>([]);
   const [view, setView] = useState<View>('board');
   const [editing, setEditing] = useState<TaskWithProjects | null | 'new'>(null);
@@ -59,7 +52,6 @@ export default function Board({
   const captureRef = useRef<HTMLInputElement>(null);
   const seedWsRef = useRef(false);
   const seedStatusRef = useRef(false);
-  const seedDevRef = useRef(false);
 
   const report = useCallback((label: string, err: unknown) => {
     const msg =
@@ -78,17 +70,12 @@ export default function Board({
     () => [...statuses].sort((a, b) => a.position - b.position),
     [statuses]
   );
-  const orderedDevStates = useMemo(
-    () => [...devStates].sort((a, b) => a.position - b.position),
-    [devStates]
-  );
-  // Board columns = statuses that aren't the archive bucket.
   const boardStatuses = useMemo(
     () => orderedStatuses.filter((s) => !s.is_archive),
     [orderedStatuses]
   );
 
-  // ---------- first-login seeding (browser client carries the session) ----------
+  // ---------- first-login seeding ----------
   useEffect(() => {
     if (workspaces.length > 0 || seedWsRef.current) return;
     seedWsRef.current = true;
@@ -112,38 +99,12 @@ export default function Board({
     if (statuses.length > 0 || seedStatusRef.current) return;
     seedStatusRef.current = true;
     (async () => {
-      const rows = DEFAULT_STATUSES.map((s, i) => ({
-        owner_id: userId,
-        position: i,
-        ...s,
-      }));
-      const { data, error } = await supabase
-        .from('task_statuses')
-        .insert(rows)
-        .select('*');
-      if (error) return report('建立流程狀態失敗', error);
+      const rows = DEFAULT_STATUSES.map((s, i) => ({ owner_id: userId, position: i, ...s }));
+      const { data, error } = await supabase.from('task_statuses').insert(rows).select('*');
+      if (error) return report('建立狀態失敗', error);
       if (data) setStatuses(data as StatusRow[]);
     })();
   }, [statuses.length, supabase, userId, report]);
-
-  useEffect(() => {
-    if (devStates.length > 0 || seedDevRef.current) return;
-    seedDevRef.current = true;
-    (async () => {
-      const rows = DEFAULT_DEV_STATES.map((d, i) => ({
-        owner_id: userId,
-        position: i,
-        is_default: i === 0,
-        ...d,
-      }));
-      const { data, error } = await supabase
-        .from('dev_states')
-        .insert(rows)
-        .select('*');
-      if (error) return report('建立開發狀態失敗', error);
-      if (data) setDevStates(data as DevStateRow[]);
-    })();
-  }, [devStates.length, supabase, userId, report]);
 
   // ---------- data loading ----------
   const loadTasks = useCallback(async () => {
@@ -172,13 +133,9 @@ export default function Board({
     );
   }, [supabase, currentWs]);
 
-  const loadMeta = useCallback(async () => {
-    const [{ data: s }, { data: d }] = await Promise.all([
-      supabase.from('task_statuses').select('*').order('position'),
-      supabase.from('dev_states').select('*').order('position'),
-    ]);
-    if (s) setStatuses(s as StatusRow[]);
-    if (d) setDevStates(d as DevStateRow[]);
+  const loadStatuses = useCallback(async () => {
+    const { data } = await supabase.from('task_statuses').select('*').order('position');
+    if (data) setStatuses(data as StatusRow[]);
   }, [supabase]);
 
   useEffect(() => {
@@ -201,14 +158,13 @@ export default function Board({
         refetch
       )
       .on('postgres_changes', { event: '*', schema: 'public', table: 'task_projects' }, refetch)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'task_statuses' }, loadMeta)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'dev_states' }, loadMeta)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'task_statuses' }, loadStatuses)
       .subscribe();
     return () => {
       if (timer) clearTimeout(timer);
       supabase.removeChannel(channel);
     };
-  }, [supabase, currentWs, loadTasks, loadMeta]);
+  }, [supabase, currentWs, loadTasks, loadStatuses]);
 
   // ---------- font-size preference ----------
   useEffect(() => {
@@ -249,13 +205,11 @@ export default function Board({
   async function quickCapture(title: string) {
     if (!title.trim() || !currentWs) return;
     const def = statuses.find((s) => s.is_default) ?? orderedStatuses[0];
-    const dev = devStates.find((d) => d.is_default) ?? orderedDevStates[0];
     const { error } = await supabase.from('tasks').insert({
       workspace_id: currentWs.id,
       owner_id: userId,
       title: title.trim(),
       status_id: def?.id ?? null,
-      dev_state_id: dev?.id ?? null,
     });
     if (error) return report('新增任務失敗', error);
     loadTasks();
@@ -275,7 +229,6 @@ export default function Board({
       description: draft.description,
       status_id: draft.status_id,
       category: draft.category,
-      dev_state_id: draft.dev_state_id,
       blocked_reason: draft.blocked_reason,
       needs_backend: draft.needs_backend,
       deploy_notes: draft.deploy_notes,
@@ -315,23 +268,21 @@ export default function Board({
     loadTasks();
   }
 
-  async function updateDevState(
-    task: TaskWithProjects,
-    nextId: string,
-    reason: string | null
-  ) {
+  // Set a task's status directly (from the row status icon).
+  async function setTaskStatus(task: TaskWithProjects, nextId: string, reason: string | null) {
     setTasks((prev) =>
       prev.map((t) =>
-        t.id === task.id ? { ...t, dev_state_id: nextId, blocked_reason: reason } : t
+        t.id === task.id ? { ...t, status_id: nextId, blocked_reason: reason } : t
       )
     );
     const { error } = await supabase
       .from('tasks')
-      .update({ dev_state_id: nextId, blocked_reason: reason })
+      .update({ status_id: nextId, blocked_reason: reason })
       .eq('id', task.id);
-    if (error) report('更新開發狀態失敗', error);
+    if (error) report('更新狀態失敗', error);
   }
 
+  // Move a task one column via the ← / → arrows.
   async function moveStatus(task: TaskWithProjects, dir: -1 | 1) {
     const idx = boardStatuses.findIndex((s) => s.id === task.status_id);
     if (idx < 0) return;
@@ -340,11 +291,8 @@ export default function Board({
     setTasks((prev) =>
       prev.map((t) => (t.id === task.id ? { ...t, status_id: next.id } : t))
     );
-    const { error } = await supabase
-      .from('tasks')
-      .update({ status_id: next.id })
-      .eq('id', task.id);
-    if (error) report('移動流程狀態失敗', error);
+    const { error } = await supabase.from('tasks').update({ status_id: next.id }).eq('id', task.id);
+    if (error) report('移動狀態失敗', error);
   }
 
   async function deleteTask() {
@@ -391,7 +339,7 @@ export default function Board({
     loadTasks();
   }
 
-  // ---------- status / dev-state management ----------
+  // ---------- status management ----------
   async function addStatus(name: string) {
     const pos = statuses.reduce((m, s) => Math.max(m, s.position), -1) + 1;
     const { data, error } = await supabase
@@ -399,12 +347,11 @@ export default function Board({
       .insert({ owner_id: userId, name, position: pos })
       .select('*')
       .single();
-    if (error || !data) return report('新增流程狀態失敗', error);
+    if (error || !data) return report('新增狀態失敗', error);
     setStatuses((prev) => [...prev, data as StatusRow]);
   }
 
   async function updateStatus(id: string, patch: Partial<StatusRow>) {
-    // enforce a single is_default / is_archive per user
     if (patch.is_default) {
       await supabase
         .from('task_statuses')
@@ -427,7 +374,7 @@ export default function Board({
       .eq('id', id)
       .select('*')
       .single();
-    if (error || !data) return report('更新流程狀態失敗', error);
+    if (error || !data) return report('更新狀態失敗', error);
     setStatuses((prev) => prev.map((s) => (s.id === id ? (data as StatusRow) : s)));
   }
 
@@ -441,7 +388,7 @@ export default function Board({
         .eq('status_id', id);
     }
     const { error } = await supabase.from('task_statuses').delete().eq('id', id);
-    if (error) return report('刪除流程狀態失敗', error);
+    if (error) return report('刪除狀態失敗', error);
     setStatuses((prev) => prev.filter((s) => s.id !== id));
     loadTasks();
   }
@@ -449,68 +396,10 @@ export default function Board({
   async function reorderStatuses(ids: string[]) {
     setStatuses((prev) => prev.map((s) => ({ ...s, position: ids.indexOf(s.id) })));
     const results = await Promise.all(
-      ids.map((id, i) =>
-        supabase.from('task_statuses').update({ position: i }).eq('id', id)
-      )
+      ids.map((id, i) => supabase.from('task_statuses').update({ position: i }).eq('id', id))
     );
     const err = results.find((r) => r.error)?.error;
-    if (err) report('排序流程狀態失敗', err);
-  }
-
-  async function addDevState(name: string) {
-    const pos = devStates.reduce((m, d) => Math.max(m, d.position), -1) + 1;
-    const { data, error } = await supabase
-      .from('dev_states')
-      .insert({ owner_id: userId, name, position: pos })
-      .select('*')
-      .single();
-    if (error || !data) return report('新增開發狀態失敗', error);
-    setDevStates((prev) => [...prev, data as DevStateRow]);
-  }
-
-  async function updateDevStateRow(id: string, patch: Partial<DevStateRow>) {
-    if (patch.is_default) {
-      await supabase
-        .from('dev_states')
-        .update({ is_default: false })
-        .eq('owner_id', userId)
-        .eq('is_default', true);
-      setDevStates((prev) => prev.map((d) => ({ ...d, is_default: false })));
-    }
-    const { data, error } = await supabase
-      .from('dev_states')
-      .update(patch)
-      .eq('id', id)
-      .select('*')
-      .single();
-    if (error || !data) return report('更新開發狀態失敗', error);
-    setDevStates((prev) => prev.map((d) => (d.id === id ? (data as DevStateRow) : d)));
-  }
-
-  async function deleteDevState(id: string) {
-    const def = devStates.find((d) => d.is_default && d.id !== id);
-    if (def) {
-      await supabase
-        .from('tasks')
-        .update({ dev_state_id: def.id })
-        .eq('owner_id', userId)
-        .eq('dev_state_id', id);
-    }
-    const { error } = await supabase.from('dev_states').delete().eq('id', id);
-    if (error) return report('刪除開發狀態失敗', error);
-    setDevStates((prev) => prev.filter((d) => d.id !== id));
-    loadTasks();
-  }
-
-  async function reorderDevStates(ids: string[]) {
-    setDevStates((prev) => prev.map((d) => ({ ...d, position: ids.indexOf(d.id) })));
-    const results = await Promise.all(
-      ids.map((id, i) =>
-        supabase.from('dev_states').update({ position: i }).eq('id', id)
-      )
-    );
-    const err = results.find((r) => r.error)?.error;
-    if (err) report('排序開發狀態失敗', err);
+    if (err) report('排序狀態失敗', err);
   }
 
   const statusHandlers: StatusManagerHandlers = {
@@ -518,10 +407,6 @@ export default function Board({
     updateStatus,
     deleteStatus,
     reorderStatuses,
-    addDevState,
-    updateDevState: updateDevStateRow,
-    deleteDevState,
-    reorderDevStates,
   };
 
   async function signOut() {
@@ -531,9 +416,7 @@ export default function Board({
 
   // ---------- derived ----------
   const archiveIds = new Set(statuses.filter((s) => s.is_archive).map((s) => s.id));
-  const boardTasks = tasks.filter(
-    (t) => !t.status_id || !archiveIds.has(t.status_id)
-  );
+  const boardTasks = tasks.filter((t) => !t.status_id || !archiveIds.has(t.status_id));
   const deployIds = new Set(statuses.filter((s) => s.is_deploy).map((s) => s.id));
   const pendingDeployCount = tasks.filter(
     (t) =>
@@ -551,7 +434,7 @@ export default function Board({
         currentWorkspace={currentWs}
         onSwitchWorkspace={setCurrentWs}
         projects={wsProjects}
-        devStates={orderedDevStates}
+        statuses={orderedStatuses}
         view={view}
         onSetView={setView}
         onAddProject={addProject}
@@ -571,11 +454,7 @@ export default function Board({
           </div>
         )}
         <div className="topbar">
-          <button
-            className="hamburger icon-btn"
-            title="選單"
-            onClick={() => setSidebarOpen(true)}
-          >
+          <button className="hamburger icon-btn" title="選單" onClick={() => setSidebarOpen(true)}>
             ☰
           </button>
           <span className="breadcrumb">
@@ -586,9 +465,7 @@ export default function Board({
             <>
               <button className="btn" onClick={() => setDeployOpen(true)}>
                 部署
-                {pendingDeployCount > 0 && (
-                  <span className="badge-count">{pendingDeployCount}</span>
-                )}
+                {pendingDeployCount > 0 && <span className="badge-count">{pendingDeployCount}</span>}
               </button>
               <button className="btn btn-primary" onClick={() => setEditing('new')}>
                 新任務
@@ -608,11 +485,7 @@ export default function Board({
               {...enterSubmit(submitCapture)}
             />
             <span className="kbd">c</span>
-            <button
-              className="capture-send"
-              onClick={submitCapture}
-              disabled={!capture.trim()}
-            >
+            <button className="capture-send" onClick={submitCapture} disabled={!capture.trim()}>
               丟入
             </button>
           </div>
@@ -625,9 +498,9 @@ export default function Board({
             <BoardList
               boardStatuses={boardStatuses}
               tasks={boardTasks}
-              devStates={orderedDevStates}
+              statuses={orderedStatuses}
               onOpen={setEditing}
-              onDevState={updateDevState}
+              onStatus={setTaskStatus}
               onMove={moveStatus}
             />
           )}
@@ -639,7 +512,6 @@ export default function Board({
           task={editing === 'new' ? null : editing}
           projects={wsProjects}
           statuses={orderedStatuses}
-          devStates={orderedDevStates}
           onSave={saveTask}
           onClose={() => setEditing(null)}
           onDelete={editing === 'new' ? undefined : deleteTask}
@@ -658,19 +530,13 @@ export default function Board({
       {statusMgrOpen && (
         <StatusManager
           statuses={orderedStatuses}
-          devStates={orderedDevStates}
           handlers={statusHandlers}
           onClose={() => setStatusMgrOpen(false)}
         />
       )}
 
       {deployOpen && (
-        <DeploySheet
-          tasks={tasks}
-          statuses={statuses}
-          devStates={orderedDevStates}
-          onClose={() => setDeployOpen(false)}
-        />
+        <DeploySheet tasks={tasks} statuses={statuses} onClose={() => setDeployOpen(false)} />
       )}
     </div>
   );
@@ -680,24 +546,20 @@ export default function Board({
 function BoardList({
   boardStatuses,
   tasks,
-  devStates,
+  statuses,
   onOpen,
-  onDevState,
+  onStatus,
   onMove,
 }: {
   boardStatuses: StatusRow[];
   tasks: TaskWithProjects[];
-  devStates: DevStateRow[];
+  statuses: StatusRow[];
   onOpen: (t: TaskWithProjects) => void;
-  onDevState: (t: TaskWithProjects, id: string, r: string | null) => void;
+  onStatus: (t: TaskWithProjects, id: string, r: string | null) => void;
   onMove: (t: TaskWithProjects, dir: -1 | 1) => void;
 }) {
   if (boardStatuses.length === 0) {
-    return (
-      <div className="empty">
-        還沒有流程狀態。到左側「狀態設定」新增。
-      </div>
-    );
+    return <div className="empty">還沒有狀態。到左側「狀態設定」新增。</div>;
   }
 
   return (
@@ -718,11 +580,11 @@ function BoardList({
                 <TaskRow
                   key={task.id}
                   task={task}
-                  devStates={devStates}
+                  statuses={statuses}
                   canBack={i > 0}
                   canFwd={i < boardStatuses.length - 1}
                   onOpen={() => onOpen(task)}
-                  onDevState={(id, r) => onDevState(task, id, r)}
+                  onStatus={(id, r) => onStatus(task, id, r)}
                   onMove={(dir) => onMove(task, dir)}
                 />
               ))

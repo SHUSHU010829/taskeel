@@ -10,7 +10,7 @@ Linear (deep-grey base, hairline borders, restrained purple accent).
 - **Quick capture** — type a line, press Enter, it lands in the workspace inbox. Press `c` anywhere to focus the capture box.
 - **Per-project branches** — one task can span multiple projects, each with its own repo and git branch.
 - **Batched deploy → archive** — CI pings a webhook when a branch ships; that `(project, branch)` is marked deployed. A task is archived only once *all* its projects have deployed.
-- **Two independent axes** — flow status (the board columns) and dev state (the clickable status circle per row). Both are **user-editable**: add / rename / recolour / reorder / delete them under **狀態設定** in the sidebar. Flow statuses carry three roles (★ default capture bucket, ⇧ deploy stage, ✔ archive); dev states pick a shape (ring / filled / spinner / cross — a `cross` state shows the "blocked reason" field).
+- **One status per task** (Linear-style) — a task's status drives both its board column and its row icon. Statuses are **user-editable** under **狀態設定** (account menu): add / rename / recolour / reorder / delete, pick an icon (ring / dashed / half / filled / spinner / check / cross / dot), and flag roles (★ default capture bucket, ⇧ deploy stage, ✔ archive). A `cross`-icon status shows the "blocked reason" field.
 - **Workspaces** — 個人 / 工作, each with its own projects and tasks (seeded on first login).
 - **Deploy history** — archived tasks become a read-only, filterable changelog.
 - **Realtime** — capture on your phone, the board updates on your laptop.
@@ -23,11 +23,11 @@ Create a project, then run [`supabase/schema.sql`](supabase/schema.sql) in the
 SQL Editor. It creates the tables, enums, RLS policies, the realtime
 publication, and the `archive_branch(repo, branch, owner)` function.
 
-**Already have a project from an earlier version?** Flow status and dev state
-moved from Postgres enums to editable tables (`task_statuses` / `dev_states`).
-Run [`supabase/migrations/0001_custom_statuses.sql`](supabase/migrations/0001_custom_statuses.sql)
-once — it creates the tables, seeds your defaults, backfills existing tasks,
-and drops the old enum columns.
+**Upgrading an existing project?** Run the migrations in
+[`supabase/migrations/`](supabase/migrations) in order, once each:
+`0001_custom_statuses.sql` (enums → editable status/dev-state tables) then
+`0002_merge_status.sql` (merge into a single status with an icon; drops the
+dev-state table). Fresh installs just run `schema.sql`.
 
 Enable an auth provider — **magic link (email OTP)** is what the login page uses.
 

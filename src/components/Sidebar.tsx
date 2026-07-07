@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import type { DevStateRow, Project, Workspace } from '@/lib/types';
+import type { Project, StatusRow, Workspace } from '@/lib/types';
 import { enterSubmit } from '@/lib/useEnterSubmit';
 import StatusDot from './StatusDot';
 
@@ -21,7 +21,7 @@ export default function Sidebar({
   currentWorkspace,
   onSwitchWorkspace,
   projects,
-  devStates,
+  statuses,
   view,
   onSetView,
   onAddProject,
@@ -38,7 +38,7 @@ export default function Sidebar({
   currentWorkspace: Workspace | null;
   onSwitchWorkspace: (ws: Workspace) => void;
   projects: Project[];
-  devStates: DevStateRow[];
+  statuses: StatusRow[];
   view: View;
   onSetView: (v: View) => void;
   onAddProject: (name: string, repo: string) => void;
@@ -207,11 +207,11 @@ export default function Sidebar({
 
         {/* footer: legend + account menu */}
         <div className="sidebar-footer">
-          <div className="sidebar-label">開發狀態</div>
-          {devStates.map((d) => (
-            <div className="legend-item" key={d.id}>
-              <StatusDot color={d.color} style={d.style} sm />
-              {d.name}
+          <div className="sidebar-label">狀態</div>
+          {statuses.map((s) => (
+            <div className="legend-item" key={s.id}>
+              <StatusDot color={s.color} style={s.style} sm />
+              {s.name}
             </div>
           ))}
 

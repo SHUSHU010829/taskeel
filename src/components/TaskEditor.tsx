@@ -3,7 +3,6 @@
 import { useState } from 'react';
 import {
   CATEGORY_META,
-  type DevStateRow,
   type Project,
   type StatusRow,
   type TaskCategory,
@@ -16,7 +15,6 @@ export interface TaskDraft {
   description: string;
   status_id: string | null;
   category: TaskCategory | null;
-  dev_state_id: string | null;
   blocked_reason: string | null;
   needs_backend: boolean;
   deploy_notes: string;
@@ -28,7 +26,6 @@ export default function TaskEditor({
   task,
   projects,
   statuses,
-  devStates,
   onSave,
   onClose,
   onDelete,
@@ -36,25 +33,18 @@ export default function TaskEditor({
   task: TaskWithProjects | null;
   projects: Project[];
   statuses: StatusRow[];
-  devStates: DevStateRow[];
   onSave: (draft: TaskDraft) => void;
   onClose: () => void;
   onDelete?: () => void;
 }) {
   const defaultStatus = statuses.find((s) => s.is_default) ?? statuses[0];
-  const defaultDev = devStates.find((d) => d.is_default) ?? devStates[0];
 
   const [title, setTitle] = useState(task?.title ?? '');
   const [description, setDescription] = useState(task?.description ?? '');
   const [statusId, setStatusId] = useState<string | null>(
     task?.status_id ?? defaultStatus?.id ?? null
   );
-  const [category, setCategory] = useState<TaskCategory | null>(
-    task?.category ?? null
-  );
-  const [devStateId, setDevStateId] = useState<string | null>(
-    task?.dev_state_id ?? defaultDev?.id ?? null
-  );
+  const [category, setCategory] = useState<TaskCategory | null>(task?.category ?? null);
   const [blockedReason, setBlockedReason] = useState(task?.blocked_reason ?? '');
   const [needsBackend, setNeedsBackend] = useState(task?.needs_backend ?? false);
   const [deployNotes, setDeployNotes] = useState(task?.deploy_notes ?? '');
@@ -65,8 +55,8 @@ export default function TaskEditor({
     return m;
   });
 
-  const selectedDev = devStates.find((d) => d.id === devStateId);
-  const isBlocked = selectedDev?.style === 'cross';
+  const selected = statuses.find((s) => s.id === statusId);
+  const isBlocked = selected?.style === 'cross';
 
   function toggleProject(id: string) {
     setBranches((prev) => {
@@ -84,7 +74,6 @@ export default function TaskEditor({
       description,
       status_id: statusId,
       category,
-      dev_state_id: devStateId,
       blocked_reason: isBlocked ? blockedReason || null : null,
       needs_backend: needsBackend,
       deploy_notes: deployNotes,
@@ -115,9 +104,9 @@ export default function TaskEditor({
           onChange={(e) => setDescription(e.target.value)}
         />
 
-        {/* flow status */}
+        {/* status */}
         <div className="field">
-          <div className="field-label">流程狀態</div>
+          <div className="field-label">狀態</div>
           <div className="option-row">
             {statuses.map((s) => (
               <button
@@ -125,25 +114,8 @@ export default function TaskEditor({
                 className={`option${statusId === s.id ? ' selected' : ''}`}
                 onClick={() => setStatusId(s.id)}
               >
-                <span className="dot" style={{ background: s.color }} />
+                <StatusDot color={s.color} style={s.style} sm />
                 {s.name}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* dev state */}
-        <div className="field">
-          <div className="field-label">開發狀態</div>
-          <div className="option-row">
-            {devStates.map((d) => (
-              <button
-                key={d.id}
-                className={`option${devStateId === d.id ? ' selected' : ''}`}
-                onClick={() => setDevStateId(d.id)}
-              >
-                <StatusDot color={d.color} style={d.style} sm />
-                {d.name}
               </button>
             ))}
           </div>
@@ -168,10 +140,7 @@ export default function TaskEditor({
                 className={`option${category === c ? ' selected' : ''}`}
                 onClick={() => setCategory(category === c ? null : c)}
               >
-                <span
-                  className="cat-dot"
-                  style={{ background: CATEGORY_META[c].color }}
-                />
+                <span className="cat-dot" style={{ background: CATEGORY_META[c].color }} />
                 {CATEGORY_META[c].label}
               </button>
             ))}
@@ -250,11 +219,7 @@ export default function TaskEditor({
           <button className="btn btn-ghost" onClick={onClose}>
             取消
           </button>
-          <button
-            className="btn btn-primary"
-            disabled={!title.trim()}
-            onClick={save}
-          >
+          <button className="btn btn-primary" disabled={!title.trim()} onClick={save}>
             儲存
           </button>
         </div>

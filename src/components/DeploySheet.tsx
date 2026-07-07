@@ -1,6 +1,6 @@
 'use client';
 
-import type { DevStateRow, StatusRow, TaskWithProjects } from '@/lib/types';
+import type { StatusRow, TaskWithProjects } from '@/lib/types';
 import StatusDot from './StatusDot';
 
 // Slide-over aggregating everything waiting to deploy: each task in a
@@ -9,12 +9,10 @@ import StatusDot from './StatusDot';
 export default function DeploySheet({
   tasks,
   statuses,
-  devStates,
   onClose,
 }: {
   tasks: TaskWithProjects[];
   statuses: StatusRow[];
-  devStates: DevStateRow[];
   onClose: () => void;
 }) {
   const deployIds = new Set(
@@ -48,11 +46,11 @@ export default function DeploySheet({
             <div className="empty">沒有待部署的任務。</div>
           )}
           {pending.map(({ task, links }) => {
-            const dev = devStates.find((d) => d.id === task.dev_state_id);
+            const st = statuses.find((s) => s.id === task.status_id);
             return (
               <div className="deploy-card" key={task.id}>
                 <div className="deploy-card-title">
-                  {dev && <StatusDot color={dev.color} style={dev.style} sm />}
+                  {st && <StatusDot color={st.color} style={st.style} sm />}
                   <span>{task.title}</span>
                   {task.needs_backend && (
                     <span className="badge-backend">後端</span>
