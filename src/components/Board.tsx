@@ -44,7 +44,9 @@ export default function Board({
   const [editingProject, setEditingProject] = useState<Project | null>(null);
   const [deployOpen, setDeployOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [capture, setCapture] = useState('');
   const captureRef = useRef<HTMLInputElement>(null);
+  const composingRef = useRef(false);
   const seededRef = useRef(false);
 
   // Surface any Supabase error instead of swallowing it.
@@ -381,12 +383,24 @@ export default function Board({
           <div className="quick-capture">
             <input
               ref={captureRef}
+              value={capture}
               placeholder="快速捕捉：打一行字 Enter 丟進暫存區…"
+              onChange={(e) => setCapture(e.target.value)}
+              onCompositionStart={() => {
+                composingRef.current = true;
+              }}
+              onCompositionEnd={() => {
+                composingRef.current = false;
+              }}
               onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  quickCapture((e.target as HTMLInputElement).value);
-                  (e.target as HTMLInputElement).value = '';
-                }
+                if (e.key !== 'Enter') return;
+                // Ignore the Enter that only confirms an IME candidate.
+                if (composingRef.current || e.nativeEvent.isComposing) return;
+                e.preventDefault();
+                const v = capture;
+                if (!v.trim()) return;
+                setCapture('');
+                quickCapture(v);
               }}
             />
             <span className="kbd">c</span>
