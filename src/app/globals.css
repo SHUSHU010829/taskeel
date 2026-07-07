@@ -217,10 +217,22 @@ a {
   padding: 5px 8px;
   color: var(--text-dim);
   border-radius: 4px;
+  cursor: pointer;
 }
 
 .project-row:hover {
   background: var(--bg-hover);
+  color: var(--text);
+}
+
+.project-edit {
+  opacity: 0;
+  font-size: 11px;
+  color: var(--text-faint);
+}
+
+.project-row:hover .project-edit {
+  opacity: 1;
 }
 
 .sidebar-footer {
@@ -623,6 +635,15 @@ a {
   border-color: var(--accent);
   background: rgba(94, 106, 210, 0.12);
   color: var(--text);
+}
+
+.color-swatch {
+  width: 22px;
+  height: 22px;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  outline-offset: 2px;
 }
 
 .branch-field {

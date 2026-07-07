@@ -15,6 +15,7 @@ import {
 import Sidebar, { type View } from './Sidebar';
 import TaskRow from './TaskRow';
 import TaskEditor, { type TaskDraft } from './TaskEditor';
+import ProjectEditor from './ProjectEditor';
 import DeploySheet from './DeploySheet';
 import DeployHistory from './DeployHistory';
 
@@ -40,6 +41,7 @@ export default function Board({
   const [tasks, setTasks] = useState<TaskWithProjects[]>([]);
   const [view, setView] = useState<View>('board');
   const [editing, setEditing] = useState<TaskWithProjects | null | 'new'>(null);
+  const [editingProject, setEditingProject] = useState<Project | null>(null);
   const [deployOpen, setDeployOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const captureRef = useRef<HTMLInputElement>(null);
@@ -290,6 +292,33 @@ export default function Board({
     setProjects((prev) => [...prev, data as Project]);
   }
 
+  async function updateProject(
+    id: string,
+    patch: { name: string; repo: string | null; color: string }
+  ) {
+    const { data, error } = await supabase
+      .from('projects')
+      .update(patch)
+      .eq('id', id)
+      .select('*')
+      .single();
+    if (error || !data) return report('更新專案失敗', error);
+    setProjects((prev) =>
+      prev.map((p) => (p.id === id ? (data as Project) : p))
+    );
+    setEditingProject(null);
+    loadTasks(); // refresh project chips on tasks
+  }
+
+  async function deleteProject(id: string) {
+    // task_projects rows cascade via FK; the tasks themselves are kept.
+    const { error } = await supabase.from('projects').delete().eq('id', id);
+    if (error) return report('刪除專案失敗', error);
+    setProjects((prev) => prev.filter((p) => p.id !== id));
+    setEditingProject(null);
+    loadTasks();
+  }
+
   async function signOut() {
     await supabase.auth.signOut();
     router.push('/login');
@@ -313,6 +342,7 @@ export default function Board({
         view={view}
         onSetView={setView}
         onAddProject={addProject}
+        onEditProject={setEditingProject}
         userEmail={userEmail}
         onSignOut={signOut}
       />
@@ -384,6 +414,15 @@ export default function Board({
           onSave={saveTask}
           onClose={() => setEditing(null)}
           onDelete={editing === 'new' ? undefined : deleteTask}
+        />
+      )}
+
+      {editingProject && (
+        <ProjectEditor
+          project={editingProject}
+          onSave={(patch) => updateProject(editingProject.id, patch)}
+          onDelete={() => deleteProject(editingProject.id)}
+          onClose={() => setEditingProject(null)}
         />
       )}
 

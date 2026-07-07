@@ -19,6 +19,7 @@ export default function Sidebar({
   view,
   onSetView,
   onAddProject,
+  onEditProject,
   userEmail,
   onSignOut,
 }: {
@@ -29,6 +30,7 @@ export default function Sidebar({
   view: View;
   onSetView: (v: View) => void;
   onAddProject: (name: string, repo: string) => void;
+  onEditProject: (p: Project) => void;
   userEmail: string;
   onSignOut: () => void;
 }) {
@@ -109,7 +111,13 @@ export default function Sidebar({
           </button>
         </div>
         {projects.map((p) => (
-          <div className="project-row" key={p.id}>
+          <div
+            className="project-row"
+            key={p.id}
+            role="button"
+            title="編輯專案"
+            onClick={() => onEditProject(p)}
+          >
             <span className="dot" style={{ background: p.color }} />
             <span
               style={{
@@ -129,6 +137,7 @@ export default function Sidebar({
                 ⎇
               </span>
             )}
+            <span className="project-edit">✎</span>
           </div>
         ))}
         {adding && (
