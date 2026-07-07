@@ -1196,9 +1196,12 @@ a {
 }
 
 .role-chip {
-  width: 24px;
-  height: 24px;
+  width: 26px;
+  height: 26px;
   flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   border: 1px solid var(--border-strong);
   border-radius: 4px;
   background: transparent;

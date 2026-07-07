@@ -110,7 +110,7 @@ export default function Sidebar({
       <aside className={`sidebar${open ? ' open' : ''}`}>
         <div className="brand">
           <Diamond size={15} fill="currentColor" />
-          taskeel
+          Taskeel
         </div>
 
         {/* workspace switcher */}
@@ -195,14 +195,14 @@ export default function Sidebar({
         </button>
         <button
           className="nav-item"
-          title="編輯目前工作區的狀態"
+          title="編輯目前工作區（名稱、顏色、狀態）"
           onClick={() => {
             onOpenStatusManager();
             onClose();
           }}
         >
           <Settings size={15} />
-          狀態設定
+          工作區設定
         </button>
 
         {/* projects */}

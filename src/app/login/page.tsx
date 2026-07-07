@@ -28,7 +28,7 @@ export default function LoginPage() {
   return (
     <div className="login-wrap">
       <div className="login-card">
-        <h1>taskeel</h1>
+        <h1>Taskeel</h1>
         <p className="login-sub">綁定 git 分支與部署的任務追蹤器</p>
 
         {sent ? (

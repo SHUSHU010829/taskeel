@@ -18,7 +18,7 @@ import TaskRow from './TaskRow';
 import TaskEditor, { type TaskDraft } from './TaskEditor';
 import ProjectEditor from './ProjectEditor';
 import WorkspaceEditor from './WorkspaceEditor';
-import StatusManager, { type StatusManagerHandlers } from './StatusManager';
+import { type StatusManagerHandlers } from './StatusList';
 import DeploySheet from './DeploySheet';
 import DeployHistory from './DeployHistory';
 
@@ -47,7 +47,6 @@ export default function Board({
   const [editing, setEditing] = useState<TaskWithProjects | null | 'new'>(null);
   const [editingProject, setEditingProject] = useState<Project | null>(null);
   const [editingWs, setEditingWs] = useState<Workspace | null | 'new'>(null);
-  const [statusMgrOpen, setStatusMgrOpen] = useState(false);
   const [deployOpen, setDeployOpen] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -441,13 +440,15 @@ export default function Board({
     loadTasks();
   }
 
-  // ---------- status management (scoped to current workspace) ----------
-  async function addStatus(name: string) {
-    if (!currentWs) return;
-    const pos = wsStatuses.reduce((m, s) => Math.max(m, s.position), -1) + 1;
+  // ---------- status management (workspace-aware, so the workspace editor can
+  // manage any workspace's statuses, not just the current one) ----------
+  async function addStatus(wsId: string, name: string) {
+    const pos =
+      statuses.filter((s) => s.workspace_id === wsId).reduce((m, s) => Math.max(m, s.position), -1) +
+      1;
     const { data, error } = await supabase
       .from('task_statuses')
-      .insert({ owner_id: userId, workspace_id: currentWs.id, name, position: pos })
+      .insert({ owner_id: userId, workspace_id: wsId, name, position: pos })
       .select('*')
       .single();
     if (error || !data) return report('新增狀態失敗', error);
@@ -455,25 +456,25 @@ export default function Board({
   }
 
   async function updateStatus(id: string, patch: Partial<StatusRow>) {
-    if (!currentWs) return;
-    if (patch.is_default) {
+    const wsId = statuses.find((s) => s.id === id)?.workspace_id;
+    if (patch.is_default && wsId) {
       await supabase
         .from('task_statuses')
         .update({ is_default: false })
-        .eq('workspace_id', currentWs.id)
+        .eq('workspace_id', wsId)
         .eq('is_default', true);
       setStatuses((prev) =>
-        prev.map((s) => (s.workspace_id === currentWs.id ? { ...s, is_default: false } : s))
+        prev.map((s) => (s.workspace_id === wsId ? { ...s, is_default: false } : s))
       );
     }
-    if (patch.is_archive) {
+    if (patch.is_archive && wsId) {
       await supabase
         .from('task_statuses')
         .update({ is_archive: false })
-        .eq('workspace_id', currentWs.id)
+        .eq('workspace_id', wsId)
         .eq('is_archive', true);
       setStatuses((prev) =>
-        prev.map((s) => (s.workspace_id === currentWs.id ? { ...s, is_archive: false } : s))
+        prev.map((s) => (s.workspace_id === wsId ? { ...s, is_archive: false } : s))
       );
     }
     const { data, error } = await supabase
@@ -487,13 +488,13 @@ export default function Board({
   }
 
   async function deleteStatus(id: string) {
-    if (!currentWs) return;
-    const def = wsStatuses.find((s) => s.is_default && s.id !== id);
-    if (def) {
+    const wsId = statuses.find((s) => s.id === id)?.workspace_id;
+    const def = statuses.find((s) => s.workspace_id === wsId && s.is_default && s.id !== id);
+    if (def && wsId) {
       await supabase
         .from('tasks')
         .update({ status_id: def.id })
-        .eq('workspace_id', currentWs.id)
+        .eq('workspace_id', wsId)
         .eq('status_id', id);
     }
     const { error } = await supabase.from('task_statuses').delete().eq('id', id);
@@ -513,12 +514,19 @@ export default function Board({
     if (err) report('排序狀態失敗', err);
   }
 
-  const statusHandlers: StatusManagerHandlers = {
-    addStatus,
-    updateStatus,
-    deleteStatus,
-    reorderStatuses,
-  };
+  // Status handlers bound to the workspace currently being edited.
+  const editedWs = editingWs && editingWs !== 'new' ? editingWs : null;
+  const editedWsStatuses = editedWs
+    ? statuses.filter((s) => s.workspace_id === editedWs.id).sort((a, b) => a.position - b.position)
+    : [];
+  const editStatusHandlers: StatusManagerHandlers | null = editedWs
+    ? {
+        addStatus: (name) => addStatus(editedWs.id, name),
+        updateStatus,
+        deleteStatus,
+        reorderStatuses,
+      }
+    : null;
 
   async function signOut() {
     await supabase.auth.signOut();
@@ -559,7 +567,7 @@ export default function Board({
         onSetView={setView}
         onAddProject={addProject}
         onEditProject={setEditingProject}
-        onOpenStatusManager={() => setStatusMgrOpen(true)}
+        onOpenStatusManager={() => currentWs && setEditingWs(currentWs)}
         fontPx={fontPx}
         onSetFont={changeFont}
         userEmail={userEmail}
@@ -673,6 +681,8 @@ export default function Board({
         <WorkspaceEditor
           workspace={editingWs === 'new' ? null : editingWs}
           canDelete={workspaces.length > 1}
+          statuses={editedWsStatuses}
+          statusHandlers={editStatusHandlers}
           onSave={(patch) =>
             editingWs === 'new'
               ? addWorkspace(patch.name, patch.color)
@@ -680,15 +690,6 @@ export default function Board({
           }
           onDelete={editingWs === 'new' ? undefined : () => deleteWorkspace(editingWs.id)}
           onClose={() => setEditingWs(null)}
-        />
-      )}
-
-      {statusMgrOpen && (
-        <StatusManager
-          statuses={wsStatuses}
-          handlers={statusHandlers}
-          workspaceName={currentWs?.name}
-          onClose={() => setStatusMgrOpen(false)}
         />
       )}
 

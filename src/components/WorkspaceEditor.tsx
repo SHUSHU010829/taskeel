@@ -1,21 +1,27 @@
 'use client';
 
 import { useState } from 'react';
-import type { Workspace } from '@/lib/types';
+import type { StatusRow, Workspace } from '@/lib/types';
 import { STATUS_COLORS } from '@/lib/types';
 import { enterSubmit } from '@/lib/useEnterSubmit';
 import ConfirmDialog from './ConfirmDialog';
+import StatusList, { type StatusManagerHandlers } from './StatusList';
 
-// Add / edit a workspace. `workspace` null = new.
+// Add / edit a workspace: name, colour, and (for existing workspaces) its
+// statuses. `workspace` null = new.
 export default function WorkspaceEditor({
   workspace,
   canDelete,
+  statuses,
+  statusHandlers,
   onSave,
   onDelete,
   onClose,
 }: {
   workspace: Workspace | null;
   canDelete: boolean;
+  statuses: StatusRow[];
+  statusHandlers: StatusManagerHandlers | null;
   onSave: (patch: { name: string; color: string }) => void;
   onDelete?: () => void;
   onClose: () => void;
@@ -31,9 +37,13 @@ export default function WorkspaceEditor({
 
   return (
     <div className="overlay" onMouseDown={onClose}>
-      <div className="modal" style={{ width: 420 }} onMouseDown={(e) => e.stopPropagation()}>
+      <div
+        className="modal"
+        style={{ width: workspace ? 620 : 420 }}
+        onMouseDown={(e) => e.stopPropagation()}
+      >
         <div className="modal-heading" style={{ marginBottom: 12 }}>
-          {workspace ? '編輯工作區' : '新增工作區'}
+          {workspace ? '工作區設定' : '新增工作區'}
         </div>
 
         <input
@@ -63,6 +73,13 @@ export default function WorkspaceEditor({
           </div>
         </div>
 
+        {workspace && statusHandlers && (
+          <div className="field">
+            <div className="field-label">狀態（此工作區）</div>
+            <StatusList statuses={statuses} handlers={statusHandlers} />
+          </div>
+        )}
+
         <div className="modal-actions">
           {workspace && onDelete && (
             <button
@@ -72,7 +89,7 @@ export default function WorkspaceEditor({
               title={canDelete ? '刪除工作區' : '至少要保留一個工作區'}
               onClick={() => setConfirming(true)}
             >
-              刪除
+              刪除工作區
             </button>
           )}
           <button className="btn btn-ghost" onClick={onClose}>

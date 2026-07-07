@@ -3,11 +3,11 @@ import './globals.css';
 import PWARegister from '@/components/PWARegister';
 
 export const metadata: Metadata = {
-  title: 'taskeel',
+  title: 'Taskeel',
   description: 'A dev task tracker bound to git branches and deploys.',
   appleWebApp: {
     capable: true,
-    title: 'taskeel',
+    title: 'Taskeel',
     statusBarStyle: 'black-translucent',
   },
   icons: {

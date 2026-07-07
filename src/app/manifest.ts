@@ -3,8 +3,8 @@ import type { MetadataRoute } from 'next';
 // Web App Manifest — makes taskeel installable ("Add to Home Screen").
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: 'taskeel',
-    short_name: 'taskeel',
+    name: 'Taskeel',
+    short_name: 'Taskeel',
     description: '綁定 git 分支與部署的任務追蹤器',
     start_url: '/',
     display: 'standalone',

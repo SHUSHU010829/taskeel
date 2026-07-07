@@ -98,7 +98,6 @@ function StyleSelect({
     if (!open && ref.current) {
       const r = ref.current.getBoundingClientRect();
       const menuH = STATUS_STYLES.length * 36 + 8;
-      // open upward when there isn't room below
       setUp(window.innerHeight - r.bottom < menuH);
     }
     setOpen((o) => !o);
@@ -136,16 +135,15 @@ function StyleSelect({
   );
 }
 
-export default function StatusManager({
+// The status list editor — used inside the workspace editor. Manages one
+// workspace's statuses: add / rename / recolour / icon / roles / reorder /
+// delete.
+export default function StatusList({
   statuses,
   handlers,
-  workspaceName,
-  onClose,
 }: {
   statuses: StatusRow[];
   handlers: StatusManagerHandlers;
-  workspaceName?: string;
-  onClose: () => void;
 }) {
   const [newName, setNewName] = useState('');
   const [dragId, setDragId] = useState<string | null>(null);
@@ -167,117 +165,99 @@ export default function StatusManager({
   }
 
   return (
-    <div className="overlay" onMouseDown={onClose}>
-      <div className="modal" style={{ width: 620 }} onMouseDown={(e) => e.stopPropagation()}>
-        <div style={{ display: 'flex', alignItems: 'center', marginBottom: 12 }}>
-          <div className="modal-heading">
-            狀態設定
-            {workspaceName && (
-              <span style={{ color: 'var(--text-faint)', fontWeight: 400 }}>
-                {' '}
-                · {workspaceName}
-              </span>
-            )}
-          </div>
-          <div className="spacer" />
-          <button className="icon-btn" onClick={onClose}>
-            <X size={16} />
-          </button>
-        </div>
-        <div className="field-label" style={{ marginTop: 0 }}>
-          一個任務只有一個狀態，決定看板分欄與圖示。右側三顆：星號＝預設落點、火箭＝待部署、封存＝歸檔。
-          圖示為「打叉」的狀態會顯示卡住原因欄。拖曳左側握把排序。
-        </div>
+    <div>
+      <div className="field-label" style={{ marginTop: 0 }}>
+        右側三顆：星號＝預設落點、火箭＝待部署、封存＝歸檔。圖示為「打叉」的狀態會顯示卡住原因欄。拖曳左側握把排序。
+      </div>
 
-        {statuses.map((s) => (
-          <div
-            key={s.id}
-            className={`status-row${overId === s.id ? ' drag-over' : ''}${
-              dragId === s.id ? ' dragging' : ''
-            }`}
-            onDragOver={(e) => {
-              e.preventDefault();
-              setOverId(s.id);
+      {statuses.map((s) => (
+        <div
+          key={s.id}
+          className={`status-row${overId === s.id ? ' drag-over' : ''}${
+            dragId === s.id ? ' dragging' : ''
+          }`}
+          onDragOver={(e) => {
+            e.preventDefault();
+            setOverId(s.id);
+          }}
+          onDragLeave={() => setOverId((o) => (o === s.id ? null : o))}
+          onDrop={() => onDrop(s.id)}
+        >
+          <span
+            className="drag-handle"
+            title="拖曳排序"
+            draggable
+            onDragStart={() => setDragId(s.id)}
+            onDragEnd={() => {
+              setDragId(null);
+              setOverId(null);
             }}
-            onDragLeave={() => setOverId((o) => (o === s.id ? null : o))}
-            onDrop={() => onDrop(s.id)}
           >
-            <span
-              className="drag-handle"
-              title="拖曳排序"
-              draggable
-              onDragStart={() => setDragId(s.id)}
-              onDragEnd={() => {
-                setDragId(null);
-                setOverId(null);
-              }}
-            >
-              <GripVertical size={16} />
-            </span>
-            <ColorButton color={s.color} onPick={(c) => handlers.updateStatus(s.id, { color: c })} />
-            <input
-              className="text-input"
-              defaultValue={s.name}
-              key={s.name}
-              onBlur={(e) => {
-                const v = e.target.value.trim();
-                if (v && v !== s.name) handlers.updateStatus(s.id, { name: v });
-              }}
-            />
-            <StyleSelect
-              value={s.style}
-              color={s.color}
-              onChange={(st) => handlers.updateStatus(s.id, { style: st })}
-            />
-            <button
-              className={`role-chip${s.is_default ? ' on' : ''}`}
-              title="預設落點（快速捕捉丟這區）"
-              onClick={() => handlers.updateStatus(s.id, { is_default: true })}
-            >
-              <Star size={14} fill={s.is_default ? 'currentColor' : 'none'} />
-            </button>
-            <button
-              className={`role-chip${s.is_deploy ? ' on' : ''}`}
-              title="待部署（部署清單抓這區）"
-              onClick={() => handlers.updateStatus(s.id, { is_deploy: !s.is_deploy })}
-            >
-              <Rocket size={14} />
-            </button>
-            <button
-              className={`role-chip${s.is_archive ? ' on' : ''}`}
-              title="歸檔（進部署歷史）"
-              onClick={() => handlers.updateStatus(s.id, { is_archive: true })}
-            >
-              <Archive size={14} />
-            </button>
-            <button
-              className="icon-btn"
-              disabled={s.is_default || s.is_archive}
-              title={s.is_default || s.is_archive ? '預設／歸檔狀態不可刪除' : '刪除'}
-              onClick={() =>
-                setConfirm({
-                  message: `刪除狀態「${s.name}」？該狀態的任務會移到預設區。`,
-                  onYes: () => handlers.deleteStatus(s.id),
-                })
-              }
-            >
-              <X size={15} />
-            </button>
-          </div>
-        ))}
-
-        <div className="branch-field" style={{ marginTop: 12 }}>
+            <GripVertical size={16} />
+          </span>
+          <ColorButton color={s.color} onPick={(c) => handlers.updateStatus(s.id, { color: c })} />
           <input
             className="text-input"
-            placeholder="新增狀態…"
-            value={newName}
-            onChange={(e) => setNewName(e.target.value)}
-            {...enterSubmit(submitNew)}
+            defaultValue={s.name}
+            key={s.name}
+            onBlur={(e) => {
+              const v = e.target.value.trim();
+              if (v && v !== s.name) handlers.updateStatus(s.id, { name: v });
+            }}
           />
-          <button className="btn btn-primary" onClick={submitNew}>
-            新增
+          <StyleSelect
+            value={s.style}
+            color={s.color}
+            onChange={(st) => handlers.updateStatus(s.id, { style: st })}
+          />
+          <button
+            className={`role-chip${s.is_default ? ' on' : ''}`}
+            title="預設落點（快速捕捉丟這區）"
+            onClick={() => handlers.updateStatus(s.id, { is_default: true })}
+          >
+            <Star size={14} fill={s.is_default ? 'currentColor' : 'none'} />
+          </button>
+          <button
+            className={`role-chip${s.is_deploy ? ' on' : ''}`}
+            title="待部署（部署清單抓這區）"
+            onClick={() => handlers.updateStatus(s.id, { is_deploy: !s.is_deploy })}
+          >
+            <Rocket size={14} />
+          </button>
+          <button
+            className={`role-chip${s.is_archive ? ' on' : ''}`}
+            title="歸檔（進部署歷史）"
+            onClick={() => handlers.updateStatus(s.id, { is_archive: true })}
+          >
+            <Archive size={14} />
+          </button>
+          <button
+            className="icon-btn"
+            disabled={s.is_default || s.is_archive}
+            title={s.is_default || s.is_archive ? '預設／歸檔狀態不可刪除' : '刪除'}
+            onClick={() =>
+              setConfirm({
+                message: `刪除狀態「${s.name}」？該狀態的任務會移到預設區。`,
+                onYes: () => handlers.deleteStatus(s.id),
+              })
+            }
+          >
+            <X size={15} />
           </button>
         </div>
+      ))}
+
+      <div className="branch-field" style={{ marginTop: 12 }}>
+        <input
+          className="text-input"
+          placeholder="新增狀態…"
+          value={newName}
+          onChange={(e) => setNewName(e.target.value)}
+          {...enterSubmit(submitNew)}
+        />
+        <button className="btn btn-primary" onClick={submitNew}>
+          新增
+        </button>
       </div>
 
       {confirm && (
