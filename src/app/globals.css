@@ -121,15 +121,15 @@ a {
 
 .collapse-toggle {
   margin-left: auto;
-  width: 24px;
-  height: 24px;
+  width: 30px;
+  height: 30px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   border: none;
   background: transparent;
-  color: var(--text-faint);
-  border-radius: 4px;
+  color: var(--text-dim);
+  border-radius: 6px;
   flex-shrink: 0;
 }
 

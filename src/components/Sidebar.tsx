@@ -125,9 +125,7 @@ export default function Sidebar({
       {open && <div className="sidebar-backdrop" onClick={onClose} />}
       <aside className={`sidebar${open ? ' open' : ''}${rail ? ' rail' : ''}`}>
         <div className="brand">
-          {rail ? (
-            <Diamond size={16} fill="currentColor" />
-          ) : (
+          {!rail && (
             <>
               <Diamond size={15} fill="currentColor" />
               <span style={{ flex: 1 }}>Taskeel</span>
@@ -138,7 +136,7 @@ export default function Sidebar({
             title={rail ? '展開側欄' : '收合側欄'}
             onClick={onToggleCollapsed}
           >
-            {rail ? <PanelLeft size={15} /> : <PanelLeftClose size={15} />}
+            {rail ? <PanelLeft size={20} /> : <PanelLeftClose size={20} />}
           </button>
         </div>
 
