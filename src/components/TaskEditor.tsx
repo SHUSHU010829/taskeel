@@ -171,6 +171,13 @@ export default function TaskEditor({
     });
   }
 
+  // Closing flushes any pending description edit (its onChange keeps `description`
+  // live, but the DB only updates on 儲存 — so persist it here too, if changed).
+  function closeEditor() {
+    if (task && description !== (task.description ?? '')) onPatch({ description });
+    onClose();
+  }
+
   function commitTitle() {
     const t = title.trim();
     if (!t) {
@@ -266,7 +273,7 @@ export default function TaskEditor({
     ) : null;
 
   return (
-    <div className="overlay" onMouseDown={onClose}>
+    <div className="overlay" onMouseDown={isNew ? onClose : closeEditor}>
       <div className="modal editor-modal" onMouseDown={(e) => e.stopPropagation()}>
         {isNew ? (
           <input
@@ -570,7 +577,7 @@ export default function TaskEditor({
                   刪除
                 </button>
               )}
-              <button className="btn btn-primary" onClick={onClose}>
+              <button className="btn btn-primary" onClick={closeEditor}>
                 完成
               </button>
             </>
