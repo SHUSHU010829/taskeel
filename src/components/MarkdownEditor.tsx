@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, type KeyboardEvent } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import remarkBreaks from 'remark-breaks';
+import { Bold, Check, Code, Heading1, Heading2, Italic, List, ListOrdered, Pencil, Quote } from 'lucide-react';
 
 // Casual multi-line notes: keep a standalone `---`/`***`/`___` line as a
 // divider (horizontal rule) instead of letting it turn the preceding block into
@@ -23,31 +24,22 @@ function normalizeMarkdown(md: string) {
   }
   return out.join('\n');
 }
-import {
-  Bold,
-  Code,
-  Heading1,
-  Heading2,
-  Italic,
-  List,
-  ListOrdered,
-  Quote,
-} from 'lucide-react';
 
-// A lightweight Markdown editor: write Markdown (with a small toolbar), or flip
-// to a rendered preview. The stored value stays plain text.
+// A lightweight Markdown editor. Preview is read-only (text stays selectable /
+// copyable); press 編輯 to switch to editing, then 儲存 to persist and return to
+// preview. `onSave` is called with the current value when 儲存 is pressed.
 export default function MarkdownEditor({
   value,
   onChange,
+  onSave,
   startInEdit,
 }: {
   value: string;
   onChange: (v: string) => void;
+  onSave: () => void;
   startInEdit: boolean;
 }) {
-  const [mode, setMode] = useState<'edit' | 'preview'>(
-    startInEdit || !value.trim() ? 'edit' : 'preview'
-  );
+  const [mode, setMode] = useState<'edit' | 'preview'>(startInEdit ? 'edit' : 'preview');
   const ref = useRef<HTMLTextAreaElement>(null);
   const pending = useRef<[number, number] | null>(null);
 
@@ -87,11 +79,11 @@ export default function MarkdownEditor({
     const el = ref.current;
     if (!el) return;
     const s = el.selectionStart;
-    if (s !== el.selectionEnd) return; // let ranged Enter behave normally
+    if (s !== el.selectionEnd) return;
     const lineStart = value.lastIndexOf('\n', s - 1) + 1;
     const nlEnd = value.indexOf('\n', s);
     const lineEnd = nlEnd === -1 ? value.length : nlEnd;
-    if (s !== lineEnd) return; // only continue when at end of the line
+    if (s !== lineEnd) return;
     const line = value.slice(lineStart, lineEnd);
 
     const ordered = line.match(/^(\s*)(\d+)([.)])\s+(.*)$/);
@@ -101,7 +93,6 @@ export default function MarkdownEditor({
     e.preventDefault();
     const content = (ordered ? ordered[4] : bullet![3]).trim();
     if (content === '') {
-      // empty item → exit the list: clear this line's marker
       onChange(value.slice(0, lineStart) + value.slice(lineEnd));
       pending.current = [lineStart, lineStart];
       return;
@@ -112,6 +103,11 @@ export default function MarkdownEditor({
     const insert = `\n${marker}`;
     onChange(value.slice(0, s) + insert + value.slice(s));
     pending.current = [s + insert.length, s + insert.length];
+  }
+
+  function save() {
+    onSave();
+    setMode('preview');
   }
 
   const tools = [
@@ -125,62 +121,60 @@ export default function MarkdownEditor({
     { icon: Code, title: '程式碼', fn: () => surround('`') },
   ];
 
+  if (mode === 'preview') {
+    return (
+      <div className="md-editor">
+        <div className="md-toolbar">
+          <span className="md-desc-label">說明</span>
+          <div className="spacer" />
+          <button type="button" className="md-tab" onClick={() => setMode('edit')}>
+            <Pencil size={13} /> 編輯
+          </button>
+        </div>
+        {value.trim() ? (
+          <div className="modal-desc md">
+            <ReactMarkdown remarkPlugins={[remarkGfm, remarkBreaks]}>
+              {normalizeMarkdown(value)}
+            </ReactMarkdown>
+          </div>
+        ) : (
+          <div className="modal-desc md md-empty" onClick={() => setMode('edit')}>
+            點「編輯」加說明…
+          </div>
+        )}
+      </div>
+    );
+  }
+
   return (
     <div className="md-editor">
       <div className="md-toolbar">
-        {mode === 'edit' &&
-          tools.map((t, i) => (
-            <button
-              key={i}
-              type="button"
-              className="icon-btn"
-              title={t.title}
-              onMouseDown={(e) => e.preventDefault()}
-              onClick={t.fn}
-            >
-              <t.icon size={15} />
-            </button>
-          ))}
+        {tools.map((t, i) => (
+          <button
+            key={i}
+            type="button"
+            className="icon-btn"
+            title={t.title}
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={t.fn}
+          >
+            <t.icon size={15} />
+          </button>
+        ))}
         <div className="spacer" />
-        <button
-          type="button"
-          className={`md-tab${mode === 'edit' ? ' on' : ''}`}
-          onClick={() => setMode('edit')}
-        >
-          編輯
-        </button>
-        <button
-          type="button"
-          className={`md-tab${mode === 'preview' ? ' on' : ''}`}
-          onClick={() => setMode('preview')}
-        >
-          預覽
+        <button type="button" className="md-save" onClick={save}>
+          <Check size={13} /> 儲存
         </button>
       </div>
-
-      {mode === 'edit' ? (
-        <textarea
-          ref={ref}
-          className="modal-desc"
-          placeholder="加點說明…（支援 Markdown：# 標題、- 清單、**粗體**）"
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          onKeyDown={handleKeyDown}
-        />
-      ) : value.trim() ? (
-        <div className="modal-desc md" onClick={() => setMode('edit')}>
-          <ReactMarkdown remarkPlugins={[remarkGfm, remarkBreaks]}>
-            {normalizeMarkdown(value)}
-          </ReactMarkdown>
-        </div>
-      ) : (
-        <div
-          className="modal-desc md md-empty"
-          onClick={() => setMode('edit')}
-        >
-          點此加說明…
-        </div>
-      )}
+      <textarea
+        ref={ref}
+        className="modal-desc"
+        placeholder="加點說明…（支援 Markdown：# 標題、- 清單、**粗體**）"
+        autoFocus
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        onKeyDown={handleKeyDown}
+      />
     </div>
   );
 }

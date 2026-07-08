@@ -21,6 +21,7 @@ import {
   type CategoryRow,
   type Project,
   type StatusRow,
+  type Task,
   type TaskWithProjects,
   type Workspace,
 } from '@/lib/types';
@@ -439,6 +440,39 @@ export default function Board({
     await del;
 
     setEditing(null);
+    loadTasks();
+  }
+
+  // Auto-save a single set of task fields (used by the editor's live controls).
+  async function patchTask(task: TaskWithProjects, patch: Partial<Task>) {
+    setTasks((prev) => prev.map((t) => (t.id === task.id ? { ...t, ...patch } : t)));
+    setEditing((cur) =>
+      cur && cur !== 'new' && cur.id === task.id ? { ...cur, ...patch } : cur
+    );
+    const { error } = await supabase.from('tasks').update(patch).eq('id', task.id);
+    if (error) {
+      report('儲存失敗', error);
+      loadTasks();
+    }
+  }
+
+  // Auto-save a task's project/branch links (reconcile to exactly `links`).
+  async function setTaskProjects(
+    task: TaskWithProjects,
+    links: Array<{ project_id: string; branch: string }>
+  ) {
+    const keepIds = links.map((l) => l.project_id);
+    if (links.length > 0) {
+      const { error } = await supabase.from('task_projects').upsert(
+        links.map((l) => ({ task_id: task.id, project_id: l.project_id, branch: l.branch || null })),
+        { onConflict: 'task_id,project_id' }
+      );
+      if (error) report('儲存專案失敗', error);
+    }
+    let del = supabase.from('task_projects').delete().eq('task_id', task.id);
+    del = keepIds.length ? del.not('project_id', 'in', `(${keepIds.join(',')})`) : del;
+    const { error: e2 } = await del;
+    if (e2) report('儲存專案失敗', e2);
     loadTasks();
   }
 
@@ -987,6 +1021,8 @@ export default function Board({
           onSetBundle={(otherIds) => editingTask && setBundle(editingTask, otherIds)}
           onDetachParent={() => editingTask && detachParent(editingTask)}
           onSave={saveTask}
+          onPatch={(patch) => editingTask && patchTask(editingTask, patch)}
+          onSetProjects={(links) => editingTask && setTaskProjects(editingTask, links)}
           onAddSubtask={(title) => editingTask && addSubtask(editingTask, title)}
           onOpenTask={(t) => setEditing(t)}
           onMoveWorkspace={(wsId) =>

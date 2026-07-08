@@ -1,11 +1,21 @@
 'use client';
 
 import { useState } from 'react';
-import { ArrowUpFromLine, Check, CornerUpLeft, GitBranch, Link2, Plus, Settings2 } from 'lucide-react';
+import {
+  ArrowUpFromLine,
+  Check,
+  CornerUpLeft,
+  GitBranch,
+  Link2,
+  Pencil,
+  Plus,
+  Settings2,
+} from 'lucide-react';
 import {
   type CategoryRow,
   type Project,
   type StatusRow,
+  type Task,
   type TaskWithProjects,
   type Workspace,
 } from '@/lib/types';
@@ -26,6 +36,9 @@ export interface TaskDraft {
 }
 
 // Create / edit modal. `task` null = new task.
+// Existing tasks auto-save every control change (onPatch / onSetProjects); the
+// title and description are read-only until you press their edit affordance.
+// New tasks accumulate a draft and commit once via 建立任務 (onSave).
 export default function TaskEditor({
   task,
   projects,
@@ -40,6 +53,8 @@ export default function TaskEditor({
   onSetBundle,
   onDetachParent,
   onSave,
+  onPatch,
+  onSetProjects,
   onAddSubtask,
   onOpenTask,
   onMoveWorkspace,
@@ -59,15 +74,19 @@ export default function TaskEditor({
   onSetBundle: (otherIds: string[]) => void;
   onDetachParent: () => void;
   onSave: (draft: TaskDraft) => void;
+  onPatch: (patch: Partial<Task>) => void;
+  onSetProjects: (links: Array<{ project_id: string; branch: string }>) => void;
   onAddSubtask: (title: string) => void;
   onOpenTask: (t: TaskWithProjects) => void;
   onMoveWorkspace: (wsId: string) => void;
   onClose: () => void;
   onDelete?: () => void;
 }) {
+  const isNew = !task;
   const defaultStatus = statuses.find((s) => s.is_default) ?? statuses[0];
 
   const [title, setTitle] = useState(task?.title ?? '');
+  const [editingTitle, setEditingTitle] = useState(isNew);
   const [description, setDescription] = useState(task?.description ?? '');
   const [statusId, setStatusId] = useState<string | null>(
     task?.status_id ?? defaultStatus?.id ?? null
@@ -82,15 +101,11 @@ export default function TaskEditor({
     task?.links.forEach((l) => (m[l.project_id] = l.branch ?? ''));
     return m;
   });
-  // Settings open as an overlay over the description when the 設定 button is
-  // clicked; closed by default so the title + description read first.
   const [showSettings, setShowSettings] = useState(false);
   const [moveTo, setMoveTo] = useState<Workspace | null>(null);
   const [newSubtask, setNewSubtask] = useState('');
-  // deploy bundle: ids of tasks that must ship together with this one
   const [boundIds, setBoundIds] = useState<string[]>(bundleMemberIds);
   const [bundleFilter, setBundleFilter] = useState('');
-  // Only top-level, already-saved tasks can hold subtasks.
   const canHaveSubtasks = !!task && !task.parent_id;
 
   const selected = statuses.find((s) => s.id === statusId);
@@ -98,16 +113,51 @@ export default function TaskEditor({
   const selectedCategory = categories.find((c) => c.id === categoryId);
   const selectedProjects = projects.filter((p) => p.id in branches);
 
-  function toggleProject(id: string) {
-    setBranches((prev) => {
-      const next = { ...prev };
-      if (id in next) delete next[id];
-      else next[id] = '';
-      return next;
-    });
+  const linksArray = (b: Record<string, string>) =>
+    Object.entries(b).map(([project_id, branch]) => ({ project_id, branch }));
+
+  // Persist a field patch immediately (existing tasks only; new tasks stay
+  // local until 建立任務).
+  const commit = (patch: Partial<Task>) => {
+    if (!isNew) onPatch(patch);
+  };
+
+  function chooseStatus(id: string) {
+    setStatusId(id);
+    const st = statuses.find((s) => s.id === id);
+    const patch: Partial<Task> = { status_id: id };
+    if (st?.style !== 'cross') {
+      setBlockedReason('');
+      patch.blocked_reason = null;
+    }
+    commit(patch);
   }
 
-  function save() {
+  function chooseCategory(id: string) {
+    const next = categoryId === id ? null : id;
+    setCategoryId(next);
+    commit({ category_id: next });
+  }
+
+  function toggleProject(id: string) {
+    const next = { ...branches };
+    if (id in next) delete next[id];
+    else next[id] = '';
+    setBranches(next);
+    if (!isNew) onSetProjects(linksArray(next));
+  }
+
+  function commitBranches() {
+    if (!isNew) onSetProjects(linksArray(branches));
+  }
+
+  function toggleBackend() {
+    const next = !needsBackend;
+    setNeedsBackend(next);
+    commit({ needs_backend: next });
+  }
+
+  function create() {
     if (!title.trim()) return;
     onSave({
       title: title.trim(),
@@ -117,11 +167,19 @@ export default function TaskEditor({
       blocked_reason: isBlocked ? blockedReason || null : null,
       needs_backend: needsBackend,
       deploy_notes: deployNotes,
-      links: Object.entries(branches).map(([project_id, branch]) => ({
-        project_id,
-        branch,
-      })),
+      links: linksArray(branches),
     });
+  }
+
+  function commitTitle() {
+    const t = title.trim();
+    if (!t) {
+      if (task) setTitle(task.title); // revert empty back to the saved title
+      setEditingTitle(false);
+      return;
+    }
+    if (task && t !== task.title) onPatch({ title: t });
+    setEditingTitle(false);
   }
 
   function addSubtaskNow() {
@@ -131,11 +189,9 @@ export default function TaskEditor({
   }
 
   function toggleBound(id: string) {
-    setBoundIds((prev) => {
-      const next = prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id];
-      onSetBundle(next);
-      return next;
-    });
+    const next = boundIds.includes(id) ? boundIds.filter((x) => x !== id) : [...boundIds, id];
+    setBoundIds(next);
+    onSetBundle(next);
   }
 
   const filteredCandidates = bundleFilter.trim()
@@ -212,16 +268,39 @@ export default function TaskEditor({
   return (
     <div className="overlay" onMouseDown={onClose}>
       <div className="modal editor-modal" onMouseDown={(e) => e.stopPropagation()}>
-        <input
-          className="modal-title-input"
-          autoFocus
-          placeholder="任務標題"
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) save();
-          }}
-        />
+        {isNew ? (
+          <input
+            className="modal-title-input"
+            autoFocus
+            placeholder="任務標題"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) create();
+            }}
+          />
+        ) : editingTitle ? (
+          <input
+            className="modal-title-input"
+            autoFocus
+            placeholder="任務標題"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            onBlur={commitTitle}
+            {...enterSubmit(commitTitle)}
+          />
+        ) : (
+          <div className="editor-title-view">
+            <h2 className="editor-title-text">{title}</h2>
+            <button
+              className="icon-btn"
+              title="編輯標題"
+              onClick={() => setEditingTitle(true)}
+            >
+              <Pencil size={15} />
+            </button>
+          </div>
+        )}
 
         {/* control bar: settings button + compact summary */}
         <div className="editor-bar">
@@ -294,7 +373,7 @@ export default function TaskEditor({
                       <button
                         key={s.id}
                         className={`option${statusId === s.id ? ' selected' : ''}`}
-                        onClick={() => setStatusId(s.id)}
+                        onClick={() => chooseStatus(s.id)}
                       >
                         <StatusDot color={s.color} style={s.style} sm />
                         {s.name}
@@ -308,6 +387,7 @@ export default function TaskEditor({
                       placeholder="卡在什麼？（如：等 Twitch API 回覆）"
                       value={blockedReason}
                       onChange={(e) => setBlockedReason(e.target.value)}
+                      onBlur={() => commit({ blocked_reason: blockedReason || null })}
                     />
                   )}
                 </div>
@@ -320,7 +400,7 @@ export default function TaskEditor({
                       <button
                         key={c.id}
                         className={`option${categoryId === c.id ? ' selected' : ''}`}
-                        onClick={() => setCategoryId(categoryId === c.id ? null : c.id)}
+                        onClick={() => chooseCategory(c.id)}
                       >
                         <span className="cat-dot" style={{ background: c.color }} />
                         {c.name}
@@ -371,6 +451,7 @@ export default function TaskEditor({
                           onChange={(e) =>
                             setBranches((prev) => ({ ...prev, [p.id]: e.target.value }))
                           }
+                          onBlur={commitBranches}
                         />
                       </div>
                     ))}
@@ -384,6 +465,7 @@ export default function TaskEditor({
                     placeholder="本次部署要處理的事、提醒…"
                     value={deployNotes}
                     onChange={(e) => setDeployNotes(e.target.value)}
+                    onBlur={() => commit({ deploy_notes: deployNotes })}
                   />
                 </div>
 
@@ -396,7 +478,7 @@ export default function TaskEditor({
                       className={`toggle${needsBackend ? ' on' : ''}`}
                       role="switch"
                       aria-checked={needsBackend}
-                      onClick={() => setNeedsBackend((v) => !v)}
+                      onClick={toggleBackend}
                     >
                       <span className="toggle-knob" />
                     </button>
@@ -460,28 +542,39 @@ export default function TaskEditor({
               <MarkdownEditor
                 value={description}
                 onChange={setDescription}
-                startInEdit={task === null}
+                onSave={() => commit({ description })}
+                startInEdit={isNew}
               />
             </>
           )}
         </div>
 
         <div className="modal-actions">
-          {onDelete && (
-            <button
-              className="btn btn-ghost"
-              style={{ marginRight: 'auto', color: '#EB5757' }}
-              onClick={onDelete}
-            >
-              刪除
-            </button>
+          {isNew ? (
+            <>
+              <button className="btn btn-ghost" onClick={onClose}>
+                取消
+              </button>
+              <button className="btn btn-primary" disabled={!title.trim()} onClick={create}>
+                建立任務
+              </button>
+            </>
+          ) : (
+            <>
+              {onDelete && (
+                <button
+                  className="btn btn-ghost"
+                  style={{ marginRight: 'auto', color: '#EB5757' }}
+                  onClick={onDelete}
+                >
+                  刪除
+                </button>
+              )}
+              <button className="btn btn-primary" onClick={onClose}>
+                完成
+              </button>
+            </>
           )}
-          <button className="btn btn-ghost" onClick={onClose}>
-            取消
-          </button>
-          <button className="btn btn-primary" disabled={!title.trim()} onClick={save}>
-            儲存
-          </button>
         </div>
       </div>
 

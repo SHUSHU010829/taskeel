@@ -1191,6 +1191,56 @@ a {
   color: var(--text-faint);
 }
 
+.editor-title-view {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 0;
+}
+
+.editor-title-text {
+  flex: 1;
+  margin: 0;
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: var(--text);
+  line-height: 1.4;
+  word-break: break-word;
+}
+
+.editor-title-view .icon-btn {
+  flex-shrink: 0;
+  color: var(--text-faint);
+}
+
+.editor-title-view .icon-btn:hover {
+  color: var(--text);
+}
+
+.md-desc-label {
+  font-size: 0.73rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-faint);
+  font-weight: 500;
+}
+
+.md-save {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 12px;
+  border: 1px solid var(--accent);
+  border-radius: var(--radius);
+  background: var(--accent);
+  color: #fff;
+  font-size: 0.8rem;
+}
+
+.md-save:hover {
+  filter: brightness(1.08);
+}
+
 .modal-desc {
   width: 100%;
   min-height: 180px;
