@@ -554,6 +554,32 @@ a {
   color: var(--text-faint);
 }
 
+.email-change {
+  padding: 6px 8px 8px;
+}
+
+.email-change .text-input {
+  width: 100%;
+}
+
+.email-change-msg {
+  margin-top: 6px;
+  padding: 6px 8px;
+  border-radius: 4px;
+  font-size: 0.72rem;
+  line-height: 1.5;
+}
+
+.email-change-msg.ok {
+  background: rgba(76, 183, 130, 0.14);
+  color: #4cb782;
+}
+
+.email-change-msg.err {
+  background: rgba(235, 87, 87, 0.14);
+  color: #eb5757;
+}
+
 .font-control-label {
   display: block;
   font-size: 0.7333rem;

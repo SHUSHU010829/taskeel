@@ -7,6 +7,7 @@ import {
   GitBranch,
   LayoutList,
   LogOut,
+  Mail,
   Moon,
   PanelLeft,
   PanelLeftClose,
@@ -59,6 +60,7 @@ export default function Sidebar({
   onToggleTheme,
   userEmail,
   onLinkIdentity,
+  onChangeEmail,
   onSignOut,
 }: {
   open: boolean;
@@ -87,6 +89,7 @@ export default function Sidebar({
   onToggleTheme: () => void;
   userEmail: string;
   onLinkIdentity: (provider: 'google' | 'github') => void;
+  onChangeEmail: (email: string) => Promise<{ ok: boolean; message: string }>;
   onSignOut: () => void;
 }) {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -95,6 +98,19 @@ export default function Sidebar({
   const [repo, setRepo] = useState('');
   const [acctOpen, setAcctOpen] = useState(false);
   const acctRef = useRef<HTMLDivElement>(null);
+  const [emailFormOpen, setEmailFormOpen] = useState(false);
+  const [newEmail, setNewEmail] = useState('');
+  const [emailBusy, setEmailBusy] = useState(false);
+  const [emailMsg, setEmailMsg] = useState<{ ok: boolean; text: string } | null>(null);
+
+  async function submitEmailChange() {
+    if (!newEmail.trim() || emailBusy) return;
+    setEmailBusy(true);
+    const res = await onChangeEmail(newEmail.trim());
+    setEmailBusy(false);
+    setEmailMsg({ ok: res.ok, text: res.message });
+    if (res.ok) setNewEmail('');
+  }
 
   // A drawer that's explicitly open (mobile) always shows the full layout.
   const rail = collapsed && !open;
@@ -423,6 +439,42 @@ export default function Sidebar({
                 >
                   <GithubMark size={14} /> 連結 GitHub
                 </button>
+                <div className="acct-sep" />
+                <button
+                  className="ws-menu-item"
+                  style={{ gap: 8 }}
+                  onClick={() => {
+                    setEmailFormOpen((o) => !o);
+                    setEmailMsg(null);
+                  }}
+                >
+                  <Mail size={14} /> 更換登入 Email
+                </button>
+                {emailFormOpen && (
+                  <div className="email-change">
+                    <input
+                      className="text-input"
+                      type="email"
+                      placeholder="新的 Email"
+                      value={newEmail}
+                      onChange={(e) => setNewEmail(e.target.value)}
+                      {...enterSubmit(submitEmailChange)}
+                    />
+                    <button
+                      className="btn btn-primary"
+                      style={{ width: '100%', justifyContent: 'center', marginTop: 6 }}
+                      disabled={emailBusy || !newEmail.trim()}
+                      onClick={submitEmailChange}
+                    >
+                      {emailBusy ? '寄送中…' : '寄送確認信'}
+                    </button>
+                    {emailMsg && (
+                      <div className={`email-change-msg${emailMsg.ok ? ' ok' : ' err'}`}>
+                        {emailMsg.text}
+                      </div>
+                    )}
+                  </div>
+                )}
                 <div className="acct-sep" />
                 <button
                   className="ws-menu-item"
