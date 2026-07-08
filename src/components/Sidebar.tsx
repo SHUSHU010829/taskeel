@@ -21,6 +21,7 @@ import type { Project, StatusRow, Workspace } from '@/lib/types';
 import { enterSubmit } from '@/lib/useEnterSubmit';
 import StatusDot from './StatusDot';
 import WorkspaceIcon from './WorkspaceIcon';
+import { GoogleMark, GithubMark } from './ProviderMarks';
 
 export type View = 'board' | 'history';
 
@@ -57,6 +58,7 @@ export default function Sidebar({
   theme,
   onToggleTheme,
   userEmail,
+  onLinkIdentity,
   onSignOut,
 }: {
   open: boolean;
@@ -84,6 +86,7 @@ export default function Sidebar({
   theme: 'dark' | 'light';
   onToggleTheme: () => void;
   userEmail: string;
+  onLinkIdentity: (provider: 'google' | 'github') => void;
   onSignOut: () => void;
 }) {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -398,6 +401,29 @@ export default function Sidebar({
                   {theme === 'dark' ? <Sun size={14} /> : <Moon size={14} />}
                   {theme === 'dark' ? '切換為淺色' : '切換為深色'}
                 </button>
+                <div className="acct-sep" />
+                <div className="acct-hint">連結登入方式（綁到目前帳號）</div>
+                <button
+                  className="ws-menu-item"
+                  style={{ gap: 8 }}
+                  onClick={() => {
+                    setAcctOpen(false);
+                    onLinkIdentity('google');
+                  }}
+                >
+                  <GoogleMark size={14} /> 連結 Google
+                </button>
+                <button
+                  className="ws-menu-item"
+                  style={{ gap: 8 }}
+                  onClick={() => {
+                    setAcctOpen(false);
+                    onLinkIdentity('github');
+                  }}
+                >
+                  <GithubMark size={14} /> 連結 GitHub
+                </button>
+                <div className="acct-sep" />
                 <button
                   className="ws-menu-item"
                   style={{ gap: 8 }}

@@ -796,6 +796,17 @@ export default function Board({
     router.push('/login');
   }
 
+  // Attach a Google/GitHub identity to the *current* account so future OAuth
+  // sign-ins land on the same user (and keep all existing data).
+  async function linkIdentity(provider: 'google' | 'github') {
+    const { error } = await supabase.auth.linkIdentity({
+      provider,
+      options: { redirectTo: `${window.location.origin}/auth/callback` },
+    });
+    // on success the browser redirects to the provider; only reached on error
+    if (error) report(`連結 ${provider === 'google' ? 'Google' : 'GitHub'} 失敗`, error);
+  }
+
   // ---------- derived ----------
   // A task with subtasks is hidden — its subtasks stand in for it.
   const parentIds = new Set(
@@ -879,6 +890,7 @@ export default function Board({
         theme={theme}
         onToggleTheme={toggleTheme}
         userEmail={userEmail}
+        onLinkIdentity={linkIdentity}
         onSignOut={signOut}
       />
 

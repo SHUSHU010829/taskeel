@@ -42,6 +42,12 @@ secret), and add `https://<your-domain>/auth/callback` (and the Supabase
 `.../auth/v1/callback`) to the allowed redirect URLs. The buttons are always
 shown; a disabled provider just returns an error when clicked.
 
+Signed-in users can attach Google/GitHub to their existing account from the
+account menu (**連結 Google / 連結 GitHub**) — this keeps the same user id, so
+all workspaces and tasks are preserved even if the provider's email differs.
+This uses `linkIdentity`, which needs **Manual linking** enabled in the
+Supabase Auth settings.
+
 ### 2. Environment
 
 Copy `.env.example` to `.env.local` and fill in:

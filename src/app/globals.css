@@ -542,6 +542,18 @@ a {
   margin-bottom: 4px;
 }
 
+.acct-sep {
+  height: 1px;
+  background: var(--border);
+  margin: 4px 0;
+}
+
+.acct-hint {
+  padding: 4px 8px 2px;
+  font-size: 0.7rem;
+  color: var(--text-faint);
+}
+
 .font-control-label {
   display: block;
   font-size: 0.7333rem;
