@@ -897,6 +897,7 @@ export default function Board({
 
       {editing !== null && (
         <TaskEditor
+          key={editing === 'new' ? 'new' : editing.id}
           task={editing === 'new' ? null : editing}
           projects={wsProjects}
           statuses={wsStatuses}
