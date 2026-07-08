@@ -113,6 +113,71 @@ export default function TaskEditor({
     });
   }
 
+  function addSubtaskNow() {
+    if (!newSubtask.trim()) return;
+    onAddSubtask(newSubtask.trim());
+    setNewSubtask('');
+  }
+
+  // Subtasks / parent link — shown next to the description (commonly used).
+  const subtaskBlock =
+    parentTask || canHaveSubtasks ? (
+      <div className="ed-section">
+        {parentTask && (
+          <div className="ed-parent">
+            <span className="field-label" style={{ margin: 0 }}>
+              母任務
+            </span>
+            <button className="parent-chip lg" onClick={() => onOpenTask(parentTask)}>
+              <CornerUpLeft size={13} />
+              {parentTask.title}
+            </button>
+          </div>
+        )}
+        {canHaveSubtasks && (
+          <div>
+            <div className="field-label" style={{ marginTop: parentTask ? 10 : 0 }}>
+              子任務{subtasks.length > 0 ? `（${subtasks.length}）` : ''}
+            </div>
+            {subtasks.length > 0 && (
+              <div style={{ marginBottom: 6 }}>
+                {subtasks.map((st) => {
+                  const s = statuses.find((x) => x.id === st.status_id);
+                  return (
+                    <button
+                      key={st.id}
+                      className="subtask-item"
+                      onClick={() => onOpenTask(st)}
+                    >
+                      {s && <StatusDot color={s.color} style={s.style} sm />}
+                      <span className="subtask-title">{st.title}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+            <div className="branch-field" style={{ marginTop: 0 }}>
+              <input
+                className="text-input"
+                placeholder="拆一個子任務…（繼承母任務的專案/狀態/分類）"
+                value={newSubtask}
+                onChange={(e) => setNewSubtask(e.target.value)}
+                {...enterSubmit(addSubtaskNow)}
+              />
+              <button className="btn btn-primary" onClick={addSubtaskNow}>
+                <Plus size={14} />
+              </button>
+            </div>
+            {subtasks.length > 0 && (
+              <div style={{ color: 'var(--text-faint)', fontSize: '0.78rem', marginTop: 6 }}>
+                有子任務後，此母任務不顯示在看板，改由子任務呈現。
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    ) : null;
+
   return (
     <div className="overlay" onMouseDown={onClose}>
       <div className="modal editor-modal" onMouseDown={(e) => e.stopPropagation()}>
@@ -169,79 +234,6 @@ export default function TaskEditor({
         <div className="editor-body">
           {showSettings ? (
             <div className="settings-inline">
-                {/* parent link — this task is a subtask */}
-                {parentTask && (
-                  <div className="field" style={{ marginTop: 0 }}>
-                    <div className="field-label">母任務</div>
-                    <button className="parent-chip lg" onClick={() => onOpenTask(parentTask)}>
-                      <CornerUpLeft size={13} />
-                      {parentTask.title}
-                    </button>
-                  </div>
-                )}
-
-                {/* subtasks — top-level saved tasks only */}
-                {canHaveSubtasks && (
-                  <div
-                    className="field"
-                    style={{
-                      marginTop: parentTask ? undefined : 0,
-                      paddingBottom: 16,
-                      marginBottom: 4,
-                      borderBottom: '1px solid var(--border)',
-                    }}
-                  >
-                    <div className="field-label">
-                      子任務{subtasks.length > 0 ? `（${subtasks.length}）` : ''}
-                    </div>
-                    {subtasks.length > 0 && (
-                      <div style={{ marginBottom: 6 }}>
-                        {subtasks.map((st) => {
-                          const s = statuses.find((x) => x.id === st.status_id);
-                          return (
-                            <button
-                              key={st.id}
-                              className="subtask-item"
-                              onClick={() => onOpenTask(st)}
-                            >
-                              {s && <StatusDot color={s.color} style={s.style} sm />}
-                              <span className="subtask-title">{st.title}</span>
-                            </button>
-                          );
-                        })}
-                      </div>
-                    )}
-                    <div className="branch-field" style={{ marginTop: 0 }}>
-                      <input
-                        className="text-input"
-                        placeholder="拆一個子任務…（繼承母任務的專案/狀態/分類）"
-                        value={newSubtask}
-                        onChange={(e) => setNewSubtask(e.target.value)}
-                        {...enterSubmit(() => {
-                          if (!newSubtask.trim()) return;
-                          onAddSubtask(newSubtask.trim());
-                          setNewSubtask('');
-                        })}
-                      />
-                      <button
-                        className="btn btn-primary"
-                        onClick={() => {
-                          if (!newSubtask.trim()) return;
-                          onAddSubtask(newSubtask.trim());
-                          setNewSubtask('');
-                        }}
-                      >
-                        <Plus size={14} />
-                      </button>
-                    </div>
-                    {subtasks.length > 0 && (
-                      <div style={{ color: 'var(--text-faint)', fontSize: '0.78rem', marginTop: 6 }}>
-                        有子任務後，此母任務不顯示在看板，改由子任務呈現。
-                      </div>
-                    )}
-                  </div>
-                )}
-
                 {/* workspace (move) — existing tasks only */}
                 {task && workspaces.length > 1 && (
                   <div className="field" style={{ marginTop: 0 }}>
@@ -381,11 +373,14 @@ export default function TaskEditor({
                 </div>
             </div>
           ) : (
-            <MarkdownEditor
-              value={description}
-              onChange={setDescription}
-              startInEdit={task === null}
-            />
+            <>
+              {subtaskBlock}
+              <MarkdownEditor
+                value={description}
+                onChange={setDescription}
+                startInEdit={task === null}
+              />
+            </>
           )}
         </div>
 

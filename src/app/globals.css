@@ -962,6 +962,21 @@ a {
   overflow-y: auto;
 }
 
+/* subtask / parent section shown above the description */
+.ed-section {
+  flex-shrink: 0;
+  padding-bottom: 12px;
+  margin-bottom: 10px;
+  border-bottom: 1px solid var(--border);
+}
+
+.ed-parent {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
 .md-editor textarea.modal-desc {
   resize: none;
 }
