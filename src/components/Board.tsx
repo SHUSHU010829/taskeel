@@ -909,7 +909,6 @@ export default function Board({
         onSetView={setView}
         onAddProject={addProject}
         onEditProject={setEditingProject}
-        onOpenStatusManager={() => currentWs && setEditingWs(currentWs)}
         fontPx={fontPx}
         onSetFont={changeFont}
         theme={theme}

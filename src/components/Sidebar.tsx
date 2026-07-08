@@ -51,7 +51,6 @@ export default function Sidebar({
   onSetView,
   onAddProject,
   onEditProject,
-  onOpenStatusManager,
   fontPx,
   onSetFont,
   theme,
@@ -79,7 +78,6 @@ export default function Sidebar({
   onSetView: (v: View) => void;
   onAddProject: (name: string, repo: string) => void;
   onEditProject: (p: Project) => void;
-  onOpenStatusManager: () => void;
   fontPx: number;
   onSetFont: (px: number) => void;
   theme: 'dark' | 'light';
@@ -191,14 +189,14 @@ export default function Sidebar({
                   </button>
                   <button
                     className="icon-btn ws-edit"
-                    title="編輯工作區"
+                    title="工作區設定"
                     onClick={(e) => {
                       e.stopPropagation();
                       onEditWorkspace(ws);
                       setMenuOpen(false);
                     }}
                   >
-                    <Pencil size={14} />
+                    <Settings size={14} />
                   </button>
                 </div>
               ))}
@@ -232,17 +230,6 @@ export default function Sidebar({
         >
           <Rocket size={15} />
           {!rail && '部署歷史'}
-        </button>
-        <button
-          className="nav-item"
-          title={rail ? '工作區設定' : '編輯目前工作區（名稱、顏色、狀態）'}
-          onClick={() => {
-            onOpenStatusManager();
-            onClose();
-          }}
-        >
-          <Settings size={15} />
-          {!rail && '工作區設定'}
         </button>
 
         {/* projects */}

@@ -344,14 +344,14 @@ a {
 }
 
 .ws-edit {
-  opacity: 0;
   width: 24px;
   height: 24px;
   flex-shrink: 0;
+  color: var(--text-faint);
 }
 
-.ws-menu-row:hover .ws-edit {
-  opacity: 1;
+.ws-edit:hover {
+  color: var(--text);
 }
 
 .dot {
