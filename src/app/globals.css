@@ -143,6 +143,8 @@ a {
   width: 56px;
   padding: 12px 6px;
   align-items: center;
+  /* let the right-flyout popovers escape the narrow column */
+  overflow: visible;
 }
 
 .sidebar.rail .brand {
