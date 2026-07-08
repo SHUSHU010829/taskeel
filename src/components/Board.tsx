@@ -827,12 +827,14 @@ export default function Board({
     ? tasks.find((t) => t.id === editingTask.parent_id) ?? null
     : null;
   // deploy-bundle: sibling tasks that must ship together with the edited task
-  const wsArchiveIds = new Set(wsStatuses.filter((s) => s.is_archive).map((s) => s.id));
   const bundleMemberIds = editingTask?.bundle_id
     ? tasks
         .filter((t) => t.id !== editingTask.id && t.bundle_id === editingTask.bundle_id)
         .map((t) => t.id)
     : [];
+  // Only offer tasks currently in a deploy-stage (待部署) status as bundle
+  // options — plus any already-bound member so it stays removable.
+  const bundleMemberSet = new Set(bundleMemberIds);
   const bundleCandidates = editingTask
     ? tasks
         .filter(
@@ -840,7 +842,7 @@ export default function Board({
             t.id !== editingTask.id &&
             t.workspace_id === editingTask.workspace_id &&
             !t.parent_id && // only top-level tasks (主任務) can be bound
-            !(t.status_id && wsArchiveIds.has(t.status_id)),
+            ((t.status_id && deployIds.has(t.status_id)) || bundleMemberSet.has(t.id)),
         )
         .map((t) => ({ id: t.id, title: t.title, status_id: t.status_id }))
     : [];

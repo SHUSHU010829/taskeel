@@ -414,7 +414,7 @@ export default function TaskEditor({
                       </div>
                     ) : (
                       <div style={{ color: 'var(--text-faint)', fontSize: '0.8rem', marginBottom: 6 }}>
-                        勾選其他任務，讓它們與此任務同一次部署。
+                        勾選其他待部署的任務，讓它們與此任務同一次部署。
                       </div>
                     )}
                     {bundleCandidates.length > 6 && (
@@ -428,7 +428,7 @@ export default function TaskEditor({
                     )}
                     {bundleCandidates.length === 0 ? (
                       <div style={{ color: 'var(--text-faint)', fontSize: '0.8rem' }}>
-                        此工作區沒有其他可綁定的任務。
+                        目前沒有其他待部署的主任務可綁定。
                       </div>
                     ) : (
                       <div className="bundle-list">
