@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { ArrowLeft, Diamond, Loader2, Mail, MailCheck } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 
 export default function LoginPage() {
@@ -11,6 +12,7 @@ export default function LoginPage() {
 
   async function sendMagicLink(e: React.FormEvent) {
     e.preventDefault();
+    if (!email.trim()) return;
     setLoading(true);
     setError(null);
     const supabase = createClient();
@@ -28,38 +30,78 @@ export default function LoginPage() {
   return (
     <div className="login-wrap">
       <div className="login-card">
-        <h1>Taskeel</h1>
-        <p className="login-sub">綁定 git 分支與部署的任務追蹤器</p>
+        <div className="login-mark">
+          <Diamond size={22} fill="currentColor" />
+        </div>
 
         {sent ? (
-          <div className="login-msg">
-            登入連結已寄到 <strong>{email}</strong>。<br />
-            打開信件點擊即可登入。
-          </div>
+          <>
+            <div className="login-check">
+              <MailCheck size={22} />
+            </div>
+            <h1>看看你的信箱</h1>
+            <p className="login-sub">
+              登入連結已寄到 <strong>{email}</strong>，
+              <br />
+              打開信件點一下即可登入。
+            </p>
+            <div className="login-hint">沒收到？看看垃圾信件匣，或稍等一分鐘。</div>
+            <div className="login-actions">
+              <button
+                type="button"
+                className="btn btn-ghost login-back"
+                onClick={() => {
+                  setSent(false);
+                  setError(null);
+                }}
+              >
+                <ArrowLeft size={14} /> 換一個信箱
+              </button>
+              <button
+                type="button"
+                className="btn"
+                disabled={loading}
+                onClick={() => sendMagicLink({ preventDefault() {} } as React.FormEvent)}
+              >
+                {loading ? '寄送中…' : '重新寄送'}
+              </button>
+            </div>
+          </>
         ) : (
-          <form onSubmit={sendMagicLink}>
-            <input
-              className="text-input"
-              type="email"
-              required
-              autoFocus
-              placeholder="you@example.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-            />
-            <button
-              className="btn btn-primary"
-              style={{ width: '100%', justifyContent: 'center' }}
-              disabled={loading}
-            >
-              {loading ? '寄送中…' : '寄送登入連結'}
-            </button>
-            {error && (
-              <div className="login-msg" style={{ color: '#EB5757' }}>
-                {error}
+          <>
+            <h1>登入 Taskeel</h1>
+            <p className="login-sub">綁定 git 分支與部署的任務追蹤器</p>
+
+            <form onSubmit={sendMagicLink}>
+              <div className="login-field">
+                <Mail size={16} className="login-field-icon" />
+                <input
+                  className="text-input"
+                  type="email"
+                  required
+                  autoFocus
+                  placeholder="you@example.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                />
               </div>
-            )}
-          </form>
+              <button
+                className="btn btn-primary login-submit"
+                disabled={loading || !email.trim()}
+              >
+                {loading ? (
+                  <>
+                    <Loader2 size={15} className="spin" /> 寄送中…
+                  </>
+                ) : (
+                  '寄送登入連結'
+                )}
+              </button>
+              {error && <div className="login-msg login-error">{error}</div>}
+            </form>
+
+            <div className="login-hint">免密碼登入：我們會寄一封含登入連結的信給你。</div>
+          </>
         )}
       </div>
     </div>
