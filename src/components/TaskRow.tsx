@@ -1,7 +1,7 @@
 'use client';
 
 import { useDraggable } from '@dnd-kit/core';
-import { Check, GitBranch } from 'lucide-react';
+import { Check, CornerDownRight, GitBranch } from 'lucide-react';
 import type { CategoryRow, StatusRow, TaskWithProjects } from '@/lib/types';
 import StatusControl from './StatusControl';
 import CategoryControl from './CategoryControl';
@@ -11,6 +11,8 @@ export default function TaskRow({
   task,
   statuses,
   categories,
+  parentLabel,
+  onOpenParent,
   onOpen,
   onStatus,
   onCategory,
@@ -18,6 +20,8 @@ export default function TaskRow({
   task: TaskWithProjects;
   statuses: StatusRow[];
   categories: CategoryRow[];
+  parentLabel?: string;
+  onOpenParent?: () => void;
   onOpen: () => void;
   onStatus: (nextId: string, reason: string | null) => void;
   onCategory: (next: string | null) => void;
@@ -41,6 +45,20 @@ export default function TaskRow({
       />
 
       <CategoryControl categories={categories} value={task.category_id} onChange={onCategory} />
+
+      {parentLabel && (
+        <button
+          className="parent-chip"
+          title={`母任務：${parentLabel}`}
+          onClick={(e) => {
+            e.stopPropagation();
+            onOpenParent?.();
+          }}
+        >
+          <CornerDownRight size={11} />
+          {parentLabel}
+        </button>
+      )}
 
       <span className="task-title" onClick={onOpen}>
         {task.title}

@@ -436,15 +436,52 @@ export default function Board({
 
   // Move a task to another workspace: projects are workspace-scoped, so its
   // project/branch links are cleared and it gets the target's default status.
+  // It also detaches from any parent (parents are workspace-bound).
   async function moveTaskWorkspace(task: TaskWithProjects, wsId: string) {
     const def = statuses.find((s) => s.workspace_id === wsId && s.is_default);
     await supabase.from('task_projects').delete().eq('task_id', task.id);
     const { error } = await supabase
       .from('tasks')
-      .update({ workspace_id: wsId, status_id: def?.id ?? null, blocked_reason: null })
+      .update({
+        workspace_id: wsId,
+        status_id: def?.id ?? null,
+        blocked_reason: null,
+        parent_id: null,
+      })
       .eq('id', task.id);
     if (error) return report('搬移工作區失敗', error);
     setEditing(null);
+    loadTasks();
+  }
+
+  // Split a task into a subtask that inherits the parent's status, category,
+  // backend flag, deploy notes, and project/branch tags.
+  async function addSubtask(parent: TaskWithProjects, title: string) {
+    if (!title.trim()) return;
+    const { data, error } = await supabase
+      .from('tasks')
+      .insert({
+        workspace_id: parent.workspace_id,
+        owner_id: userId,
+        parent_id: parent.id,
+        title: title.trim(),
+        status_id: parent.status_id,
+        category_id: parent.category_id,
+        needs_backend: parent.needs_backend,
+        deploy_notes: parent.deploy_notes,
+      })
+      .select('id')
+      .single();
+    if (error || !data) return report('新增子任務失敗', error);
+    if (parent.links.length) {
+      await supabase.from('task_projects').insert(
+        parent.links.map((l) => ({
+          task_id: data.id,
+          project_id: l.project_id,
+          branch: l.branch,
+        }))
+      );
+    }
     loadTasks();
   }
 
@@ -681,18 +718,39 @@ export default function Board({
   }
 
   // ---------- derived ----------
+  // A task with subtasks is hidden — its subtasks stand in for it.
+  const parentIds = new Set(
+    tasks.map((t) => t.parent_id).filter((id): id is string => !!id)
+  );
+  const titleById: Record<string, string> = {};
+  tasks.forEach((t) => (titleById[t.id] = t.title));
+  const leafTasks = tasks.filter((t) => !parentIds.has(t.id));
+
   const archiveIds = new Set(wsStatuses.filter((s) => s.is_archive).map((s) => s.id));
-  const boardTasks = tasks
+  const boardTasks = leafTasks
     .filter((t) => !t.status_id || !archiveIds.has(t.status_id))
     .filter((t) => !projectFilter || t.links.some((l) => l.project_id === projectFilter));
   const filteredProject = projects.find((p) => p.id === projectFilter) ?? null;
   const deployIds = new Set(wsStatuses.filter((s) => s.is_deploy).map((s) => s.id));
-  const pendingDeployCount = tasks.filter(
+  const pendingDeployCount = leafTasks.filter(
     (t) =>
       t.status_id &&
       deployIds.has(t.status_id) &&
       t.links.some((l) => l.deploy_status === 'pending')
   ).length;
+
+  // task being edited: its subtasks and its parent (if it's a subtask)
+  const editingTask = editing && editing !== 'new' ? editing : null;
+  const editingSubtasks = editingTask
+    ? tasks.filter((t) => t.parent_id === editingTask.id)
+    : [];
+  const editingParent = editingTask?.parent_id
+    ? tasks.find((t) => t.id === editingTask.parent_id) ?? null
+    : null;
+  const openTaskId = (id: string) => {
+    const t = tasks.find((x) => x.id === id);
+    if (t) setEditing(t);
+  };
 
   return (
     <div className="app">
@@ -787,7 +845,7 @@ export default function Board({
         <div className="content">
           {view === 'history' ? (
             <DeployHistory
-              tasks={tasks}
+              tasks={leafTasks}
               projects={wsProjects}
               statuses={wsStatuses}
               categories={wsCategories}
@@ -798,7 +856,9 @@ export default function Board({
               tasks={boardTasks}
               statuses={wsStatuses}
               categories={wsCategories}
+              parentTitleById={titleById}
               onOpen={setEditing}
+              onOpenTaskId={openTaskId}
               onStatus={setTaskStatus}
               onCategory={setTaskCategory}
               onMoveToStatus={(t, statusId) => setTaskStatus(t, statusId, t.blocked_reason)}
@@ -815,7 +875,11 @@ export default function Board({
           categories={wsCategories}
           workspaces={workspaces}
           currentWorkspaceId={currentWs?.id ?? null}
+          subtasks={editingSubtasks}
+          parentTask={editingParent}
           onSave={saveTask}
+          onAddSubtask={(title) => editingTask && addSubtask(editingTask, title)}
+          onOpenTask={(t) => setEditing(t)}
           onMoveWorkspace={(wsId) =>
             editing !== 'new' && editing && moveTaskWorkspace(editing, wsId)
           }
@@ -852,7 +916,7 @@ export default function Board({
       )}
 
       {deployOpen && (
-        <DeploySheet tasks={tasks} statuses={wsStatuses} onClose={() => setDeployOpen(false)} />
+        <DeploySheet tasks={leafTasks} statuses={wsStatuses} onClose={() => setDeployOpen(false)} />
       )}
     </div>
   );
@@ -888,7 +952,9 @@ function BoardList({
   tasks,
   statuses,
   categories,
+  parentTitleById,
   onOpen,
+  onOpenTaskId,
   onStatus,
   onCategory,
   onMoveToStatus,
@@ -897,7 +963,9 @@ function BoardList({
   tasks: TaskWithProjects[];
   statuses: StatusRow[];
   categories: CategoryRow[];
+  parentTitleById: Record<string, string>;
   onOpen: (t: TaskWithProjects) => void;
+  onOpenTaskId: (id: string) => void;
   onStatus: (t: TaskWithProjects, id: string, r: string | null) => void;
   onCategory: (t: TaskWithProjects, c: string | null) => void;
   onMoveToStatus: (t: TaskWithProjects, statusId: string) => void;
@@ -945,6 +1013,10 @@ function BoardList({
                   task={task}
                   statuses={statuses}
                   categories={categories}
+                  parentLabel={task.parent_id ? parentTitleById[task.parent_id] : undefined}
+                  onOpenParent={
+                    task.parent_id ? () => onOpenTaskId(task.parent_id!) : undefined
+                  }
                   onOpen={() => onOpen(task)}
                   onStatus={(id, r) => onStatus(task, id, r)}
                   onCategory={(c) => onCategory(task, c)}

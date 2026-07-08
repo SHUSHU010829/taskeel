@@ -701,6 +701,60 @@ a {
   flex-shrink: 0;
 }
 
+/* subtask parent chip on a row / in the editor */
+.parent-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: transparent;
+  color: var(--text-dim);
+  font-size: 0.78rem;
+  max-width: 170px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.parent-chip:hover {
+  background: var(--bg-active);
+  color: var(--text);
+}
+
+.parent-chip.lg {
+  font-size: 0.85rem;
+  max-width: 100%;
+  padding: 5px 10px;
+}
+
+.subtask-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 6px 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: transparent;
+  color: var(--text);
+  text-align: left;
+  margin-bottom: 4px;
+}
+
+.subtask-item:hover {
+  background: var(--bg-hover);
+}
+
+.subtask-title {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .chip {
   display: inline-flex;
   align-items: center;

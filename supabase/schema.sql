@@ -67,6 +67,7 @@ create table tasks (
   description    text not null default '',
   status_id      uuid references task_statuses(id) on delete set null,
   category_id    uuid references categories(id) on delete set null,
+  parent_id      uuid references tasks(id) on delete set null,  -- 母任務（子任務拆分）
   blocked_reason text,                     -- 僅當狀態圖示為 cross 時有意義
   needs_backend  boolean not null default false,
   deploy_notes   text not null default '',
@@ -95,6 +96,7 @@ create trigger tasks_touch before update on tasks
 
 -- ---------- INDEXES ----------
 create index on tasks (workspace_id, status_id);
+create index on tasks (parent_id);
 create index on projects (workspace_id);
 create index on projects (repo);
 create index on task_projects (project_id, branch);
