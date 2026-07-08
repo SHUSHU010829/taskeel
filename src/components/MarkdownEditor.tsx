@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type KeyboardEvent } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import remarkBreaks from 'remark-breaks';
@@ -78,6 +78,42 @@ export default function MarkdownEditor({
     pending.current = [s + prefix.length, s + prefix.length];
   }
 
+  // Enter continues the current list item: `1. ` → `2. `, `- ` → `- `.
+  // Pressing Enter on an empty item ends the list (clears the marker).
+  function handleKeyDown(e: KeyboardEvent<HTMLTextAreaElement>) {
+    if (e.key !== 'Enter') return;
+    if (e.nativeEvent.isComposing || e.keyCode === 229) return; // IME confirm
+    if (e.shiftKey || e.metaKey || e.ctrlKey || e.altKey) return;
+    const el = ref.current;
+    if (!el) return;
+    const s = el.selectionStart;
+    if (s !== el.selectionEnd) return; // let ranged Enter behave normally
+    const lineStart = value.lastIndexOf('\n', s - 1) + 1;
+    const nlEnd = value.indexOf('\n', s);
+    const lineEnd = nlEnd === -1 ? value.length : nlEnd;
+    if (s !== lineEnd) return; // only continue when at end of the line
+    const line = value.slice(lineStart, lineEnd);
+
+    const ordered = line.match(/^(\s*)(\d+)([.)])\s+(.*)$/);
+    const bullet = line.match(/^(\s*)([-*+])\s+(.*)$/);
+    if (!ordered && !bullet) return;
+
+    e.preventDefault();
+    const content = (ordered ? ordered[4] : bullet![3]).trim();
+    if (content === '') {
+      // empty item → exit the list: clear this line's marker
+      onChange(value.slice(0, lineStart) + value.slice(lineEnd));
+      pending.current = [lineStart, lineStart];
+      return;
+    }
+    const marker = ordered
+      ? `${ordered[1]}${parseInt(ordered[2], 10) + 1}${ordered[3]} `
+      : `${bullet![1]}${bullet![2]} `;
+    const insert = `\n${marker}`;
+    onChange(value.slice(0, s) + insert + value.slice(s));
+    pending.current = [s + insert.length, s + insert.length];
+  }
+
   const tools = [
     { icon: Heading1, title: '大標題', fn: () => linePrefix('# ') },
     { icon: Heading2, title: '小標題', fn: () => linePrefix('## ') },
@@ -129,6 +165,7 @@ export default function MarkdownEditor({
           placeholder="加點說明…（支援 Markdown：# 標題、- 清單、**粗體**）"
           value={value}
           onChange={(e) => onChange(e.target.value)}
+          onKeyDown={handleKeyDown}
         />
       ) : value.trim() ? (
         <div className="modal-desc md" onClick={() => setMode('edit')}>
