@@ -1193,6 +1193,17 @@ a {
   flex-wrap: wrap;
 }
 
+.promote-btn {
+  margin-left: auto;
+  gap: 4px;
+  font-size: 0.8rem;
+  color: var(--text-dim);
+}
+
+.promote-btn:hover {
+  color: var(--text);
+}
+
 .md-editor textarea.modal-desc {
   resize: none;
 }

@@ -517,6 +517,20 @@ export default function Board({
     loadTasks();
   }
 
+  // Promote a subtask to a top-level 母任務 (detach from its parent) so it can
+  // stand on its own board row and take part in deploy bundles.
+  async function detachParent(task: TaskWithProjects) {
+    setEditing((cur) =>
+      cur && cur !== 'new' && cur.id === task.id ? { ...cur, parent_id: null } : cur
+    );
+    const { error } = await supabase
+      .from('tasks')
+      .update({ parent_id: null })
+      .eq('id', task.id);
+    if (error) return report('升為母任務失敗', error);
+    loadTasks();
+  }
+
   // Set the deploy bundle for `task`: it plus `otherIds` become one bundle
   // (must ship together). An empty `otherIds` dissolves the bundle.
   async function setBundle(task: TaskWithProjects, otherIds: string[]) {
@@ -825,6 +839,7 @@ export default function Board({
           (t) =>
             t.id !== editingTask.id &&
             t.workspace_id === editingTask.workspace_id &&
+            !t.parent_id && // only top-level tasks (母任務) can be bound
             !(t.status_id && wsArchiveIds.has(t.status_id)),
         )
         .map((t) => ({ id: t.id, title: t.title, status_id: t.status_id }))
@@ -965,6 +980,7 @@ export default function Board({
           bundleCandidates={bundleCandidates}
           bundleMemberIds={bundleMemberIds}
           onSetBundle={(otherIds) => editingTask && setBundle(editingTask, otherIds)}
+          onDetachParent={() => editingTask && detachParent(editingTask)}
           onSave={saveTask}
           onAddSubtask={(title) => editingTask && addSubtask(editingTask, title)}
           onOpenTask={(t) => setEditing(t)}

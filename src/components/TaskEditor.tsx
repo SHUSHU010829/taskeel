@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Check, CornerUpLeft, GitBranch, Link2, Plus, Settings2 } from 'lucide-react';
+import { ArrowUpFromLine, Check, CornerUpLeft, GitBranch, Link2, Plus, Settings2 } from 'lucide-react';
 import {
   type CategoryRow,
   type Project,
@@ -38,6 +38,7 @@ export default function TaskEditor({
   bundleCandidates,
   bundleMemberIds,
   onSetBundle,
+  onDetachParent,
   onSave,
   onAddSubtask,
   onOpenTask,
@@ -56,6 +57,7 @@ export default function TaskEditor({
   bundleCandidates: Array<{ id: string; title: string; status_id: string | null }>;
   bundleMemberIds: string[];
   onSetBundle: (otherIds: string[]) => void;
+  onDetachParent: () => void;
   onSave: (draft: TaskDraft) => void;
   onAddSubtask: (title: string) => void;
   onOpenTask: (t: TaskWithProjects) => void;
@@ -153,6 +155,13 @@ export default function TaskEditor({
             <button className="parent-chip lg" onClick={() => onOpenTask(parentTask)}>
               <CornerUpLeft size={13} />
               {parentTask.title}
+            </button>
+            <button
+              className="btn btn-ghost promote-btn"
+              title="脫離母任務，成為獨立的母任務（可加入部署綁定）"
+              onClick={onDetachParent}
+            >
+              <ArrowUpFromLine size={13} /> 升為母任務
             </button>
           </div>
         )}
@@ -394,10 +403,10 @@ export default function TaskEditor({
                   </div>
                 </div>
 
-                {/* deploy bundle — existing tasks only */}
-                {task && (
+                {/* deploy bundle — top-level (母任務) existing tasks only */}
+                {task && !task.parent_id && (
                   <div className="field">
-                    <div className="field-label">部署綁定（需一併部署的任務）</div>
+                    <div className="field-label">部署綁定（需一併部署的母任務）</div>
                     {boundCandidates.length > 0 ? (
                       <div className="bundle-current">
                         <Link2 size={13} />
