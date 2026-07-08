@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { ChevronDown, ChevronUp, GitBranch } from 'lucide-react';
+import { GitBranch, Settings2, X } from 'lucide-react';
 import {
   type CategoryRow,
   type Project,
@@ -65,9 +65,9 @@ export default function TaskEditor({
     task?.links.forEach((l) => (m[l.project_id] = l.branch ?? ''));
     return m;
   });
-  // Reading-first: existing tasks open with settings collapsed; new tasks
-  // expand so you can fill them in.
-  const [showSettings, setShowSettings] = useState(task === null);
+  // Settings open as an overlay over the description when the 設定 button is
+  // clicked; closed by default so the title + description read first.
+  const [showSettings, setShowSettings] = useState(false);
   const [moveTo, setMoveTo] = useState<Workspace | null>(null);
 
   const selected = statuses.find((s) => s.id === statusId);
@@ -103,7 +103,7 @@ export default function TaskEditor({
 
   return (
     <div className="overlay" onMouseDown={onClose}>
-      <div className="modal" onMouseDown={(e) => e.stopPropagation()}>
+      <div className="modal editor-modal" onMouseDown={(e) => e.stopPropagation()}>
         <input
           className="modal-title-input"
           autoFocus
@@ -114,194 +114,199 @@ export default function TaskEditor({
             if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) save();
           }}
         />
-        <MarkdownEditor
-          value={description}
-          onChange={setDescription}
-          startInEdit={task === null}
-        />
 
-        {/* settings toggle + compact summary when collapsed */}
-        <div className="settings-bar">
+        {/* control bar: settings button + compact summary */}
+        <div className="editor-bar">
           <button
-            className="settings-toggle"
+            className={`settings-toggle${showSettings ? ' on' : ''}`}
             onClick={() => setShowSettings((s) => !s)}
           >
-            {showSettings ? (
-              <>
-                收合設定 <ChevronUp size={13} />
-              </>
-            ) : (
-              <>
-                設定 <ChevronDown size={13} />
-              </>
-            )}
+            <Settings2 size={14} /> 設定
           </button>
-          {!showSettings && (
-            <div className="settings-summary" onClick={() => setShowSettings(true)}>
-              {selected && (
-                <span className="summary-chip">
-                  <StatusDot color={selected.color} style={selected.style} sm />
-                  {selected.name}
-                </span>
-              )}
-              {selectedCategory && (
-                <span className="summary-chip">
-                  <span
-                    className="dot"
-                    style={{ background: selectedCategory.color, width: 6, height: 6 }}
-                  />
-                  {selectedCategory.name}
-                </span>
-              )}
-              {selectedProjects.map((p) => (
-                <span className="summary-chip" key={p.id}>
-                  <span className="dot" style={{ background: p.color, width: 6, height: 6 }} />
-                  {p.name}
-                  {branches[p.id] && (
-                    <span className="branch">
-                      <GitBranch size={11} /> {branches[p.id]}
-                    </span>
-                  )}
-                </span>
-              ))}
-              {task?.needs_backend && <span className="badge-backend">後端</span>}
-            </div>
-          )}
-        </div>
-
-        {showSettings && (
-        <>
-        {/* workspace (move) — existing tasks only */}
-        {task && workspaces.length > 1 && (
-          <div className="field">
-            <div className="field-label">工作區</div>
-            <div className="option-row">
-              {workspaces.map((w) => (
-                <button
-                  key={w.id}
-                  className={`option${w.id === currentWorkspaceId ? ' selected' : ''}`}
-                  onClick={() => {
-                    if (w.id !== currentWorkspaceId) setMoveTo(w);
-                  }}
-                >
-                  <span className="dot" style={{ background: w.color }} />
-                  {w.name}
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* status */}
-        <div className="field">
-          <div className="field-label">狀態</div>
-          <div className="option-row">
-            {statuses.map((s) => (
-              <button
-                key={s.id}
-                className={`option${statusId === s.id ? ' selected' : ''}`}
-                onClick={() => setStatusId(s.id)}
-              >
-                <StatusDot color={s.color} style={s.style} sm />
-                {s.name}
-              </button>
-            ))}
-          </div>
-          {isBlocked && (
-            <input
-              className="text-input"
-              style={{ marginTop: 8 }}
-              placeholder="卡在什麼？（如：等 Twitch API 回覆）"
-              value={blockedReason}
-              onChange={(e) => setBlockedReason(e.target.value)}
-            />
-          )}
-        </div>
-
-        {/* category */}
-        <div className="field">
-          <div className="field-label">分類</div>
-          <div className="option-row">
-            {categories.map((c) => (
-              <button
-                key={c.id}
-                className={`option${categoryId === c.id ? ' selected' : ''}`}
-                onClick={() => setCategoryId(categoryId === c.id ? null : c.id)}
-              >
-                <span className="cat-dot" style={{ background: c.color }} />
-                {c.name}
-              </button>
-            ))}
-            {categories.length === 0 && (
-              <span style={{ color: 'var(--text-faint)', fontSize: '0.8rem' }}>
-                尚無分類，可到工作區設定新增。
+          <div className="settings-summary">
+            {selected && (
+              <span className="summary-chip">
+                <StatusDot color={selected.color} style={selected.style} sm />
+                {selected.name}
               </span>
             )}
+            {selectedCategory && (
+              <span className="summary-chip">
+                <span
+                  className="dot"
+                  style={{ background: selectedCategory.color, width: 6, height: 6 }}
+                />
+                {selectedCategory.name}
+              </span>
+            )}
+            {selectedProjects.map((p) => (
+              <span className="summary-chip" key={p.id}>
+                <span className="dot" style={{ background: p.color, width: 6, height: 6 }} />
+                {p.name}
+                {branches[p.id] && (
+                  <span className="branch">
+                    <GitBranch size={11} /> {branches[p.id]}
+                  </span>
+                )}
+              </span>
+            ))}
+            {needsBackend && <span className="badge-backend">後端</span>}
           </div>
         </div>
 
-        {/* projects + per-project branch */}
-        <div className="field">
-          <div className="field-label">專案與分支</div>
-          {projects.length === 0 && (
-            <div style={{ color: 'var(--text-faint)', fontSize: 12 }}>
-              此工作環境還沒有專案。
+        <div className="editor-body">
+          <MarkdownEditor
+            value={description}
+            onChange={setDescription}
+            startInEdit={task === null}
+          />
+
+          {showSettings && (
+            <div className="settings-panel">
+              <div className="settings-panel-head">
+                <span className="modal-heading" style={{ fontSize: '1rem' }}>設定</span>
+                <div className="spacer" />
+                <button className="icon-btn" onClick={() => setShowSettings(false)}>
+                  <X size={16} />
+                </button>
+              </div>
+              <div className="settings-panel-body">
+                {/* workspace (move) — existing tasks only */}
+                {task && workspaces.length > 1 && (
+                  <div className="field" style={{ marginTop: 0 }}>
+                    <div className="field-label">工作區</div>
+                    <div className="option-row">
+                      {workspaces.map((w) => (
+                        <button
+                          key={w.id}
+                          className={`option${w.id === currentWorkspaceId ? ' selected' : ''}`}
+                          onClick={() => {
+                            if (w.id !== currentWorkspaceId) setMoveTo(w);
+                          }}
+                        >
+                          <span className="dot" style={{ background: w.color }} />
+                          {w.name}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* status */}
+                <div className="field" style={task && workspaces.length > 1 ? {} : { marginTop: 0 }}>
+                  <div className="field-label">狀態</div>
+                  <div className="option-row">
+                    {statuses.map((s) => (
+                      <button
+                        key={s.id}
+                        className={`option${statusId === s.id ? ' selected' : ''}`}
+                        onClick={() => setStatusId(s.id)}
+                      >
+                        <StatusDot color={s.color} style={s.style} sm />
+                        {s.name}
+                      </button>
+                    ))}
+                  </div>
+                  {isBlocked && (
+                    <input
+                      className="text-input"
+                      style={{ marginTop: 8 }}
+                      placeholder="卡在什麼？（如：等 Twitch API 回覆）"
+                      value={blockedReason}
+                      onChange={(e) => setBlockedReason(e.target.value)}
+                    />
+                  )}
+                </div>
+
+                {/* category */}
+                <div className="field">
+                  <div className="field-label">分類</div>
+                  <div className="option-row">
+                    {categories.map((c) => (
+                      <button
+                        key={c.id}
+                        className={`option${categoryId === c.id ? ' selected' : ''}`}
+                        onClick={() => setCategoryId(categoryId === c.id ? null : c.id)}
+                      >
+                        <span className="cat-dot" style={{ background: c.color }} />
+                        {c.name}
+                      </button>
+                    ))}
+                    {categories.length === 0 && (
+                      <span style={{ color: 'var(--text-faint)', fontSize: '0.8rem' }}>
+                        尚無分類，可到工作區設定新增。
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                {/* projects + per-project branch */}
+                <div className="field">
+                  <div className="field-label">專案與分支</div>
+                  {projects.length === 0 && (
+                    <div style={{ color: 'var(--text-faint)', fontSize: 12 }}>
+                      此工作環境還沒有專案。
+                    </div>
+                  )}
+                  <div className="option-row">
+                    {projects.map((p) => (
+                      <button
+                        key={p.id}
+                        className={`option${p.id in branches ? ' selected' : ''}`}
+                        onClick={() => toggleProject(p.id)}
+                      >
+                        <span className="dot" style={{ background: p.color }} />
+                        {p.name}
+                      </button>
+                    ))}
+                  </div>
+                  {projects
+                    .filter((p) => p.id in branches)
+                    .map((p) => (
+                      <div className="branch-field" key={p.id}>
+                        <span
+                          className="proj-name"
+                          style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}
+                        >
+                          {p.name} <GitBranch size={12} />
+                        </span>
+                        <input
+                          className="text-input"
+                          placeholder="分支名稱（如 feat/gacha）"
+                          value={branches[p.id]}
+                          onChange={(e) =>
+                            setBranches((prev) => ({ ...prev, [p.id]: e.target.value }))
+                          }
+                        />
+                      </div>
+                    ))}
+                </div>
+
+                {/* backend + deploy notes */}
+                <div className="field">
+                  <label className="checkbox-row">
+                    <input
+                      type="checkbox"
+                      checked={needsBackend}
+                      onChange={(e) => setNeedsBackend(e.target.checked)}
+                    />
+                    通知後端也需加入代辦
+                  </label>
+                </div>
+
+                <div className="field">
+                  <div className="field-label">部署提醒</div>
+                  <textarea
+                    className="textarea"
+                    placeholder="本次部署要處理的事、提醒…"
+                    value={deployNotes}
+                    onChange={(e) => setDeployNotes(e.target.value)}
+                  />
+                </div>
+              </div>
             </div>
           )}
-          <div className="option-row">
-            {projects.map((p) => (
-              <button
-                key={p.id}
-                className={`option${p.id in branches ? ' selected' : ''}`}
-                onClick={() => toggleProject(p.id)}
-              >
-                <span className="dot" style={{ background: p.color }} />
-                {p.name}
-              </button>
-            ))}
-          </div>
-          {projects
-            .filter((p) => p.id in branches)
-            .map((p) => (
-              <div className="branch-field" key={p.id}>
-                <span className="proj-name" style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-                  {p.name} <GitBranch size={12} />
-                </span>
-                <input
-                  className="text-input"
-                  placeholder="分支名稱（如 feat/gacha）"
-                  value={branches[p.id]}
-                  onChange={(e) =>
-                    setBranches((prev) => ({ ...prev, [p.id]: e.target.value }))
-                  }
-                />
-              </div>
-            ))}
         </div>
-
-        {/* backend + deploy notes */}
-        <div className="field">
-          <label className="checkbox-row">
-            <input
-              type="checkbox"
-              checked={needsBackend}
-              onChange={(e) => setNeedsBackend(e.target.checked)}
-            />
-            通知後端也需加入代辦
-          </label>
-        </div>
-
-        <div className="field">
-          <div className="field-label">部署提醒</div>
-          <textarea
-            className="textarea"
-            placeholder="本次部署要處理的事、提醒…"
-            value={deployNotes}
-            onChange={(e) => setDeployNotes(e.target.value)}
-          />
-        </div>
-        </>
-        )}
 
         <div className="modal-actions">
           {onDelete && (

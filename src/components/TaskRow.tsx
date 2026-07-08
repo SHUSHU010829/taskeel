@@ -1,38 +1,37 @@
 'use client';
 
+import { useDraggable } from '@dnd-kit/core';
 import { Check, GitBranch } from 'lucide-react';
 import type { CategoryRow, StatusRow, TaskWithProjects } from '@/lib/types';
 import StatusControl from './StatusControl';
 import CategoryControl from './CategoryControl';
 
-// One task row in the grouped board list. Draggable between status columns.
+// One task row in the grouped board list. Draggable (dnd-kit) between columns.
 export default function TaskRow({
   task,
   statuses,
   categories,
-  dragging,
   onOpen,
   onStatus,
   onCategory,
-  onDragStart,
-  onDragEnd,
 }: {
   task: TaskWithProjects;
   statuses: StatusRow[];
   categories: CategoryRow[];
-  dragging: boolean;
   onOpen: () => void;
   onStatus: (nextId: string, reason: string | null) => void;
   onCategory: (next: string | null) => void;
-  onDragStart: () => void;
-  onDragEnd: () => void;
 }) {
+  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
+    id: task.id,
+  });
+
   return (
     <div
-      className={`task-row${dragging ? ' dragging' : ''}`}
-      draggable
-      onDragStart={onDragStart}
-      onDragEnd={onDragEnd}
+      ref={setNodeRef}
+      className={`task-row${isDragging ? ' dragging' : ''}`}
+      {...attributes}
+      {...listeners}
     >
       <StatusControl
         statuses={statuses}

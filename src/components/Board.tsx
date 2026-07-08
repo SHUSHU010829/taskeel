@@ -3,6 +3,16 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Menu, Plus, X, TriangleAlert } from 'lucide-react';
+import {
+  DndContext,
+  DragOverlay,
+  MouseSensor,
+  TouchSensor,
+  useSensor,
+  useSensors,
+  useDroppable,
+  type DragEndEvent,
+} from '@dnd-kit/core';
 import { createClient } from '@/lib/supabase/client';
 import { enterSubmit } from '@/lib/useEnterSubmit';
 import {
@@ -825,7 +835,31 @@ export default function Board({
   );
 }
 
-// Grouped-by-status list. Drag a task onto another status group to move it.
+// A status column that is a dnd-kit drop target.
+function StatusGroup({
+  status,
+  count,
+  children,
+}: {
+  status: StatusRow;
+  count: number;
+  children: React.ReactNode;
+}) {
+  const { setNodeRef, isOver } = useDroppable({ id: status.id });
+  return (
+    <div ref={setNodeRef} className={`group${isOver ? ' drop-target' : ''}`}>
+      <div className="group-header">
+        <span className="group-square" style={{ background: status.color }} />
+        <span className="group-title">{status.name}</span>
+        <span className="badge-count">{count}</span>
+      </div>
+      {children}
+    </div>
+  );
+}
+
+// Grouped-by-status list. Drag a task onto another status column to move it
+// (dnd-kit pointer/touch drag — no native browser drag).
 function BoardList({
   boardStatuses,
   tasks,
@@ -845,42 +879,40 @@ function BoardList({
   onCategory: (t: TaskWithProjects, c: string | null) => void;
   onMoveToStatus: (t: TaskWithProjects, statusId: string) => void;
 }) {
-  const [dragId, setDragId] = useState<string | null>(null);
-  const [overStatus, setOverStatus] = useState<string | null>(null);
+  const [activeId, setActiveId] = useState<string | null>(null);
+  const sensors = useSensors(
+    // mouse: start after a small move so clicks still work;
+    // touch: press-and-hold so a normal swipe still scrolls the board.
+    useSensor(MouseSensor, { activationConstraint: { distance: 6 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 8 } })
+  );
 
   if (boardStatuses.length === 0) {
     return <div className="empty">還沒有狀態。到左側「工作區設定」新增。</div>;
   }
 
-  function drop(statusId: string) {
-    const t = tasks.find((x) => x.id === dragId);
-    setDragId(null);
-    setOverStatus(null);
+  const activeTask = tasks.find((t) => t.id === activeId) ?? null;
+
+  function onDragEnd(e: DragEndEvent) {
+    setActiveId(null);
+    const { active, over } = e;
+    if (!over) return;
+    const t = tasks.find((x) => x.id === active.id);
+    const statusId = String(over.id);
     if (t && t.status_id !== statusId) onMoveToStatus(t, statusId);
   }
 
   return (
-    <>
+    <DndContext
+      sensors={sensors}
+      onDragStart={(e) => setActiveId(String(e.active.id))}
+      onDragEnd={onDragEnd}
+      onDragCancel={() => setActiveId(null)}
+    >
       {boardStatuses.map((status) => {
         const items = tasks.filter((t) => t.status_id === status.id);
         return (
-          <div
-            className={`group${overStatus === status.id && dragId ? ' drop-target' : ''}`}
-            key={status.id}
-            onDragOver={(e) => {
-              if (dragId) {
-                e.preventDefault();
-                setOverStatus(status.id);
-              }
-            }}
-            onDragLeave={() => setOverStatus((o) => (o === status.id ? null : o))}
-            onDrop={() => drop(status.id)}
-          >
-            <div className="group-header">
-              <span className="group-square" style={{ background: status.color }} />
-              <span className="group-title">{status.name}</span>
-              <span className="badge-count">{items.length}</span>
-            </div>
+          <StatusGroup key={status.id} status={status} count={items.length}>
             {items.length === 0 ? (
               <div className="empty-row">—</div>
             ) : (
@@ -890,21 +922,20 @@ function BoardList({
                   task={task}
                   statuses={statuses}
                   categories={categories}
-                  dragging={dragId === task.id}
                   onOpen={() => onOpen(task)}
                   onStatus={(id, r) => onStatus(task, id, r)}
                   onCategory={(c) => onCategory(task, c)}
-                  onDragStart={() => setDragId(task.id)}
-                  onDragEnd={() => {
-                    setDragId(null);
-                    setOverStatus(null);
-                  }}
                 />
               ))
             )}
-          </div>
+          </StatusGroup>
         );
       })}
-    </>
+      <DragOverlay>
+        {activeTask ? (
+          <div className="task-drag-overlay">{activeTask.title}</div>
+        ) : null}
+      </DragOverlay>
+    </DndContext>
   );
 }
