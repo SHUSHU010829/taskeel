@@ -34,7 +34,7 @@ export default function RootLayout({
         <script
           dangerouslySetInnerHTML={{
             __html:
-              "try{var f=localStorage.getItem('taskeel.fontPx');if(f)document.documentElement.style.setProperty('--app-font',f+'px')}catch(e){}",
+              "try{var f=localStorage.getItem('taskeel.fontPx');if(f)document.documentElement.style.setProperty('--app-font',f+'px');var t=localStorage.getItem('taskeel.theme')||'dark';document.documentElement.setAttribute('data-theme',t)}catch(e){}",
           }}
         />
         {children}

@@ -8,6 +8,7 @@
   --bg-elevated: #16181d;
   --bg-hover: rgba(255, 255, 255, 0.04);
   --bg-active: rgba(255, 255, 255, 0.06);
+  --sidebar-bg: #0a0b0d;
   --border: rgba(255, 255, 255, 0.06);
   --border-strong: rgba(255, 255, 255, 0.12);
   --text: #e6e7ea;
@@ -19,6 +20,19 @@
   --radius-lg: 8px;
   --font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
     Helvetica, Arial, sans-serif;
+}
+
+:root[data-theme='light'] {
+  --bg: #ffffff;
+  --bg-elevated: #ffffff;
+  --bg-hover: rgba(0, 0, 0, 0.04);
+  --bg-active: rgba(0, 0, 0, 0.07);
+  --sidebar-bg: #f5f6f8;
+  --border: rgba(0, 0, 0, 0.09);
+  --border-strong: rgba(0, 0, 0, 0.16);
+  --text: #1c1d21;
+  --text-dim: #5b616b;
+  --text-faint: #8a8f98;
 }
 
 * {
@@ -82,7 +96,7 @@ a {
   width: 248px;
   flex-shrink: 0;
   border-right: 1px solid var(--border);
-  background: #0a0b0d;
+  background: var(--sidebar-bg);
   display: flex;
   flex-direction: column;
   padding: 12px 8px;
@@ -96,7 +110,7 @@ a {
   gap: 6px;
   font-size: 0.9333rem;
   font-weight: 600;
-  color: #fff;
+  color: var(--text);
   letter-spacing: 0.2px;
   padding: 4px 8px 8px;
 }
@@ -484,7 +498,7 @@ a {
   height: 16px;
   padding: 0 5px;
   border-radius: 8px;
-  background: rgba(255, 255, 255, 0.1);
+  background: var(--bg-active);
   font-size: 0.7333rem;
   color: var(--text-dim);
 }

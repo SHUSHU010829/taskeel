@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
-import type { Project, StatusRow, Workspace } from '@/lib/types';
+import type { CategoryRow, Project, StatusRow, Workspace } from '@/lib/types';
 import Board from '@/components/Board';
 
 // Home = the task board. Server component: authenticates, then hands off to the
@@ -13,11 +13,13 @@ export default async function HomePage() {
 
   if (!user) redirect('/login');
 
-  const [{ data: workspaces }, { data: projects }, { data: statuses }] = await Promise.all([
-    supabase.from('workspaces').select('*').order('created_at', { ascending: true }),
-    supabase.from('projects').select('*').order('created_at', { ascending: true }),
-    supabase.from('task_statuses').select('*').order('position', { ascending: true }),
-  ]);
+  const [{ data: workspaces }, { data: projects }, { data: statuses }, { data: cats }] =
+    await Promise.all([
+      supabase.from('workspaces').select('*').order('created_at', { ascending: true }),
+      supabase.from('projects').select('*').order('created_at', { ascending: true }),
+      supabase.from('task_statuses').select('*').order('position', { ascending: true }),
+      supabase.from('categories').select('*').order('position', { ascending: true }),
+    ]);
 
   return (
     <Board
@@ -26,6 +28,7 @@ export default async function HomePage() {
       initialWorkspaces={(workspaces ?? []) as Workspace[]}
       initialProjects={(projects ?? []) as Project[]}
       initialStatuses={(statuses ?? []) as StatusRow[]}
+      initialCategories={(cats ?? []) as CategoryRow[]}
     />
   );
 }

@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { GitBranch } from 'lucide-react';
 import {
-  CATEGORY_META,
+  type CategoryRow,
   type Project,
   type StatusRow,
   type TaskWithProjects,
@@ -14,10 +14,12 @@ export default function DeployHistory({
   tasks,
   projects,
   statuses,
+  categories,
 }: {
   tasks: TaskWithProjects[];
   projects: Project[];
   statuses: StatusRow[];
+  categories: CategoryRow[];
 }) {
   const [filter, setFilter] = useState<string | null>(null);
   const archiveIds = new Set(
@@ -53,7 +55,7 @@ export default function DeployHistory({
       {archived.length === 0 && <div className="empty">還沒有已歸檔的任務。</div>}
 
       {archived.map((t) => {
-        const cat = t.category ? CATEGORY_META[t.category] : null;
+        const cat = categories.find((c) => c.id === t.category_id) ?? null;
         return (
           <div className="history-row" key={t.id}>
             <div className="history-head">

@@ -1,16 +1,18 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { CATEGORY_META, type TaskCategory } from '@/lib/types';
+import type { CategoryRow } from '@/lib/types';
 
-// A compact category tag on each row. Shows the category (colour + label), or a
+// A compact category tag on each row. Shows the category (colour + name), or a
 // faint empty placeholder when none. Click to pick / clear a category inline.
 export default function CategoryControl({
+  categories,
   value,
   onChange,
 }: {
-  value: TaskCategory | null;
-  onChange: (next: TaskCategory | null) => void;
+  categories: CategoryRow[];
+  value: string | null;
+  onChange: (next: string | null) => void;
 }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -24,22 +26,22 @@ export default function CategoryControl({
     return () => document.removeEventListener('mousedown', h);
   }, [open]);
 
-  const meta = value ? CATEGORY_META[value] : null;
+  const cat = categories.find((c) => c.id === value) ?? null;
 
   return (
     <div ref={ref} style={{ position: 'relative', display: 'flex' }}>
       <button
-        className={`cat-tag${meta ? '' : ' empty'}`}
-        title={meta ? meta.label : '設定分類'}
+        className={`cat-tag${cat ? '' : ' empty'}`}
+        title={cat ? cat.name : '設定分類'}
         onClick={(e) => {
           e.stopPropagation();
           setOpen((o) => !o);
         }}
       >
-        {meta ? (
+        {cat ? (
           <>
-            <span className="dot" style={{ background: meta.color, width: 6, height: 6 }} />
-            <span>{meta.label}</span>
+            <span className="dot" style={{ background: cat.color, width: 6, height: 6 }} />
+            <span>{cat.name}</span>
           </>
         ) : (
           <span className="cat-empty-dot" />
@@ -59,21 +61,18 @@ export default function CategoryControl({
             <span className="cat-empty-dot" />
             無分類
           </button>
-          {(Object.keys(CATEGORY_META) as TaskCategory[]).map((c) => (
+          {categories.map((c) => (
             <button
-              key={c}
+              key={c.id}
               className="popover-item"
               onClick={(e) => {
                 e.stopPropagation();
-                onChange(c);
+                onChange(c.id);
                 setOpen(false);
               }}
             >
-              <span
-                className="dot"
-                style={{ background: CATEGORY_META[c].color, width: 8, height: 8 }}
-              />
-              {CATEGORY_META[c].label}
+              <span className="dot" style={{ background: c.color, width: 8, height: 8 }} />
+              {c.name}
             </button>
           ))}
         </div>

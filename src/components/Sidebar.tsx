@@ -7,11 +7,13 @@ import {
   GitBranch,
   LayoutList,
   LogOut,
+  Moon,
   Pencil,
   Pin,
   Plus,
   Rocket,
   Settings,
+  Sun,
 } from 'lucide-react';
 import type { Project, StatusRow, Workspace } from '@/lib/types';
 import { enterSubmit } from '@/lib/useEnterSubmit';
@@ -47,6 +49,8 @@ export default function Sidebar({
   onOpenStatusManager,
   fontPx,
   onSetFont,
+  theme,
+  onToggleTheme,
   userEmail,
   onSignOut,
 }: {
@@ -70,6 +74,8 @@ export default function Sidebar({
   onOpenStatusManager: () => void;
   fontPx: number;
   onSetFont: (px: number) => void;
+  theme: 'dark' | 'light';
+  onToggleTheme: () => void;
   userEmail: string;
   onSignOut: () => void;
 }) {
@@ -326,6 +332,14 @@ export default function Sidebar({
                     ))}
                   </div>
                 </div>
+                <button
+                  className="ws-menu-item"
+                  style={{ gap: 8 }}
+                  onClick={onToggleTheme}
+                >
+                  {theme === 'dark' ? <Sun size={14} /> : <Moon size={14} />}
+                  {theme === 'dark' ? '切換為淺色' : '切換為深色'}
+                </button>
                 <button
                   className="ws-menu-item"
                   style={{ gap: 8 }}

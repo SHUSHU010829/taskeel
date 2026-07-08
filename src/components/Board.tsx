@@ -7,9 +7,10 @@ import { createClient } from '@/lib/supabase/client';
 import { enterSubmit } from '@/lib/useEnterSubmit';
 import {
   DEFAULT_STATUSES,
+  DEFAULT_CATEGORIES,
+  type CategoryRow,
   type Project,
   type StatusRow,
-  type TaskCategory,
   type TaskWithProjects,
   type Workspace,
 } from '@/lib/types';
@@ -19,6 +20,7 @@ import TaskEditor, { type TaskDraft } from './TaskEditor';
 import ProjectEditor from './ProjectEditor';
 import WorkspaceEditor from './WorkspaceEditor';
 import { type StatusManagerHandlers } from './StatusList';
+import { type CategoryHandlers } from './CategoryList';
 import DeploySheet from './DeploySheet';
 import DeployHistory from './DeployHistory';
 
@@ -28,12 +30,14 @@ export default function Board({
   initialWorkspaces,
   initialProjects,
   initialStatuses,
+  initialCategories,
 }: {
   userId: string;
   userEmail: string;
   initialWorkspaces: Workspace[];
   initialProjects: Project[];
   initialStatuses: StatusRow[];
+  initialCategories: CategoryRow[];
 }) {
   const router = useRouter();
   const supabase = useMemo(() => createClient(), []);
@@ -41,6 +45,7 @@ export default function Board({
   const [workspaces, setWorkspaces] = useState<Workspace[]>(initialWorkspaces);
   const [projects, setProjects] = useState<Project[]>(initialProjects);
   const [statuses, setStatuses] = useState<StatusRow[]>(initialStatuses);
+  const [categories, setCategories] = useState<CategoryRow[]>(initialCategories);
   const [currentWs, setCurrentWs] = useState<Workspace | null>(initialWorkspaces[0] ?? null);
   const [tasks, setTasks] = useState<TaskWithProjects[]>([]);
   const [view, setView] = useState<View>('board');
@@ -52,11 +57,13 @@ export default function Board({
   const [error, setError] = useState<string | null>(null);
   const [capture, setCapture] = useState('');
   const [fontPx, setFontPx] = useState(15);
+  const [theme, setTheme] = useState<'dark' | 'light'>('dark');
   const [pinnedWsId, setPinnedWsId] = useState<string | null>(null);
   const [projectFilter, setProjectFilter] = useState<string | null>(null);
   const captureRef = useRef<HTMLInputElement>(null);
   const seedWsRef = useRef(false);
   const seedingStatusRef = useRef<Set<string>>(new Set());
+  const seedingCategoryRef = useRef<Set<string>>(new Set());
 
   const report = useCallback((label: string, err: unknown) => {
     const msg =
@@ -79,6 +86,13 @@ export default function Board({
     [statuses, currentWs]
   );
   const boardStatuses = useMemo(() => wsStatuses.filter((s) => !s.is_archive), [wsStatuses]);
+  const wsCategories = useMemo(
+    () =>
+      categories
+        .filter((c) => c.workspace_id === currentWs?.id)
+        .sort((a, b) => a.position - b.position),
+    [categories, currentWs]
+  );
 
   // ---------- first-login: seed the two default workspaces ----------
   useEffect(() => {
@@ -126,6 +140,33 @@ export default function Board({
     })();
   }, [workspaces, statuses, supabase, userId, report]);
 
+  // seed default categories for any workspace that lacks them
+  useEffect(() => {
+    const need = workspaces.filter(
+      (w) =>
+        !categories.some((c) => c.workspace_id === w.id) && !seedingCategoryRef.current.has(w.id)
+    );
+    if (need.length === 0) return;
+    need.forEach((w) => seedingCategoryRef.current.add(w.id));
+    (async () => {
+      for (const w of need) {
+        const rows = DEFAULT_CATEGORIES.map((c, i) => ({
+          owner_id: userId,
+          workspace_id: w.id,
+          position: i,
+          ...c,
+        }));
+        const { data, error } = await supabase.from('categories').insert(rows).select('*');
+        if (error) {
+          report('建立分類失敗', error);
+          seedingCategoryRef.current.delete(w.id);
+        } else if (data) {
+          setCategories((prev) => [...prev, ...(data as CategoryRow[])]);
+        }
+      }
+    })();
+  }, [workspaces, categories, supabase, userId, report]);
+
   // ---------- data loading ----------
   const loadTasks = useCallback(async () => {
     if (!currentWs) return;
@@ -158,6 +199,11 @@ export default function Board({
     if (data) setStatuses(data as StatusRow[]);
   }, [supabase]);
 
+  const loadCategories = useCallback(async () => {
+    const { data } = await supabase.from('categories').select('*').order('position');
+    if (data) setCategories(data as CategoryRow[]);
+  }, [supabase]);
+
   useEffect(() => {
     loadTasks();
   }, [loadTasks]);
@@ -179,12 +225,13 @@ export default function Board({
       )
       .on('postgres_changes', { event: '*', schema: 'public', table: 'task_projects' }, refetch)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'task_statuses' }, loadStatuses)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'categories' }, loadCategories)
       .subscribe();
     return () => {
       if (timer) clearTimeout(timer);
       supabase.removeChannel(channel);
     };
-  }, [supabase, currentWs, loadTasks, loadStatuses]);
+  }, [supabase, currentWs, loadTasks, loadStatuses, loadCategories]);
 
   // ---------- font-size preference ----------
   useEffect(() => {
@@ -235,6 +282,26 @@ export default function Board({
     }
   }
 
+  useEffect(() => {
+    try {
+      const t = localStorage.getItem('taskeel.theme');
+      if (t === 'light' || t === 'dark') setTheme(t);
+    } catch {
+      // ignore
+    }
+  }, []);
+
+  function toggleTheme() {
+    const next = theme === 'dark' ? 'light' : 'dark';
+    setTheme(next);
+    document.documentElement.setAttribute('data-theme', next);
+    try {
+      localStorage.setItem('taskeel.theme', next);
+    } catch {
+      // ignore
+    }
+  }
+
   // ---------- quick capture 'c' shortcut ----------
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -277,7 +344,7 @@ export default function Board({
       title: draft.title,
       description: draft.description,
       status_id: draft.status_id,
-      category: draft.category,
+      category_id: draft.category_id,
       blocked_reason: draft.blocked_reason,
       needs_backend: draft.needs_backend,
       deploy_notes: draft.deploy_notes,
@@ -328,9 +395,9 @@ export default function Board({
     if (error) report('更新狀態失敗', error);
   }
 
-  async function setTaskCategory(task: TaskWithProjects, cat: TaskCategory | null) {
-    setTasks((prev) => prev.map((t) => (t.id === task.id ? { ...t, category: cat } : t)));
-    const { error } = await supabase.from('tasks').update({ category: cat }).eq('id', task.id);
+  async function setTaskCategory(task: TaskWithProjects, catId: string | null) {
+    setTasks((prev) => prev.map((t) => (t.id === task.id ? { ...t, category_id: catId } : t)));
+    const { error } = await supabase.from('tasks').update({ category_id: catId }).eq('id', task.id);
     if (error) report('更新分類失敗', error);
   }
 
@@ -528,6 +595,63 @@ export default function Board({
       }
     : null;
 
+  // ---------- category management (workspace-aware) ----------
+  async function addCategory(wsId: string, name: string) {
+    const pos =
+      categories.filter((c) => c.workspace_id === wsId).reduce((m, c) => Math.max(m, c.position), -1) +
+      1;
+    const { data, error } = await supabase
+      .from('categories')
+      .insert({ owner_id: userId, workspace_id: wsId, name, position: pos })
+      .select('*')
+      .single();
+    if (error || !data) return report('新增分類失敗', error);
+    setCategories((prev) => [...prev, data as CategoryRow]);
+  }
+
+  async function updateCategory(id: string, patch: Partial<CategoryRow>) {
+    const { data, error } = await supabase
+      .from('categories')
+      .update(patch)
+      .eq('id', id)
+      .select('*')
+      .single();
+    if (error || !data) return report('更新分類失敗', error);
+    setCategories((prev) => prev.map((c) => (c.id === id ? (data as CategoryRow) : c)));
+  }
+
+  async function deleteCategory(id: string) {
+    const { error } = await supabase.from('categories').delete().eq('id', id);
+    if (error) return report('刪除分類失敗', error);
+    setCategories((prev) => prev.filter((c) => c.id !== id));
+    loadTasks(); // tasks using it become uncategorised (FK on delete set null)
+  }
+
+  async function reorderCategories(ids: string[]) {
+    setCategories((prev) =>
+      prev.map((c) => (ids.includes(c.id) ? { ...c, position: ids.indexOf(c.id) } : c))
+    );
+    const results = await Promise.all(
+      ids.map((id, i) => supabase.from('categories').update({ position: i }).eq('id', id))
+    );
+    const err = results.find((r) => r.error)?.error;
+    if (err) report('排序分類失敗', err);
+  }
+
+  const editedWsCategories = editedWs
+    ? categories
+        .filter((c) => c.workspace_id === editedWs.id)
+        .sort((a, b) => a.position - b.position)
+    : [];
+  const editCategoryHandlers: CategoryHandlers | null = editedWs
+    ? {
+        addCategory: (name) => addCategory(editedWs.id, name),
+        updateCategory,
+        deleteCategory,
+        reorderCategories,
+      }
+    : null;
+
   async function signOut() {
     await supabase.auth.signOut();
     router.push('/login');
@@ -570,6 +694,8 @@ export default function Board({
         onOpenStatusManager={() => currentWs && setEditingWs(currentWs)}
         fontPx={fontPx}
         onSetFont={changeFont}
+        theme={theme}
+        onToggleTheme={toggleTheme}
         userEmail={userEmail}
         onSignOut={signOut}
       />
@@ -637,12 +763,18 @@ export default function Board({
 
         <div className="content">
           {view === 'history' ? (
-            <DeployHistory tasks={tasks} projects={wsProjects} statuses={wsStatuses} />
+            <DeployHistory
+              tasks={tasks}
+              projects={wsProjects}
+              statuses={wsStatuses}
+              categories={wsCategories}
+            />
           ) : (
             <BoardList
               boardStatuses={boardStatuses}
               tasks={boardTasks}
               statuses={wsStatuses}
+              categories={wsCategories}
               onOpen={setEditing}
               onStatus={setTaskStatus}
               onCategory={setTaskCategory}
@@ -657,6 +789,7 @@ export default function Board({
           task={editing === 'new' ? null : editing}
           projects={wsProjects}
           statuses={wsStatuses}
+          categories={wsCategories}
           workspaces={workspaces}
           currentWorkspaceId={currentWs?.id ?? null}
           onSave={saveTask}
@@ -683,6 +816,8 @@ export default function Board({
           canDelete={workspaces.length > 1}
           statuses={editedWsStatuses}
           statusHandlers={editStatusHandlers}
+          categories={editedWsCategories}
+          categoryHandlers={editCategoryHandlers}
           onSave={(patch) =>
             editingWs === 'new'
               ? addWorkspace(patch.name, patch.color)
@@ -705,6 +840,7 @@ function BoardList({
   boardStatuses,
   tasks,
   statuses,
+  categories,
   onOpen,
   onStatus,
   onCategory,
@@ -713,9 +849,10 @@ function BoardList({
   boardStatuses: StatusRow[];
   tasks: TaskWithProjects[];
   statuses: StatusRow[];
+  categories: CategoryRow[];
   onOpen: (t: TaskWithProjects) => void;
   onStatus: (t: TaskWithProjects, id: string, r: string | null) => void;
-  onCategory: (t: TaskWithProjects, c: TaskCategory | null) => void;
+  onCategory: (t: TaskWithProjects, c: string | null) => void;
   onMove: (t: TaskWithProjects, dir: -1 | 1) => void;
 }) {
   if (boardStatuses.length === 0) {
@@ -741,6 +878,7 @@ function BoardList({
                   key={task.id}
                   task={task}
                   statuses={statuses}
+                  categories={categories}
                   canBack={i > 0}
                   canFwd={i < boardStatuses.length - 1}
                   onOpen={() => onOpen(task)}

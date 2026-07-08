@@ -3,8 +3,6 @@
 // A task has ONE status: it drives both the board column and the row icon.
 // ============================================================
 
-export type TaskCategory = 'hotfix' | 'feature' | 'wishlist';
-
 export type DeployStatus = 'pending' | 'deployed';
 
 // Icon styles a status can render as.
@@ -50,6 +48,17 @@ export interface StatusRow {
   created_at: string;
 }
 
+// A category (tag), per workspace, user-editable.
+export interface CategoryRow {
+  id: string;
+  owner_id: string;
+  workspace_id: string;
+  name: string;
+  color: string;
+  position: number;
+  created_at: string;
+}
+
 export interface TaskProject {
   task_id: string;
   project_id: string;
@@ -65,7 +74,7 @@ export interface Task {
   title: string;
   description: string;
   status_id: string | null;
-  category: TaskCategory | null;
+  category_id: string | null;
   blocked_reason: string | null; // shown when the status style is `cross`
   needs_backend: boolean;
   deploy_notes: string;
@@ -78,18 +87,13 @@ export interface TaskWithProjects extends Task {
   links: Array<TaskProject & { project: Project }>;
 }
 
-// ---------- category (fixed set) ----------
-
-export const CATEGORY_META: Record<
-  TaskCategory,
-  { label: string; color: string }
-> = {
-  hotfix: { label: 'hotfix', color: '#EB5757' },
-  feature: { label: 'feature', color: '#4CB782' },
-  wishlist: { label: 'wishlist', color: '#5E6AD2' },
-};
-
 // ---------- seed defaults (used when a user has none yet) ----------
+
+export const DEFAULT_CATEGORIES: Array<Pick<CategoryRow, 'name' | 'color'>> = [
+  { name: 'hotfix', color: '#EB5757' },
+  { name: 'feature', color: '#4CB782' },
+  { name: 'wishlist', color: '#5E6AD2' },
+];
 
 export const DEFAULT_STATUSES: Array<
   Pick<StatusRow, 'name' | 'color' | 'style' | 'is_default' | 'is_deploy' | 'is_archive'>

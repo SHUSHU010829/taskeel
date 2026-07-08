@@ -7,7 +7,6 @@
 -- ============================================================
 
 -- ---------- ENUMS ----------
-create type task_category as enum ('hotfix', 'feature', 'wishlist');
 create type deploy_status as enum ('pending', 'deployed');
 
 -- ---------- WORKSPACES ----------
@@ -47,6 +46,18 @@ create table task_statuses (
 create unique index task_statuses_ws_one_default on task_statuses (workspace_id) where is_default;
 create unique index task_statuses_ws_one_archive on task_statuses (workspace_id) where is_archive;
 
+-- ---------- CATEGORIES (分類，每 workspace 一組，可自訂) ----------
+create table categories (
+  id           uuid primary key default gen_random_uuid(),
+  owner_id     uuid not null references auth.users(id) on delete cascade,
+  workspace_id uuid not null references workspaces(id) on delete cascade,
+  name         text not null,
+  color        text not null default '#5E6AD2',
+  position     int  not null default 0,
+  created_at   timestamptz not null default now()
+);
+create index on categories (workspace_id, position);
+
 -- ---------- TASKS ----------
 create table tasks (
   id             uuid primary key default gen_random_uuid(),
@@ -55,7 +66,7 @@ create table tasks (
   title          text not null,
   description    text not null default '',
   status_id      uuid references task_statuses(id) on delete set null,
-  category       task_category,
+  category_id    uuid references categories(id) on delete set null,
   blocked_reason text,                     -- 僅當狀態圖示為 cross 時有意義
   needs_backend  boolean not null default false,
   deploy_notes   text not null default '',
@@ -95,6 +106,7 @@ create index on task_statuses (workspace_id, position);
 alter table workspaces    enable row level security;
 alter table projects      enable row level security;
 alter table task_statuses enable row level security;
+alter table categories    enable row level security;
 alter table tasks         enable row level security;
 alter table task_projects enable row level security;
 
@@ -109,6 +121,9 @@ create policy "own projects" on projects
   );
 
 create policy "own task_statuses" on task_statuses
+  for all using (owner_id = auth.uid()) with check (owner_id = auth.uid());
+
+create policy "own categories" on categories
   for all using (owner_id = auth.uid()) with check (owner_id = auth.uid());
 
 create policy "own tasks" on tasks
@@ -128,7 +143,7 @@ create policy "own task_projects" on task_projects
 grant usage on schema public to anon, authenticated;
 
 grant select, insert, update, delete on
-  public.workspaces, public.projects, public.task_statuses,
+  public.workspaces, public.projects, public.task_statuses, public.categories,
   public.tasks, public.task_projects
   to authenticated;
 
@@ -138,6 +153,7 @@ grant select, insert, update, delete on
 alter publication supabase_realtime add table tasks;
 alter publication supabase_realtime add table task_projects;
 alter publication supabase_realtime add table task_statuses;
+alter publication supabase_realtime add table categories;
 
 -- ============================================================
 -- 分批部署歸檔函式 (給 deploy-hook 呼叫)

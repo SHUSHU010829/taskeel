@@ -1,7 +1,7 @@
 'use client';
 
 import { ArrowLeft, ArrowRight, Check, GitBranch } from 'lucide-react';
-import type { StatusRow, TaskCategory, TaskWithProjects } from '@/lib/types';
+import type { CategoryRow, StatusRow, TaskWithProjects } from '@/lib/types';
 import StatusControl from './StatusControl';
 import CategoryControl from './CategoryControl';
 
@@ -9,6 +9,7 @@ import CategoryControl from './CategoryControl';
 export default function TaskRow({
   task,
   statuses,
+  categories,
   canBack,
   canFwd,
   onOpen,
@@ -18,11 +19,12 @@ export default function TaskRow({
 }: {
   task: TaskWithProjects;
   statuses: StatusRow[];
+  categories: CategoryRow[];
   canBack: boolean;
   canFwd: boolean;
   onOpen: () => void;
   onStatus: (nextId: string, reason: string | null) => void;
-  onCategory: (next: TaskCategory | null) => void;
+  onCategory: (next: string | null) => void;
   onMove: (dir: -1 | 1) => void;
 }) {
   return (
@@ -34,7 +36,7 @@ export default function TaskRow({
         onChange={onStatus}
       />
 
-      <CategoryControl value={task.category} onChange={onCategory} />
+      <CategoryControl categories={categories} value={task.category_id} onChange={onCategory} />
 
       <span className="task-title" onClick={onOpen}>
         {task.title}

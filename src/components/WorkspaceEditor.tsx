@@ -1,11 +1,12 @@
 'use client';
 
 import { useState } from 'react';
-import type { StatusRow, Workspace } from '@/lib/types';
+import type { CategoryRow, StatusRow, Workspace } from '@/lib/types';
 import { STATUS_COLORS } from '@/lib/types';
 import { enterSubmit } from '@/lib/useEnterSubmit';
 import ConfirmDialog from './ConfirmDialog';
 import StatusList, { type StatusManagerHandlers } from './StatusList';
+import CategoryList, { type CategoryHandlers } from './CategoryList';
 
 // Add / edit a workspace: name, colour, and (for existing workspaces) its
 // statuses. `workspace` null = new.
@@ -14,6 +15,8 @@ export default function WorkspaceEditor({
   canDelete,
   statuses,
   statusHandlers,
+  categories,
+  categoryHandlers,
   onSave,
   onDelete,
   onClose,
@@ -22,6 +25,8 @@ export default function WorkspaceEditor({
   canDelete: boolean;
   statuses: StatusRow[];
   statusHandlers: StatusManagerHandlers | null;
+  categories: CategoryRow[];
+  categoryHandlers: CategoryHandlers | null;
   onSave: (patch: { name: string; color: string }) => void;
   onDelete?: () => void;
   onClose: () => void;
@@ -77,6 +82,13 @@ export default function WorkspaceEditor({
           <div className="field">
             <div className="field-label">狀態（此工作區）</div>
             <StatusList statuses={statuses} handlers={statusHandlers} />
+          </div>
+        )}
+
+        {workspace && categoryHandlers && (
+          <div className="field">
+            <div className="field-label">分類（此工作區）</div>
+            <CategoryList categories={categories} handlers={categoryHandlers} />
           </div>
         )}
 

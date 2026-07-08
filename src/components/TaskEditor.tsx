@@ -3,10 +3,9 @@
 import { useState } from 'react';
 import { ChevronDown, ChevronUp, GitBranch } from 'lucide-react';
 import {
-  CATEGORY_META,
+  type CategoryRow,
   type Project,
   type StatusRow,
-  type TaskCategory,
   type TaskWithProjects,
   type Workspace,
 } from '@/lib/types';
@@ -17,7 +16,7 @@ export interface TaskDraft {
   title: string;
   description: string;
   status_id: string | null;
-  category: TaskCategory | null;
+  category_id: string | null;
   blocked_reason: string | null;
   needs_backend: boolean;
   deploy_notes: string;
@@ -29,6 +28,7 @@ export default function TaskEditor({
   task,
   projects,
   statuses,
+  categories,
   workspaces,
   currentWorkspaceId,
   onSave,
@@ -39,6 +39,7 @@ export default function TaskEditor({
   task: TaskWithProjects | null;
   projects: Project[];
   statuses: StatusRow[];
+  categories: CategoryRow[];
   workspaces: Workspace[];
   currentWorkspaceId: string | null;
   onSave: (draft: TaskDraft) => void;
@@ -53,7 +54,7 @@ export default function TaskEditor({
   const [statusId, setStatusId] = useState<string | null>(
     task?.status_id ?? defaultStatus?.id ?? null
   );
-  const [category, setCategory] = useState<TaskCategory | null>(task?.category ?? null);
+  const [categoryId, setCategoryId] = useState<string | null>(task?.category_id ?? null);
   const [blockedReason, setBlockedReason] = useState(task?.blocked_reason ?? '');
   const [needsBackend, setNeedsBackend] = useState(task?.needs_backend ?? false);
   const [deployNotes, setDeployNotes] = useState(task?.deploy_notes ?? '');
@@ -70,6 +71,7 @@ export default function TaskEditor({
 
   const selected = statuses.find((s) => s.id === statusId);
   const isBlocked = selected?.style === 'cross';
+  const selectedCategory = categories.find((c) => c.id === categoryId);
   const selectedProjects = projects.filter((p) => p.id in branches);
 
   function toggleProject(id: string) {
@@ -87,7 +89,7 @@ export default function TaskEditor({
       title: title.trim(),
       description,
       status_id: statusId,
-      category,
+      category_id: categoryId,
       blocked_reason: isBlocked ? blockedReason || null : null,
       needs_backend: needsBackend,
       deploy_notes: deployNotes,
@@ -142,13 +144,13 @@ export default function TaskEditor({
                   {selected.name}
                 </span>
               )}
-              {category && (
+              {selectedCategory && (
                 <span className="summary-chip">
                   <span
                     className="dot"
-                    style={{ background: CATEGORY_META[category].color, width: 6, height: 6 }}
+                    style={{ background: selectedCategory.color, width: 6, height: 6 }}
                   />
-                  {CATEGORY_META[category].label}
+                  {selectedCategory.name}
                 </span>
               )}
               {selectedProjects.map((p) => (
@@ -220,16 +222,21 @@ export default function TaskEditor({
         <div className="field">
           <div className="field-label">分類</div>
           <div className="option-row">
-            {(Object.keys(CATEGORY_META) as TaskCategory[]).map((c) => (
+            {categories.map((c) => (
               <button
-                key={c}
-                className={`option${category === c ? ' selected' : ''}`}
-                onClick={() => setCategory(category === c ? null : c)}
+                key={c.id}
+                className={`option${categoryId === c.id ? ' selected' : ''}`}
+                onClick={() => setCategoryId(categoryId === c.id ? null : c.id)}
               >
-                <span className="cat-dot" style={{ background: CATEGORY_META[c].color }} />
-                {CATEGORY_META[c].label}
+                <span className="cat-dot" style={{ background: c.color }} />
+                {c.name}
               </button>
             ))}
+            {categories.length === 0 && (
+              <span style={{ color: 'var(--text-faint)', fontSize: '0.8rem' }}>
+                尚無分類，可到工作區設定新增。
+              </span>
+            )}
           </div>
         </div>
 

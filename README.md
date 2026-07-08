@@ -24,10 +24,14 @@ SQL Editor. It creates the tables, enums, RLS policies, the realtime
 publication, and the `archive_branch(repo, branch, owner)` function.
 
 **Upgrading an existing project?** Run the migrations in
-[`supabase/migrations/`](supabase/migrations) in order, once each:
-`0001_custom_statuses.sql` (enums → editable status/dev-state tables) then
-`0002_merge_status.sql` (merge into a single status with an icon; drops the
-dev-state table). Fresh installs just run `schema.sql`.
+[`supabase/migrations/`](supabase/migrations) in order, once each: `0001`
+(enums → editable status/dev-state tables), `0002` (merge into a single status
+with an icon), `0003` (statuses per workspace), `0004` (categories per
+workspace, editable). Fresh installs just run `schema.sql`.
+
+Statuses and categories are per-workspace and edited in the workspace settings
+(sidebar **工作區設定** or the switcher pencil). Light/dark theme, font size, and
+a pinned landing workspace are in the account menu.
 
 Enable an auth provider — **magic link (email OTP)** is what the login page uses.
 
