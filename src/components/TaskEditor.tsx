@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { GitBranch, Settings2, X } from 'lucide-react';
+import { GitBranch, Settings2 } from 'lucide-react';
 import {
   type CategoryRow,
   type Project,
@@ -155,22 +155,8 @@ export default function TaskEditor({
         </div>
 
         <div className="editor-body">
-          <MarkdownEditor
-            value={description}
-            onChange={setDescription}
-            startInEdit={task === null}
-          />
-
-          {showSettings && (
-            <div className="settings-panel">
-              <div className="settings-panel-head">
-                <span className="modal-heading" style={{ fontSize: '1rem' }}>設定</span>
-                <div className="spacer" />
-                <button className="icon-btn" onClick={() => setShowSettings(false)}>
-                  <X size={16} />
-                </button>
-              </div>
-              <div className="settings-panel-body">
+          {showSettings ? (
+            <div className="settings-inline">
                 {/* workspace (move) — existing tasks only */}
                 {task && workspaces.length > 1 && (
                   <div className="field" style={{ marginTop: 0 }}>
@@ -303,8 +289,13 @@ export default function TaskEditor({
                     onChange={(e) => setDeployNotes(e.target.value)}
                   />
                 </div>
-              </div>
             </div>
+          ) : (
+            <MarkdownEditor
+              value={description}
+              onChange={setDescription}
+              startInEdit={task === null}
+            />
           )}
         </div>
 

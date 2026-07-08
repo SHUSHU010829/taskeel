@@ -1070,29 +1070,12 @@ a {
   flex-direction: column;
 }
 
-.settings-panel {
-  position: absolute;
-  inset: 0;
-  z-index: 3;
-  background: var(--bg-elevated);
-  display: flex;
-  flex-direction: column;
-  box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.35);
-}
-
-.settings-panel-head {
-  display: flex;
-  align-items: center;
-  padding-bottom: 8px;
-  border-bottom: 1px solid var(--border);
-  margin-bottom: 8px;
-  flex-shrink: 0;
-}
-
-.settings-panel-body {
+/* settings shown in-place in the description region (not an overlay) */
+.settings-inline {
   flex: 1;
   min-height: 0;
   overflow-y: auto;
+  padding-right: 2px;
 }
 
 .settings-toggle {
