@@ -3,6 +3,26 @@
 import { useEffect, useRef, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import remarkBreaks from 'remark-breaks';
+
+// Casual multi-line notes: keep a standalone `---`/`***`/`___` line as a
+// divider (horizontal rule) instead of letting it turn the preceding block into
+// a big setext heading. Insert a blank line before it when it follows content.
+function normalizeMarkdown(md: string) {
+  const lines = md.split('\n');
+  const out: string[] = [];
+  for (const line of lines) {
+    if (
+      /^\s*(-{3,}|\*{3,}|_{3,})\s*$/.test(line) &&
+      out.length > 0 &&
+      out[out.length - 1].trim() !== ''
+    ) {
+      out.push('');
+    }
+    out.push(line);
+  }
+  return out.join('\n');
+}
 import {
   Bold,
   Code,
@@ -112,7 +132,9 @@ export default function MarkdownEditor({
         />
       ) : value.trim() ? (
         <div className="modal-desc md" onClick={() => setMode('edit')}>
-          <ReactMarkdown remarkPlugins={[remarkGfm]}>{value}</ReactMarkdown>
+          <ReactMarkdown remarkPlugins={[remarkGfm, remarkBreaks]}>
+            {normalizeMarkdown(value)}
+          </ReactMarkdown>
         </div>
       ) : (
         <div
