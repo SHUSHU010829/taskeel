@@ -1130,6 +1130,7 @@ a {
   min-height: 0;
   overflow-y: auto;
   padding-right: 2px;
+  padding-bottom: 16px;
 }
 
 .settings-toggle {

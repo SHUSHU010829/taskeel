@@ -367,7 +367,7 @@ export default function TaskEditor({
                 {/* backend toggle */}
                 <div className="field">
                   <div className="toggle-row">
-                    <span>這任務後端也需要部署</span>
+                    <span>需後端部署</span>
                     <button
                       type="button"
                       className={`toggle${needsBackend ? ' on' : ''}`}
