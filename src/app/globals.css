@@ -730,6 +730,25 @@ a {
   padding: 5px 10px;
 }
 
+/* compact subtask marker on a board row */
+.parent-mark {
+  width: 22px;
+  height: 22px;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-faint);
+}
+
+.parent-mark:hover {
+  background: var(--bg-active);
+  color: var(--text);
+}
+
 .subtask-item {
   display: flex;
   align-items: center;

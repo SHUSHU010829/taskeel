@@ -48,15 +48,14 @@ export default function TaskRow({
 
       {parentLabel && (
         <button
-          className="parent-chip"
+          className="parent-mark"
           title={`母任務：${parentLabel}`}
           onClick={(e) => {
             e.stopPropagation();
             onOpenParent?.();
           }}
         >
-          <CornerDownRight size={11} />
-          {parentLabel}
+          <CornerDownRight size={13} />
         </button>
       )}
 
