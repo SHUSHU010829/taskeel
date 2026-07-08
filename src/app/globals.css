@@ -241,6 +241,7 @@ a {
   left: calc(100% + 8px);
   right: auto;
   width: 210px;
+  z-index: 60;
 }
 
 .sidebar.rail .acct-menu {
@@ -248,6 +249,7 @@ a {
   right: auto;
   bottom: 0;
   width: 210px;
+  z-index: 60;
 }
 
 /* let icons inside text chips sit on the row */
