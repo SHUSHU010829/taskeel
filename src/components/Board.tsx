@@ -796,21 +796,6 @@ export default function Board({
     router.push('/login');
   }
 
-  // Change the account's login email. The user id is unchanged, so all data
-  // stays; Supabase emails a confirmation link (and, with secure email change,
-  // also the old address) that must be clicked to take effect.
-  async function changeEmail(newEmail: string): Promise<{ ok: boolean; message: string }> {
-    const { error } = await supabase.auth.updateUser(
-      { email: newEmail },
-      { emailRedirectTo: `${window.location.origin}/auth/callback` }
-    );
-    if (error) return { ok: false, message: error.message };
-    return {
-      ok: true,
-      message: `確認信已寄到 ${newEmail}（可能也需到舊信箱確認），點連結後即完成更換。`,
-    };
-  }
-
   // ---------- derived ----------
   // A task with subtasks is hidden — its subtasks stand in for it.
   const parentIds = new Set(
@@ -894,7 +879,6 @@ export default function Board({
         theme={theme}
         onToggleTheme={toggleTheme}
         userEmail={userEmail}
-        onChangeEmail={changeEmail}
         onSignOut={signOut}
       />
 
