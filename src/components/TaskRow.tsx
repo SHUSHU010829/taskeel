@@ -1,34 +1,39 @@
 'use client';
 
-import { ArrowLeft, ArrowRight, Check, GitBranch } from 'lucide-react';
+import { Check, GitBranch } from 'lucide-react';
 import type { CategoryRow, StatusRow, TaskWithProjects } from '@/lib/types';
 import StatusControl from './StatusControl';
 import CategoryControl from './CategoryControl';
 
-// One task row in the grouped board list.
+// One task row in the grouped board list. Draggable between status columns.
 export default function TaskRow({
   task,
   statuses,
   categories,
-  canBack,
-  canFwd,
+  dragging,
   onOpen,
   onStatus,
   onCategory,
-  onMove,
+  onDragStart,
+  onDragEnd,
 }: {
   task: TaskWithProjects;
   statuses: StatusRow[];
   categories: CategoryRow[];
-  canBack: boolean;
-  canFwd: boolean;
+  dragging: boolean;
   onOpen: () => void;
   onStatus: (nextId: string, reason: string | null) => void;
   onCategory: (next: string | null) => void;
-  onMove: (dir: -1 | 1) => void;
+  onDragStart: () => void;
+  onDragEnd: () => void;
 }) {
   return (
-    <div className="task-row">
+    <div
+      className={`task-row${dragging ? ' dragging' : ''}`}
+      draggable
+      onDragStart={onDragStart}
+      onDragEnd={onDragEnd}
+    >
       <StatusControl
         statuses={statuses}
         valueId={task.status_id}
@@ -68,15 +73,6 @@ export default function TaskRow({
             {link.deploy_status === 'deployed' && <Check size={12} />}
           </span>
         ))}
-      </div>
-
-      <div className="move-btns">
-        <button className="move-btn" disabled={!canBack} title="上一階段" onClick={() => onMove(-1)}>
-          <ArrowLeft size={15} />
-        </button>
-        <button className="move-btn" disabled={!canFwd} title="下一階段" onClick={() => onMove(1)}>
-          <ArrowRight size={15} />
-        </button>
       </div>
     </div>
   );

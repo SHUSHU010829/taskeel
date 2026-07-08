@@ -11,6 +11,7 @@ import {
 } from '@/lib/types';
 import StatusDot from './StatusDot';
 import ConfirmDialog from './ConfirmDialog';
+import MarkdownEditor from './MarkdownEditor';
 
 export interface TaskDraft {
   title: string;
@@ -113,11 +114,10 @@ export default function TaskEditor({
             if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) save();
           }}
         />
-        <textarea
-          className="modal-desc"
-          placeholder="加點說明…"
+        <MarkdownEditor
           value={description}
-          onChange={(e) => setDescription(e.target.value)}
+          onChange={setDescription}
+          startInEdit={task === null}
         />
 
         {/* settings toggle + compact summary when collapsed */}

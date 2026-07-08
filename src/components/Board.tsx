@@ -401,16 +401,6 @@ export default function Board({
     if (error) report('更新分類失敗', error);
   }
 
-  async function moveStatus(task: TaskWithProjects, dir: -1 | 1) {
-    const idx = boardStatuses.findIndex((s) => s.id === task.status_id);
-    if (idx < 0) return;
-    const next = boardStatuses[idx + dir];
-    if (!next) return;
-    setTasks((prev) => prev.map((t) => (t.id === task.id ? { ...t, status_id: next.id } : t)));
-    const { error } = await supabase.from('tasks').update({ status_id: next.id }).eq('id', task.id);
-    if (error) report('移動狀態失敗', error);
-  }
-
   // Move a task to another workspace: projects are workspace-scoped, so its
   // project/branch links are cleared and it gets the target's default status.
   async function moveTaskWorkspace(task: TaskWithProjects, wsId: string) {
@@ -778,7 +768,7 @@ export default function Board({
               onOpen={setEditing}
               onStatus={setTaskStatus}
               onCategory={setTaskCategory}
-              onMove={moveStatus}
+              onMoveToStatus={(t, statusId) => setTaskStatus(t, statusId, t.blocked_reason)}
             />
           )}
         </div>
@@ -835,7 +825,7 @@ export default function Board({
   );
 }
 
-// Grouped-by-status list.
+// Grouped-by-status list. Drag a task onto another status group to move it.
 function BoardList({
   boardStatuses,
   tasks,
@@ -844,7 +834,7 @@ function BoardList({
   onOpen,
   onStatus,
   onCategory,
-  onMove,
+  onMoveToStatus,
 }: {
   boardStatuses: StatusRow[];
   tasks: TaskWithProjects[];
@@ -853,18 +843,39 @@ function BoardList({
   onOpen: (t: TaskWithProjects) => void;
   onStatus: (t: TaskWithProjects, id: string, r: string | null) => void;
   onCategory: (t: TaskWithProjects, c: string | null) => void;
-  onMove: (t: TaskWithProjects, dir: -1 | 1) => void;
+  onMoveToStatus: (t: TaskWithProjects, statusId: string) => void;
 }) {
+  const [dragId, setDragId] = useState<string | null>(null);
+  const [overStatus, setOverStatus] = useState<string | null>(null);
+
   if (boardStatuses.length === 0) {
-    return <div className="empty">還沒有狀態。到左側「狀態設定」新增。</div>;
+    return <div className="empty">還沒有狀態。到左側「工作區設定」新增。</div>;
+  }
+
+  function drop(statusId: string) {
+    const t = tasks.find((x) => x.id === dragId);
+    setDragId(null);
+    setOverStatus(null);
+    if (t && t.status_id !== statusId) onMoveToStatus(t, statusId);
   }
 
   return (
     <>
-      {boardStatuses.map((status, i) => {
+      {boardStatuses.map((status) => {
         const items = tasks.filter((t) => t.status_id === status.id);
         return (
-          <div className="group" key={status.id}>
+          <div
+            className={`group${overStatus === status.id && dragId ? ' drop-target' : ''}`}
+            key={status.id}
+            onDragOver={(e) => {
+              if (dragId) {
+                e.preventDefault();
+                setOverStatus(status.id);
+              }
+            }}
+            onDragLeave={() => setOverStatus((o) => (o === status.id ? null : o))}
+            onDrop={() => drop(status.id)}
+          >
             <div className="group-header">
               <span className="group-square" style={{ background: status.color }} />
               <span className="group-title">{status.name}</span>
@@ -879,12 +890,15 @@ function BoardList({
                   task={task}
                   statuses={statuses}
                   categories={categories}
-                  canBack={i > 0}
-                  canFwd={i < boardStatuses.length - 1}
+                  dragging={dragId === task.id}
                   onOpen={() => onOpen(task)}
                   onStatus={(id, r) => onStatus(task, id, r)}
                   onCategory={(c) => onCategory(task, c)}
-                  onMove={(dir) => onMove(task, dir)}
+                  onDragStart={() => setDragId(task.id)}
+                  onDragEnd={() => {
+                    setDragId(null);
+                    setOverStatus(null);
+                  }}
                 />
               ))
             )}
