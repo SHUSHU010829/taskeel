@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Menu, Plus, X, TriangleAlert } from 'lucide-react';
+import { Menu, Plus, Search, X, TriangleAlert } from 'lucide-react';
 import {
   DndContext,
   DragOverlay,
@@ -34,6 +34,7 @@ import { type StatusManagerHandlers } from './StatusList';
 import { type CategoryHandlers } from './CategoryList';
 import DeploySheet from './DeploySheet';
 import DeployHistory from './DeployHistory';
+import CommandPalette from './CommandPalette';
 
 const TASK_SELECT = '*, task_projects(*, project:projects(*))';
 
@@ -107,6 +108,7 @@ export default function Board({
   const [deployOpen, setDeployOpen] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
+  const [paletteOpen, setPaletteOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [capture, setCapture] = useState('');
   const [fontPx, setFontPx] = useState(15);
@@ -374,12 +376,21 @@ export default function Board({
   // ---------- quick capture 'c' shortcut ----------
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
+      // ⌘K / Ctrl+K opens search from anywhere (even while typing)
+      if ((e.metaKey || e.ctrlKey) && (e.key === 'k' || e.key === 'K')) {
+        e.preventDefault();
+        setPaletteOpen(true);
+        return;
+      }
       const tag = (e.target as HTMLElement)?.tagName;
       if (tag === 'INPUT' || tag === 'TEXTAREA' || (e.target as HTMLElement)?.isContentEditable)
         return;
       if (e.key === 'c') {
         e.preventDefault();
         captureRef.current?.focus();
+      } else if (e.key === '/') {
+        e.preventDefault();
+        setPaletteOpen(true);
       }
     }
     window.addEventListener('keydown', onKey);
@@ -1004,6 +1015,11 @@ export default function Board({
             </button>
           )}
           <div className="spacer" />
+          <button className="btn topbar-search" title="搜尋（⌘K）" onClick={() => setPaletteOpen(true)}>
+            <Search size={14} />
+            <span className="topbar-search-label">搜尋</span>
+            <span className="kbd">⌘K</span>
+          </button>
           {view === 'board' && (
             <>
               <button className="btn" onClick={() => setDeployOpen(true)}>
@@ -1124,6 +1140,23 @@ export default function Board({
           onClose={() => setDeployOpen(false)}
         />
       )}
+
+      <CommandPalette
+        open={paletteOpen}
+        tasks={tasks}
+        statuses={wsStatuses}
+        categories={wsCategories}
+        parentTitleById={titleById}
+        onOpenTask={(t) => {
+          setPaletteOpen(false);
+          setEditing(t);
+        }}
+        onNewTask={(t) => {
+          setPaletteOpen(false);
+          quickCapture(t);
+        }}
+        onClose={() => setPaletteOpen(false)}
+      />
     </div>
   );
 }

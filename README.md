@@ -7,7 +7,9 @@ Linear (deep-grey base, hairline borders, restrained purple accent).
 
 ## What it does
 
-- **Quick capture** — type a line, press Enter, it lands in the workspace inbox. Press `c` anywhere to focus the capture box.
+- **Quick capture** — type a line, press Enter, it lands in the workspace inbox. Press `c` anywhere to focus the capture box. Inline tokens file it in one line: `#分類 @專案 !p1` (priority `!p0`–`!p3`).
+- **Search / command palette** — `⌘K` (or `/`) opens a fuzzy search over the workspace's tasks; Enter jumps to one, or create a task from the typed text.
+- **Priority & due dates** — tasks carry a priority (無/低/中/高/緊急) and an optional due date; rows show a flag and a due chip (soon/overdue coloured) and columns sort by priority → due → recency.
 - **Per-project branches** — one task can span multiple projects, each with its own repo and git branch.
 - **Batched deploy → archive** — CI pings a webhook when a branch ships; that `(project, branch)` is marked deployed. A task is archived only once *all* its projects have deployed.
 - **Deploy bundles** — tie tasks that must ship in the same release together (task editor → 設定 → 部署綁定). When one comes up in the deploy sheet, its bound siblings are listed as a "需一併部署" reminder.
@@ -29,7 +31,8 @@ publication, and the `archive_branch(repo, branch, owner)` function.
 (enums → editable status/dev-state tables), `0002` (merge into a single status
 with an icon), `0003` (statuses per workspace), `0004` (categories per
 workspace, editable), `0005` (subtasks / parent_id), `0006` (workspace icon),
-`0007` (deploy bundles / bundle_id). Fresh installs just run `schema.sql`.
+`0007` (deploy bundles / bundle_id), `0008` (priority + due_date). Fresh
+installs just run `schema.sql`.
 
 Statuses and categories are per-workspace and edited in the workspace settings
 (sidebar **工作區設定** or the switcher pencil). Light/dark theme, font size, and
