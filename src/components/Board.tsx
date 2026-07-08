@@ -57,7 +57,8 @@ function mapTaskRows(data: unknown[]): TaskWithProjects[] {
 
 export default function Board({
   userId,
-  userEmail,
+  userName,
+  userAvatar,
   initialWorkspaces,
   initialProjects,
   initialStatuses,
@@ -66,7 +67,8 @@ export default function Board({
   initialTasksWorkspaceId,
 }: {
   userId: string;
-  userEmail: string;
+  userName: string;
+  userAvatar: string;
   initialWorkspaces: Workspace[];
   initialProjects: Project[];
   initialStatuses: StatusRow[];
@@ -878,7 +880,8 @@ export default function Board({
         onSetFont={changeFont}
         theme={theme}
         onToggleTheme={toggleTheme}
-        userEmail={userEmail}
+        userName={userName}
+        userAvatar={userAvatar}
         onSignOut={signOut}
       />
 

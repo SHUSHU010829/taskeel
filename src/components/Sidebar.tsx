@@ -56,7 +56,8 @@ export default function Sidebar({
   onSetFont,
   theme,
   onToggleTheme,
-  userEmail,
+  userName,
+  userAvatar,
   onSignOut,
 }: {
   open: boolean;
@@ -83,7 +84,8 @@ export default function Sidebar({
   onSetFont: (px: number) => void;
   theme: 'dark' | 'light';
   onToggleTheme: () => void;
-  userEmail: string;
+  userName: string;
+  userAvatar: string;
   onSignOut: () => void;
 }) {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -359,16 +361,23 @@ export default function Sidebar({
           <div className="acct" ref={acctRef}>
             <button
               className={rail ? 'acct-rail' : 'acct-button'}
-              title={rail ? userEmail : undefined}
+              title={rail ? userName : undefined}
               onClick={() => setAcctOpen((o) => !o)}
             >
               <span className="acct-avatar">
-                {userEmail ? userEmail[0].toUpperCase() : '·'}
+                {userAvatar ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={userAvatar} alt="" className="acct-avatar-img" />
+                ) : userName ? (
+                  userName[0].toUpperCase()
+                ) : (
+                  '·'
+                )}
               </span>
               {!rail && (
                 <>
-                  <span className="acct-email" title={userEmail}>
-                    {userEmail}
+                  <span className="acct-email" title={userName}>
+                    {userName}
                   </span>
                   <Settings size={15} style={{ color: 'var(--text-faint)' }} />
                 </>

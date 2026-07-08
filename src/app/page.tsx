@@ -35,10 +35,16 @@ export default async function HomePage() {
     initialTasks = tasks ?? [];
   }
 
+  const meta = (user.user_metadata ?? {}) as Record<string, string | undefined>;
+  const userName =
+    meta.full_name || meta.name || meta.user_name || user.email || '使用者';
+  const userAvatar = meta.avatar_url || meta.picture || '';
+
   return (
     <Board
       userId={user.id}
-      userEmail={user.email ?? ''}
+      userName={userName}
+      userAvatar={userAvatar}
       initialWorkspaces={(workspaces ?? []) as Workspace[]}
       initialProjects={(projects ?? []) as Project[]}
       initialStatuses={(statuses ?? []) as StatusRow[]}
