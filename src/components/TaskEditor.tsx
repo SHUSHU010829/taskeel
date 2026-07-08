@@ -182,7 +182,15 @@ export default function TaskEditor({
 
                 {/* subtasks — top-level saved tasks only */}
                 {canHaveSubtasks && (
-                  <div className="field" style={parentTask ? {} : { marginTop: 0 }}>
+                  <div
+                    className="field"
+                    style={{
+                      marginTop: parentTask ? undefined : 0,
+                      paddingBottom: 16,
+                      marginBottom: 4,
+                      borderBottom: '1px solid var(--border)',
+                    }}
+                  >
                     <div className="field-label">
                       子任務{subtasks.length > 0 ? `（${subtasks.length}）` : ''}
                     </div>
@@ -345,18 +353,7 @@ export default function TaskEditor({
                     ))}
                 </div>
 
-                {/* backend + deploy notes */}
-                <div className="field">
-                  <label className="checkbox-row">
-                    <input
-                      type="checkbox"
-                      checked={needsBackend}
-                      onChange={(e) => setNeedsBackend(e.target.checked)}
-                    />
-                    通知後端也需加入代辦
-                  </label>
-                </div>
-
+                {/* deploy notes */}
                 <div className="field">
                   <div className="field-label">部署提醒</div>
                   <textarea
@@ -365,6 +362,22 @@ export default function TaskEditor({
                     value={deployNotes}
                     onChange={(e) => setDeployNotes(e.target.value)}
                   />
+                </div>
+
+                {/* backend toggle */}
+                <div className="field">
+                  <div className="toggle-row">
+                    <span>這任務後端也需要部署</span>
+                    <button
+                      type="button"
+                      className={`toggle${needsBackend ? ' on' : ''}`}
+                      role="switch"
+                      aria-checked={needsBackend}
+                      onClick={() => setNeedsBackend((v) => !v)}
+                    >
+                      <span className="toggle-knob" />
+                    </button>
+                  </div>
                 </div>
             </div>
           ) : (
