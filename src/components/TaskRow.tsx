@@ -1,10 +1,12 @@
 'use client';
 
 import { useDraggable } from '@dnd-kit/core';
-import { Check, CornerDownRight, GitBranch } from 'lucide-react';
+import { CalendarClock, Check, CornerDownRight, GitBranch } from 'lucide-react';
 import type { CategoryRow, StatusRow, TaskWithProjects } from '@/lib/types';
+import { dueMeta } from '@/lib/date';
 import StatusControl from './StatusControl';
 import CategoryControl from './CategoryControl';
+import PriorityFlag from './PriorityFlag';
 
 // One task row in the grouped board list. Draggable (dnd-kit) between columns.
 export default function TaskRow({
@@ -29,6 +31,7 @@ export default function TaskRow({
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id: task.id,
   });
+  const due = dueMeta(task.due_date);
 
   return (
     <div
@@ -59,11 +62,18 @@ export default function TaskRow({
         </button>
       )}
 
+      <PriorityFlag priority={task.priority} />
+
       <span className="task-title" onClick={onOpen}>
         {task.title}
       </span>
 
       <div className="task-meta">
+        {due && (
+          <span className={`due-chip${due.overdue ? ' overdue' : due.soon ? ' soon' : ''}`} title={due.full}>
+            <CalendarClock size={11} /> {due.label}
+          </span>
+        )}
         {task.needs_backend && <span className="badge-backend">後端</span>}
 
         {task.links.map((link) => (

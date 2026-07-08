@@ -79,6 +79,8 @@ export interface Task {
   parent_id: string | null; // set on subtasks (points at the parent task)
   bundle_id: string | null; // deploy bundle — tasks sharing it ship together
   blocked_reason: string | null; // shown when the status style is `cross`
+  priority: number; // 0 none, 1 low, 2 medium, 3 high, 4 urgent
+  due_date: string | null; // ISO date (yyyy-mm-dd), optional
   needs_backend: boolean;
   deploy_notes: string;
   created_at: string;
@@ -126,6 +128,15 @@ export const STATUS_COLORS = [
   '#F2688E', // pink
   '#B57EDC', // purple
   '#9B59B6', // magenta
+];
+
+// Task priority levels (higher value = more urgent). 0 = none (no flag shown).
+export const PRIORITIES: { value: number; label: string; short: string; color: string }[] = [
+  { value: 0, label: '無', short: '—', color: '#6B7280' },
+  { value: 1, label: '低', short: 'P3', color: '#8A8F98' },
+  { value: 2, label: '中', short: 'P2', color: '#4C8DF5' },
+  { value: 3, label: '高', short: 'P1', color: '#E5A00D' },
+  { value: 4, label: '緊急', short: 'P0', color: '#EB5757' },
 ];
 
 export const STATUS_STYLES: { value: StatusStyle; label: string }[] = [

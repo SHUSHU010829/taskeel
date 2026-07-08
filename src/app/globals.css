@@ -1058,6 +1058,28 @@ a {
   color: #e2b33e;
 }
 
+.due-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 2px 7px;
+  border-radius: 4px;
+  font-size: 0.72rem;
+  background: var(--bg-active);
+  color: var(--text-dim);
+  white-space: nowrap;
+}
+
+.due-chip.soon {
+  background: rgba(226, 179, 62, 0.15);
+  color: #e2b33e;
+}
+
+.due-chip.overdue {
+  background: rgba(235, 87, 87, 0.15);
+  color: #eb5757;
+}
+
 .move-btns {
   display: flex;
   gap: 2px;

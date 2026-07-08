@@ -71,6 +71,8 @@ create table tasks (
   parent_id      uuid references tasks(id) on delete set null,  -- 主任務（子任務拆分）
   bundle_id      uuid,                      -- 部署綁定：同 bundle_id 的任務需一併部署
   blocked_reason text,                     -- 僅當狀態圖示為 cross 時有意義
+  priority       smallint not null default 0, -- 0 無 1 低 2 中 3 高 4 緊急
+  due_date       date,                      -- 截止日（選填）
   needs_backend  boolean not null default false,
   deploy_notes   text not null default '',
   created_at     timestamptz not null default now(),

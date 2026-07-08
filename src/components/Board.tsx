@@ -37,6 +37,16 @@ import DeployHistory from './DeployHistory';
 
 const TASK_SELECT = '*, task_projects(*, project:projects(*))';
 
+// Map a `!token` from quick capture to a priority level (0 = not a priority).
+function priorityFromToken(tok: string): number {
+  const t = tok.toLowerCase();
+  if (t === 'p0' || t === 'urgent' || t === '緊急') return 4;
+  if (t === 'p1' || t === 'high' || t === '高') return 3;
+  if (t === 'p2' || t === 'med' || t === 'medium' || t === '中') return 2;
+  if (t === 'p3' || t === 'low' || t === '低') return 1;
+  return 0;
+}
+
 // Map raw joined task rows (from either the server or the client query) into
 // TaskWithProjects.
 function mapTaskRows(data: unknown[]): TaskWithProjects[] {
@@ -376,17 +386,52 @@ export default function Board({
     return () => window.removeEventListener('keydown', onKey);
   }, []);
 
+  // Parse quick-capture syntax: `#分類 @專案 !p1`. Unmatched tokens stay in the
+  // title. Names are matched case-insensitively against the current workspace.
+  function parseCapture(raw: string) {
+    let priority = 0;
+    let category_id: string | null = null;
+    const projectIds: string[] = [];
+    const titleParts: string[] = [];
+    for (const tk of raw.trim().split(/\s+/)) {
+      if (tk.length > 1 && tk[0] === '!') {
+        const p = priorityFromToken(tk.slice(1));
+        if (p) { priority = p; continue; }
+      } else if (tk.length > 1 && tk[0] === '#') {
+        const c = wsCategories.find((x) => x.name.toLowerCase() === tk.slice(1).toLowerCase());
+        if (c) { category_id = c.id; continue; }
+      } else if (tk.length > 1 && tk[0] === '@') {
+        const p = wsProjects.find((x) => x.name.toLowerCase() === tk.slice(1).toLowerCase());
+        if (p) { if (!projectIds.includes(p.id)) projectIds.push(p.id); continue; }
+      }
+      titleParts.push(tk);
+    }
+    return { title: titleParts.join(' ').trim() || raw.trim(), priority, category_id, projectIds };
+  }
+
   // ---------- task mutations ----------
-  async function quickCapture(title: string) {
-    if (!title.trim() || !currentWs) return;
+  async function quickCapture(raw: string) {
+    if (!raw.trim() || !currentWs) return;
+    const { title, priority, category_id, projectIds } = parseCapture(raw);
     const def = wsStatuses.find((s) => s.is_default) ?? wsStatuses[0];
-    const { error } = await supabase.from('tasks').insert({
-      workspace_id: currentWs.id,
-      owner_id: userId,
-      title: title.trim(),
-      status_id: def?.id ?? null,
-    });
-    if (error) return report('新增任務失敗', error);
+    const { data, error } = await supabase
+      .from('tasks')
+      .insert({
+        workspace_id: currentWs.id,
+        owner_id: userId,
+        title,
+        status_id: def?.id ?? null,
+        priority,
+        category_id,
+      })
+      .select('id')
+      .single();
+    if (error || !data) return report('新增任務失敗', error);
+    if (projectIds.length) {
+      await supabase
+        .from('task_projects')
+        .insert(projectIds.map((project_id) => ({ task_id: data.id, project_id })));
+    }
     loadTasks();
   }
 
@@ -405,6 +450,8 @@ export default function Board({
       status_id: draft.status_id,
       category_id: draft.category_id,
       blocked_reason: draft.blocked_reason,
+      priority: draft.priority,
+      due_date: draft.due_date,
       needs_backend: draft.needs_backend,
       deploy_notes: draft.deploy_notes,
     };
@@ -844,7 +891,17 @@ export default function Board({
   const archiveIds = new Set(wsStatuses.filter((s) => s.is_archive).map((s) => s.id));
   const boardTasks = leafTasks
     .filter((t) => !t.status_id || !archiveIds.has(t.status_id))
-    .filter((t) => !projectFilter || t.links.some((l) => l.project_id === projectFilter));
+    .filter((t) => !projectFilter || t.links.some((l) => l.project_id === projectFilter))
+    // higher priority first, then nearer due date, then newest
+    .sort((a, b) => {
+      if (b.priority !== a.priority) return b.priority - a.priority;
+      if (a.due_date !== b.due_date) {
+        if (!a.due_date) return 1;
+        if (!b.due_date) return -1;
+        return a.due_date < b.due_date ? -1 : 1;
+      }
+      return a.created_at < b.created_at ? 1 : -1;
+    });
   const filteredProject = projects.find((p) => p.id === projectFilter) ?? null;
   const deployIds = new Set(wsStatuses.filter((s) => s.is_deploy).map((s) => s.id));
   const pendingDeployCount = leafTasks.filter(
@@ -968,7 +1025,7 @@ export default function Board({
             <input
               ref={captureRef}
               value={capture}
-              placeholder="快速捕捉：打一行字丟進暫存區…"
+              placeholder="快速捕捉：打一行字…（#分類 @專案 !p1）"
               onChange={(e) => setCapture(e.target.value)}
               {...enterSubmit(submitCapture)}
             />

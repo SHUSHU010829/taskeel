@@ -12,6 +12,7 @@ import {
   Settings2,
 } from 'lucide-react';
 import {
+  PRIORITIES,
   type CategoryRow,
   type Project,
   type StatusRow,
@@ -21,6 +22,7 @@ import {
 } from '@/lib/types';
 import { enterSubmit } from '@/lib/useEnterSubmit';
 import StatusDot from './StatusDot';
+import PriorityFlag from './PriorityFlag';
 import ConfirmDialog from './ConfirmDialog';
 import MarkdownEditor from './MarkdownEditor';
 
@@ -30,6 +32,8 @@ export interface TaskDraft {
   status_id: string | null;
   category_id: string | null;
   blocked_reason: string | null;
+  priority: number;
+  due_date: string | null;
   needs_backend: boolean;
   deploy_notes: string;
   links: Array<{ project_id: string; branch: string }>;
@@ -92,6 +96,8 @@ export default function TaskEditor({
     task?.status_id ?? defaultStatus?.id ?? null
   );
   const [categoryId, setCategoryId] = useState<string | null>(task?.category_id ?? null);
+  const [priority, setPriority] = useState<number>(task?.priority ?? 0);
+  const [dueDate, setDueDate] = useState<string>(task?.due_date ?? '');
   const [blockedReason, setBlockedReason] = useState(task?.blocked_reason ?? '');
   const [needsBackend, setNeedsBackend] = useState(task?.needs_backend ?? false);
   const [deployNotes, setDeployNotes] = useState(task?.deploy_notes ?? '');
@@ -139,6 +145,17 @@ export default function TaskEditor({
     commit({ category_id: next });
   }
 
+  function choosePriority(v: number) {
+    const next = priority === v ? 0 : v;
+    setPriority(next);
+    commit({ priority: next });
+  }
+
+  function changeDue(v: string) {
+    setDueDate(v);
+    commit({ due_date: v || null });
+  }
+
   function toggleProject(id: string) {
     const next = { ...branches };
     if (id in next) delete next[id];
@@ -165,6 +182,8 @@ export default function TaskEditor({
       status_id: statusId,
       category_id: categoryId,
       blocked_reason: isBlocked ? blockedReason || null : null,
+      priority,
+      due_date: dueDate || null,
       needs_backend: needsBackend,
       deploy_notes: deployNotes,
       links: linksArray(branches),
@@ -324,6 +343,12 @@ export default function TaskEditor({
                 {selected.name}
               </span>
             )}
+            {priority > 0 && (
+              <span className="summary-chip">
+                <PriorityFlag priority={priority} size={11} />
+                {PRIORITIES.find((p) => p.value === priority)?.label}
+              </span>
+            )}
             {selectedCategory && (
               <span className="summary-chip">
                 <span
@@ -419,6 +444,34 @@ export default function TaskEditor({
                       </span>
                     )}
                   </div>
+                </div>
+
+                {/* priority + due date */}
+                <div className="field">
+                  <div className="field-label">優先度</div>
+                  <div className="option-row">
+                    {PRIORITIES.filter((p) => p.value > 0).map((p) => (
+                      <button
+                        key={p.value}
+                        className={`option${priority === p.value ? ' selected' : ''}`}
+                        onClick={() => choosePriority(p.value)}
+                      >
+                        <PriorityFlag priority={p.value} size={12} />
+                        {p.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="field">
+                  <div className="field-label">截止日</div>
+                  <input
+                    className="text-input"
+                    type="date"
+                    style={{ maxWidth: 200 }}
+                    value={dueDate}
+                    onChange={(e) => changeDue(e.target.value)}
+                  />
                 </div>
 
                 {/* projects + per-project branch */}
