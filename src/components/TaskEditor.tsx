@@ -150,7 +150,7 @@ export default function TaskEditor({
         {parentTask && (
           <div className="ed-parent">
             <span className="field-label" style={{ margin: 0 }}>
-              母任務
+              主任務
             </span>
             <button className="parent-chip lg" onClick={() => onOpenTask(parentTask)}>
               <CornerUpLeft size={13} />
@@ -158,10 +158,10 @@ export default function TaskEditor({
             </button>
             <button
               className="btn btn-ghost promote-btn"
-              title="脫離母任務，成為獨立的母任務（可加入部署綁定）"
+              title="脫離主任務，成為獨立的主任務（可加入部署綁定）"
               onClick={onDetachParent}
             >
-              <ArrowUpFromLine size={13} /> 升為母任務
+              <ArrowUpFromLine size={13} /> 升為主任務
             </button>
           </div>
         )}
@@ -190,7 +190,7 @@ export default function TaskEditor({
             <div className="branch-field" style={{ marginTop: 0 }}>
               <input
                 className="text-input"
-                placeholder="拆一個子任務…（繼承母任務的專案/狀態/分類）"
+                placeholder="拆一個子任務…（繼承主任務的專案/狀態/分類）"
                 value={newSubtask}
                 onChange={(e) => setNewSubtask(e.target.value)}
                 {...enterSubmit(addSubtaskNow)}
@@ -201,7 +201,7 @@ export default function TaskEditor({
             </div>
             {subtasks.length > 0 && (
               <div style={{ color: 'var(--text-faint)', fontSize: '0.78rem', marginTop: 6 }}>
-                有子任務後，此母任務不顯示在看板，改由子任務呈現。
+                有子任務後，此主任務不顯示在看板，改由子任務呈現。
               </div>
             )}
           </div>
@@ -403,10 +403,10 @@ export default function TaskEditor({
                   </div>
                 </div>
 
-                {/* deploy bundle — top-level (母任務) existing tasks only */}
+                {/* deploy bundle — top-level (主任務) existing tasks only */}
                 {task && !task.parent_id && (
                   <div className="field">
-                    <div className="field-label">部署綁定（需一併部署的母任務）</div>
+                    <div className="field-label">部署綁定（需一併部署的主任務）</div>
                     {boundCandidates.length > 0 ? (
                       <div className="bundle-current">
                         <Link2 size={13} />

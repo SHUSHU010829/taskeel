@@ -49,7 +49,7 @@ export default function TaskRow({
       {parentLabel && (
         <button
           className="parent-mark"
-          title={`母任務：${parentLabel}`}
+          title={`主任務：${parentLabel}`}
           onClick={(e) => {
             e.stopPropagation();
             onOpenParent?.();
