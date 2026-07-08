@@ -15,6 +15,7 @@ create table workspaces (
   owner_id   uuid not null references auth.users(id) on delete cascade,
   name       text not null,
   color      text not null default '#5E6AD2',
+  icon       text,
   created_at timestamptz not null default now()
 );
 

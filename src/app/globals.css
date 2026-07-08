@@ -119,6 +119,135 @@ a {
   color: var(--accent);
 }
 
+.collapse-toggle {
+  margin-left: auto;
+  width: 24px;
+  height: 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: transparent;
+  color: var(--text-faint);
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+
+.collapse-toggle:hover {
+  background: var(--bg-hover);
+  color: var(--text);
+}
+
+/* ---------- collapsed rail ---------- */
+.sidebar.rail {
+  width: 56px;
+  padding: 12px 6px;
+  align-items: center;
+}
+
+.sidebar.rail .brand {
+  flex-direction: column;
+  gap: 8px;
+  padding: 0 0 8px;
+}
+
+.sidebar.rail .collapse-toggle {
+  margin-left: 0;
+}
+
+.sidebar.rail .ws-switcher {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+}
+
+.ws-rail,
+.acct-rail {
+  width: 40px;
+  height: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg-elevated);
+  color: var(--text);
+}
+
+.ws-rail:hover,
+.acct-rail:hover {
+  background: var(--bg-active);
+}
+
+.acct-rail {
+  border: none;
+  background: transparent;
+  padding: 0;
+}
+
+.sidebar.rail .nav-item {
+  width: 40px;
+  height: 36px;
+  justify-content: center;
+  padding: 0;
+  margin: 0 auto;
+}
+
+.sidebar.rail .sidebar-section {
+  width: 100%;
+}
+
+.rail-projects {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.rail-project {
+  width: 34px;
+  height: 30px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: transparent;
+}
+
+.rail-project:hover {
+  background: var(--bg-hover);
+}
+
+.rail-project.active {
+  border-color: var(--border-strong);
+  background: var(--bg-active);
+}
+
+.sidebar.rail .sidebar-footer {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+}
+
+.sidebar.rail .acct {
+  margin-top: 0;
+}
+
+/* rail popovers fly out to the right instead of filling the (narrow) column */
+.sidebar.rail .ws-menu {
+  left: calc(100% + 8px);
+  right: auto;
+  width: 210px;
+}
+
+.sidebar.rail .acct-menu {
+  left: calc(100% + 8px);
+  right: auto;
+  bottom: 0;
+  width: 210px;
+}
+
 /* let icons inside text chips sit on the row */
 .branch,
 .settings-toggle,
@@ -1262,6 +1391,34 @@ a {
   outline-offset: 2px;
 }
 
+.icon-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.icon-swatch {
+  width: 32px;
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+  background: transparent;
+  color: var(--text-dim);
+  cursor: pointer;
+}
+
+.icon-swatch:hover {
+  background: var(--bg-hover);
+  color: var(--text);
+}
+
+.icon-swatch.on {
+  background: var(--bg-active);
+}
+
 .branch-field {
   display: flex;
   align-items: stretch;
@@ -1680,6 +1837,11 @@ a {
 @media (max-width: 720px) {
   .hamburger {
     display: inline-flex;
+  }
+
+  /* the collapse rail is a desktop affordance; the phone uses the drawer */
+  .collapse-toggle {
+    display: none;
   }
 
   /* sidebar becomes a slide-in drawer */

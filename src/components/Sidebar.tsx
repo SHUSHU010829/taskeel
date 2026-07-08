@@ -8,6 +8,8 @@ import {
   LayoutList,
   LogOut,
   Moon,
+  PanelLeft,
+  PanelLeftClose,
   Pencil,
   Pin,
   Plus,
@@ -18,6 +20,7 @@ import {
 import type { Project, StatusRow, Workspace } from '@/lib/types';
 import { enterSubmit } from '@/lib/useEnterSubmit';
 import StatusDot from './StatusDot';
+import WorkspaceIcon from './WorkspaceIcon';
 
 export type View = 'board' | 'history';
 
@@ -31,6 +34,8 @@ const FONT_SIZES = [
 export default function Sidebar({
   open,
   onClose,
+  collapsed,
+  onToggleCollapsed,
   workspaces,
   currentWorkspace,
   onSwitchWorkspace,
@@ -56,6 +61,8 @@ export default function Sidebar({
 }: {
   open: boolean;
   onClose: () => void;
+  collapsed: boolean;
+  onToggleCollapsed: () => void;
   workspaces: Workspace[];
   currentWorkspace: Workspace | null;
   onSwitchWorkspace: (ws: Workspace) => void;
@@ -86,6 +93,9 @@ export default function Sidebar({
   const [acctOpen, setAcctOpen] = useState(false);
   const acctRef = useRef<HTMLDivElement>(null);
 
+  // A drawer that's explicitly open (mobile) always shows the full layout.
+  const rail = collapsed && !open;
+
   useEffect(() => {
     if (!acctOpen) return;
     const h = (e: MouseEvent) => {
@@ -113,24 +123,44 @@ export default function Sidebar({
   return (
     <>
       {open && <div className="sidebar-backdrop" onClick={onClose} />}
-      <aside className={`sidebar${open ? ' open' : ''}`}>
+      <aside className={`sidebar${open ? ' open' : ''}${rail ? ' rail' : ''}`}>
         <div className="brand">
-          <Diamond size={15} fill="currentColor" />
-          Taskeel
+          {rail ? (
+            <Diamond size={16} fill="currentColor" />
+          ) : (
+            <>
+              <Diamond size={15} fill="currentColor" />
+              <span style={{ flex: 1 }}>Taskeel</span>
+            </>
+          )}
+          <button
+            className="collapse-toggle"
+            title={rail ? '展開側欄' : '收合側欄'}
+            onClick={onToggleCollapsed}
+          >
+            {rail ? <PanelLeft size={15} /> : <PanelLeftClose size={15} />}
+          </button>
         </div>
 
         {/* workspace switcher */}
         <div className="ws-switcher">
-          <button className="ws-button" onClick={() => setMenuOpen((o) => !o)}>
-            <span
-              className="dot"
-              style={{ background: currentWorkspace?.color ?? '#5E6AD2' }}
-            />
-            <span style={{ flex: 1 }}>{currentWorkspace?.name ?? '—'}</span>
-            {currentWorkspace && pinnedWsId === currentWorkspace.id && (
-              <Pin size={12} fill="currentColor" style={{ color: 'var(--accent)' }} />
+          <button
+            className={rail ? 'ws-rail' : 'ws-button'}
+            title={rail ? currentWorkspace?.name : undefined}
+            onClick={() => setMenuOpen((o) => !o)}
+          >
+            <span style={{ color: currentWorkspace?.color ?? '#5E6AD2', display: 'inline-flex' }}>
+              <WorkspaceIcon icon={currentWorkspace?.icon} size={16} />
+            </span>
+            {!rail && (
+              <>
+                <span style={{ flex: 1 }}>{currentWorkspace?.name ?? '—'}</span>
+                {currentWorkspace && pinnedWsId === currentWorkspace.id && (
+                  <Pin size={12} fill="currentColor" style={{ color: 'var(--accent)' }} />
+                )}
+                <ChevronDown size={14} style={{ color: 'var(--text-faint)' }} />
+              </>
             )}
-            <ChevronDown size={14} style={{ color: 'var(--text-faint)' }} />
           </button>
           {menuOpen && (
             <div className="ws-menu">
@@ -144,7 +174,9 @@ export default function Sidebar({
                       setMenuOpen(false);
                     }}
                   >
-                    <span className="dot" style={{ background: ws.color }} />
+                    <span style={{ color: ws.color, display: 'inline-flex' }}>
+                      <WorkspaceIcon icon={ws.icon} size={15} />
+                    </span>
                     {ws.name}
                   </button>
                   <button
@@ -187,134 +219,162 @@ export default function Sidebar({
         {/* nav */}
         <button
           className={`nav-item${view === 'board' ? ' active' : ''}`}
+          title={rail ? '任務看板' : undefined}
           onClick={() => go('board')}
         >
           <LayoutList size={15} />
-          任務看板
+          {!rail && '任務看板'}
         </button>
         <button
           className={`nav-item${view === 'history' ? ' active' : ''}`}
+          title={rail ? '部署歷史' : undefined}
           onClick={() => go('history')}
         >
           <Rocket size={15} />
-          部署歷史
+          {!rail && '部署歷史'}
         </button>
         <button
           className="nav-item"
-          title="編輯目前工作區（名稱、顏色、狀態）"
+          title={rail ? '工作區設定' : '編輯目前工作區（名稱、顏色、狀態）'}
           onClick={() => {
             onOpenStatusManager();
             onClose();
           }}
         >
           <Settings size={15} />
-          工作區設定
+          {!rail && '工作區設定'}
         </button>
 
         {/* projects */}
         <div className="sidebar-section">
-          <div
-            className="sidebar-label"
-            style={{ display: 'flex', alignItems: 'center' }}
-          >
-            <span style={{ flex: 1 }}>專案</span>
-            <button
-              className="icon-btn"
-              style={{ width: 20, height: 20 }}
-              title="新專案"
-              onClick={() => setAdding((a) => !a)}
-            >
-              <Plus size={14} />
-            </button>
-          </div>
-          {projects.map((p) => (
-            <div
-              className={`project-row${projectFilter === p.id ? ' active' : ''}`}
-              key={p.id}
-              role="button"
-              title="只看此專案的任務"
-              onClick={() => onFilterProject(p.id)}
-            >
-              <span className="dot" style={{ background: p.color }} />
-              <span
-                style={{
-                  flex: 1,
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                  whiteSpace: 'nowrap',
-                }}
+          {rail ? (
+            <div className="rail-projects">
+              {projects.map((p) => (
+                <button
+                  key={p.id}
+                  className={`rail-project${projectFilter === p.id ? ' active' : ''}`}
+                  title={p.name}
+                  onClick={() => onFilterProject(p.id)}
+                >
+                  <span className="dot" style={{ background: p.color, width: 10, height: 10 }} />
+                </button>
+              ))}
+            </div>
+          ) : (
+            <>
+              <div
+                className="sidebar-label"
+                style={{ display: 'flex', alignItems: 'center' }}
               >
-                {p.name}
-              </span>
-              {p.repo && (
-                <span title={p.repo} style={{ display: 'inline-flex', color: 'var(--text-faint)' }}>
-                  <GitBranch size={12} />
-                </span>
+                <span style={{ flex: 1 }}>專案</span>
+                <button
+                  className="icon-btn"
+                  style={{ width: 20, height: 20 }}
+                  title="新專案"
+                  onClick={() => setAdding((a) => !a)}
+                >
+                  <Plus size={14} />
+                </button>
+              </div>
+              {projects.map((p) => (
+                <div
+                  className={`project-row${projectFilter === p.id ? ' active' : ''}`}
+                  key={p.id}
+                  role="button"
+                  title="只看此專案的任務"
+                  onClick={() => onFilterProject(p.id)}
+                >
+                  <span className="dot" style={{ background: p.color }} />
+                  <span
+                    style={{
+                      flex: 1,
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap',
+                    }}
+                  >
+                    {p.name}
+                  </span>
+                  {p.repo && (
+                    <span title={p.repo} style={{ display: 'inline-flex', color: 'var(--text-faint)' }}>
+                      <GitBranch size={12} />
+                    </span>
+                  )}
+                  <button
+                    className="icon-btn project-edit"
+                    title="編輯專案"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onEditProject(p);
+                    }}
+                  >
+                    <Pencil size={13} />
+                  </button>
+                </div>
+              ))}
+              {adding && (
+                <div style={{ padding: '4px 8px' }}>
+                  <input
+                    className="text-input"
+                    style={{ marginBottom: 4 }}
+                    placeholder="專案名稱"
+                    autoFocus
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    {...enterSubmit(submitProject)}
+                  />
+                  <input
+                    className="text-input"
+                    style={{ marginBottom: 4 }}
+                    placeholder="repo（選填,如 owner/bibi-bot）"
+                    value={repo}
+                    onChange={(e) => setRepo(e.target.value)}
+                    {...enterSubmit(submitProject)}
+                  />
+                  <button
+                    className="btn btn-primary"
+                    style={{ width: '100%', justifyContent: 'center' }}
+                    onClick={submitProject}
+                  >
+                    新增
+                  </button>
+                </div>
               )}
-              <button
-                className="icon-btn project-edit"
-                title="編輯專案"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onEditProject(p);
-                }}
-              >
-                <Pencil size={13} />
-              </button>
-            </div>
-          ))}
-          {adding && (
-            <div style={{ padding: '4px 8px' }}>
-              <input
-                className="text-input"
-                style={{ marginBottom: 4 }}
-                placeholder="專案名稱"
-                autoFocus
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                {...enterSubmit(submitProject)}
-              />
-              <input
-                className="text-input"
-                style={{ marginBottom: 4 }}
-                placeholder="repo（選填，如 owner/bibi-bot）"
-                value={repo}
-                onChange={(e) => setRepo(e.target.value)}
-                {...enterSubmit(submitProject)}
-              />
-              <button
-                className="btn btn-primary"
-                style={{ width: '100%', justifyContent: 'center' }}
-                onClick={submitProject}
-              >
-                新增
-              </button>
-            </div>
+            </>
           )}
         </div>
 
         {/* footer: legend + account menu */}
         <div className="sidebar-footer">
-          <div className="sidebar-label">狀態</div>
-          {statuses.map((s) => (
-            <div className="legend-item" key={s.id}>
-              <StatusDot color={s.color} style={s.style} sm />
-              {s.name}
-            </div>
-          ))}
+          {!rail && (
+            <>
+              <div className="sidebar-label">狀態</div>
+              {statuses.map((s) => (
+                <div className="legend-item" key={s.id}>
+                  <StatusDot color={s.color} style={s.style} sm />
+                  {s.name}
+                </div>
+              ))}
+            </>
+          )}
 
           <div className="acct" ref={acctRef}>
             <button
-              className="acct-button"
+              className={rail ? 'acct-rail' : 'acct-button'}
+              title={rail ? userEmail : undefined}
               onClick={() => setAcctOpen((o) => !o)}
             >
               <span className="acct-avatar">
                 {userEmail ? userEmail[0].toUpperCase() : '·'}
               </span>
-              <span className="acct-email" title={userEmail}>
-                {userEmail}
-              </span>
-              <Settings size={15} style={{ color: 'var(--text-faint)' }} />
+              {!rail && (
+                <>
+                  <span className="acct-email" title={userEmail}>
+                    {userEmail}
+                  </span>
+                  <Settings size={15} style={{ color: 'var(--text-faint)' }} />
+                </>
+              )}
             </button>
             {acctOpen && (
               <div className="acct-menu">

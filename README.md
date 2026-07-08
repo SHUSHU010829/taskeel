@@ -27,8 +27,8 @@ publication, and the `archive_branch(repo, branch, owner)` function.
 [`supabase/migrations/`](supabase/migrations) in order, once each: `0001`
 (enums → editable status/dev-state tables), `0002` (merge into a single status
 with an icon), `0003` (statuses per workspace), `0004` (categories per
-workspace, editable), `0005` (subtasks / parent_id). Fresh installs just run
-`schema.sql`.
+workspace, editable), `0005` (subtasks / parent_id), `0006` (workspace icon).
+Fresh installs just run `schema.sql`.
 
 Statuses and categories are per-workspace and edited in the workspace settings
 (sidebar **工作區設定** or the switcher pencil). Light/dark theme, font size, and

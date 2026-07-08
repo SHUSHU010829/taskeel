@@ -93,6 +93,7 @@ export default function Board({
   const [editingWs, setEditingWs] = useState<Workspace | null | 'new'>(null);
   const [deployOpen, setDeployOpen] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [collapsed, setCollapsed] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [capture, setCapture] = useState('');
   const [fontPx, setFontPx] = useState(15);
@@ -305,6 +306,28 @@ export default function Board({
     setProjectFilter(null);
   }
 
+  // ---------- collapsed sidebar rail ----------
+  useEffect(() => {
+    try {
+      if (localStorage.getItem('taskeel.sidebarCollapsed') === '1') setCollapsed(true);
+    } catch {
+      // ignore
+    }
+  }, []);
+
+  function toggleCollapsed() {
+    setCollapsed((c) => {
+      const next = !c;
+      try {
+        if (next) localStorage.setItem('taskeel.sidebarCollapsed', '1');
+        else localStorage.removeItem('taskeel.sidebarCollapsed');
+      } catch {
+        // ignore
+      }
+      return next;
+    });
+  }
+
   function changeFont(px: number) {
     setFontPx(px);
     document.documentElement.style.setProperty('--app-font', `${px}px`);
@@ -494,10 +517,10 @@ export default function Board({
   }
 
   // ---------- workspace mutations ----------
-  async function addWorkspace(name: string, color: string) {
+  async function addWorkspace(name: string, color: string, icon: string | null) {
     const { data, error } = await supabase
       .from('workspaces')
-      .insert({ owner_id: userId, name, color })
+      .insert({ owner_id: userId, name, color, icon })
       .select('*')
       .single();
     if (error || !data) return report('新增工作區失敗', error);
@@ -506,7 +529,10 @@ export default function Board({
     setEditingWs(null);
   }
 
-  async function updateWorkspace(id: string, patch: { name: string; color: string }) {
+  async function updateWorkspace(
+    id: string,
+    patch: { name: string; color: string; icon: string | null },
+  ) {
     const { data, error } = await supabase
       .from('workspaces')
       .update(patch)
@@ -757,6 +783,8 @@ export default function Board({
       <Sidebar
         open={sidebarOpen}
         onClose={() => setSidebarOpen(false)}
+        collapsed={collapsed}
+        onToggleCollapsed={toggleCollapsed}
         workspaces={workspaces}
         currentWorkspace={currentWs}
         onSwitchWorkspace={switchWorkspace}
@@ -907,7 +935,7 @@ export default function Board({
           categoryHandlers={editCategoryHandlers}
           onSave={(patch) =>
             editingWs === 'new'
-              ? addWorkspace(patch.name, patch.color)
+              ? addWorkspace(patch.name, patch.color, patch.icon)
               : updateWorkspace(editingWs.id, patch)
           }
           onDelete={editingWs === 'new' ? undefined : () => deleteWorkspace(editingWs.id)}

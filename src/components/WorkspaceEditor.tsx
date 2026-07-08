@@ -7,6 +7,7 @@ import { enterSubmit } from '@/lib/useEnterSubmit';
 import ConfirmDialog from './ConfirmDialog';
 import StatusList, { type StatusManagerHandlers } from './StatusList';
 import CategoryList, { type CategoryHandlers } from './CategoryList';
+import WorkspaceIcon, { WS_ICON_KEYS } from './WorkspaceIcon';
 
 // Add / edit a workspace: name, colour, and (for existing workspaces) its
 // statuses. `workspace` null = new.
@@ -27,17 +28,18 @@ export default function WorkspaceEditor({
   statusHandlers: StatusManagerHandlers | null;
   categories: CategoryRow[];
   categoryHandlers: CategoryHandlers | null;
-  onSave: (patch: { name: string; color: string }) => void;
+  onSave: (patch: { name: string; color: string; icon: string | null }) => void;
   onDelete?: () => void;
   onClose: () => void;
 }) {
   const [name, setName] = useState(workspace?.name ?? '');
   const [color, setColor] = useState(workspace?.color ?? '#5E6AD2');
+  const [icon, setIcon] = useState<string | null>(workspace?.icon ?? 'diamond');
   const [confirming, setConfirming] = useState(false);
 
   function save() {
     if (!name.trim()) return;
-    onSave({ name: name.trim(), color });
+    onSave({ name: name.trim(), color, icon });
   }
 
   return (
@@ -74,6 +76,23 @@ export default function WorkspaceEditor({
                 }}
                 title={c}
               />
+            ))}
+          </div>
+        </div>
+
+        <div className="field">
+          <div className="field-label">圖示（收合側欄時代表此工作區）</div>
+          <div className="icon-grid">
+            {WS_ICON_KEYS.map((key) => (
+              <button
+                key={key}
+                className={`icon-swatch${icon === key ? ' on' : ''}`}
+                style={icon === key ? { color, borderColor: color } : undefined}
+                onClick={() => setIcon(key)}
+                title={key}
+              >
+                <WorkspaceIcon icon={key} size={16} />
+              </button>
             ))}
           </div>
         </div>

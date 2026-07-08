@@ -21,6 +21,7 @@ export interface Workspace {
   owner_id: string;
   name: string;
   color: string;
+  icon: string | null; // key into WS_ICONS; falls back to a diamond
   created_at: string;
 }
 
