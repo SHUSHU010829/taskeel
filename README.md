@@ -10,6 +10,7 @@ Linear (deep-grey base, hairline borders, restrained purple accent).
 - **Quick capture** — type a line, press Enter, it lands in the workspace inbox. Press `c` anywhere to focus the capture box.
 - **Per-project branches** — one task can span multiple projects, each with its own repo and git branch.
 - **Batched deploy → archive** — CI pings a webhook when a branch ships; that `(project, branch)` is marked deployed. A task is archived only once *all* its projects have deployed.
+- **Deploy bundles** — tie tasks that must ship in the same release together (task editor → 設定 → 部署綁定). When one comes up in the deploy sheet, its bound siblings are listed as a "需一併部署" reminder.
 - **One status per task** (Linear-style) — a task's status drives both its board column and its row icon. Statuses are **user-editable** under **狀態設定** (account menu): add / rename / recolour / reorder / delete, pick an icon (ring / dashed / half / filled / spinner / check / cross / dot), and flag roles (★ default capture bucket, ⇧ deploy stage, ✔ archive). A `cross`-icon status shows the "blocked reason" field.
 - **Workspaces** — 個人 / 工作, each with its own projects and tasks (seeded on first login).
 - **Deploy history** — archived tasks become a read-only, filterable changelog.
@@ -27,8 +28,8 @@ publication, and the `archive_branch(repo, branch, owner)` function.
 [`supabase/migrations/`](supabase/migrations) in order, once each: `0001`
 (enums → editable status/dev-state tables), `0002` (merge into a single status
 with an icon), `0003` (statuses per workspace), `0004` (categories per
-workspace, editable), `0005` (subtasks / parent_id), `0006` (workspace icon).
-Fresh installs just run `schema.sql`.
+workspace, editable), `0005` (subtasks / parent_id), `0006` (workspace icon),
+`0007` (deploy bundles / bundle_id). Fresh installs just run `schema.sql`.
 
 Statuses and categories are per-workspace and edited in the workspace settings
 (sidebar **工作區設定** or the switcher pencil). Light/dark theme, font size, and

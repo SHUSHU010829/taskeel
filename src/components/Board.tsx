@@ -470,6 +470,7 @@ export default function Board({
         status_id: def?.id ?? null,
         blocked_reason: null,
         parent_id: null,
+        bundle_id: null,
       })
       .eq('id', task.id);
     if (error) return report('搬移工作區失敗', error);
@@ -513,6 +514,44 @@ export default function Board({
     const { error } = await supabase.from('tasks').delete().eq('id', editing.id);
     if (error) return report('刪除任務失敗', error);
     setEditing(null);
+    loadTasks();
+  }
+
+  // Set the deploy bundle for `task`: it plus `otherIds` become one bundle
+  // (must ship together). An empty `otherIds` dissolves the bundle.
+  async function setBundle(task: TaskWithProjects, otherIds: string[]) {
+    const desired = new Set([task.id, ...otherIds]);
+    // any existing bundle these tasks already belong to (may be several)
+    const oldBundleIds = new Set(
+      tasks
+        .filter((t) => desired.has(t.id) && t.bundle_id)
+        .map((t) => t.bundle_id as string)
+    );
+    // tasks currently in those bundles but no longer wanted → unbind
+    const toUnbind = tasks
+      .filter((t) => t.bundle_id && oldBundleIds.has(t.bundle_id) && !desired.has(t.id))
+      .map((t) => t.id);
+
+    if (desired.size >= 2) {
+      const bundleId = [...oldBundleIds][0] ?? crypto.randomUUID();
+      const { error } = await supabase
+        .from('tasks')
+        .update({ bundle_id: bundleId })
+        .in('id', [...desired]);
+      if (error) return report('部署綁定失敗', error);
+      if (toUnbind.length) {
+        const { error: e2 } = await supabase
+          .from('tasks')
+          .update({ bundle_id: null })
+          .in('id', toUnbind);
+        if (e2) return report('部署綁定失敗', e2);
+      }
+    } else {
+      // dissolve: this task and any orphaned partners drop their bundle
+      const ids = [task.id, ...toUnbind];
+      const { error } = await supabase.from('tasks').update({ bundle_id: null }).in('id', ids);
+      if (error) return report('部署綁定失敗', error);
+    }
     loadTasks();
   }
 
@@ -773,6 +812,23 @@ export default function Board({
   const editingParent = editingTask?.parent_id
     ? tasks.find((t) => t.id === editingTask.parent_id) ?? null
     : null;
+  // deploy-bundle: sibling tasks that must ship together with the edited task
+  const wsArchiveIds = new Set(wsStatuses.filter((s) => s.is_archive).map((s) => s.id));
+  const bundleMemberIds = editingTask?.bundle_id
+    ? tasks
+        .filter((t) => t.id !== editingTask.id && t.bundle_id === editingTask.bundle_id)
+        .map((t) => t.id)
+    : [];
+  const bundleCandidates = editingTask
+    ? tasks
+        .filter(
+          (t) =>
+            t.id !== editingTask.id &&
+            t.workspace_id === editingTask.workspace_id &&
+            !(t.status_id && wsArchiveIds.has(t.status_id)),
+        )
+        .map((t) => ({ id: t.id, title: t.title, status_id: t.status_id }))
+    : [];
   const openTaskId = (id: string) => {
     const t = tasks.find((x) => x.id === id);
     if (t) setEditing(t);
@@ -906,6 +962,9 @@ export default function Board({
           currentWorkspaceId={currentWs?.id ?? null}
           subtasks={editingSubtasks}
           parentTask={editingParent}
+          bundleCandidates={bundleCandidates}
+          bundleMemberIds={bundleMemberIds}
+          onSetBundle={(otherIds) => editingTask && setBundle(editingTask, otherIds)}
           onSave={saveTask}
           onAddSubtask={(title) => editingTask && addSubtask(editingTask, title)}
           onOpenTask={(t) => setEditing(t)}
@@ -945,7 +1004,12 @@ export default function Board({
       )}
 
       {deployOpen && (
-        <DeploySheet tasks={leafTasks} statuses={wsStatuses} onClose={() => setDeployOpen(false)} />
+        <DeploySheet
+          tasks={leafTasks}
+          allTasks={tasks}
+          statuses={wsStatuses}
+          onClose={() => setDeployOpen(false)}
+        />
       )}
     </div>
   );

@@ -907,6 +907,70 @@ a {
   white-space: nowrap;
 }
 
+/* ---------- deploy bundle picker (editor settings) ---------- */
+.bundle-current {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 6px;
+  font-size: 0.82rem;
+  color: var(--accent);
+}
+
+.bundle-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-height: 220px;
+  overflow-y: auto;
+}
+
+.bundle-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 6px 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: transparent;
+  color: var(--text);
+  text-align: left;
+}
+
+.bundle-item:hover {
+  background: var(--bg-hover);
+}
+
+.bundle-item.on {
+  border-color: var(--accent);
+  background: rgba(94, 106, 210, 0.12);
+}
+
+.bundle-item-title {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.bundle-check {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--border-strong);
+  border-radius: 4px;
+  color: #fff;
+}
+
+.bundle-check.on {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
 .chip {
   display: inline-flex;
   align-items: center;
@@ -1589,6 +1653,37 @@ a {
   background: rgba(226, 179, 62, 0.1);
   color: #e2b33e;
   font-size: 0.8rem;
+}
+
+.deploy-bundle {
+  margin-top: 8px;
+  padding: 8px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--bg-elevated);
+}
+
+.deploy-bundle-head {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.78rem;
+  color: var(--accent);
+  margin-bottom: 6px;
+}
+
+.deploy-bundle-mate {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 0;
+  font-size: 0.85rem;
+}
+
+.deploy-bundle-state {
+  margin-left: auto;
+  font-size: 0.75rem;
+  color: var(--text-faint);
 }
 
 /* ---------- deploy history ---------- */

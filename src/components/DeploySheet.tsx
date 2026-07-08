@@ -1,6 +1,6 @@
 'use client';
 
-import { GitBranch, TriangleAlert, X } from 'lucide-react';
+import { GitBranch, Link2, TriangleAlert, X } from 'lucide-react';
 import type { StatusRow, TaskWithProjects } from '@/lib/types';
 import StatusDot from './StatusDot';
 
@@ -9,16 +9,26 @@ import StatusDot from './StatusDot';
 // reminders and backend flags. Actual archiving is CI-driven.
 export default function DeploySheet({
   tasks,
+  allTasks,
   statuses,
   onClose,
 }: {
   tasks: TaskWithProjects[];
+  allTasks: TaskWithProjects[];
   statuses: StatusRow[];
   onClose: () => void;
 }) {
   const deployIds = new Set(
     statuses.filter((s) => s.is_deploy).map((s) => s.id)
   );
+
+  // Bundle-mates of a task that still need shipping (not yet archived).
+  const bundleMates = (task: TaskWithProjects) =>
+    task.bundle_id
+      ? allTasks.filter(
+          (t) => t.id !== task.id && t.bundle_id === task.bundle_id && !t.archived_at
+        )
+      : [];
 
   const pending = tasks
     .filter((t) => t.status_id && deployIds.has(t.status_id))
@@ -78,6 +88,27 @@ export default function DeploySheet({
                     <TriangleAlert size={13} /> {task.deploy_notes}
                   </div>
                 )}
+                {(() => {
+                  const mates = bundleMates(task);
+                  if (mates.length === 0) return null;
+                  return (
+                    <div className="deploy-bundle">
+                      <div className="deploy-bundle-head">
+                        <Link2 size={13} /> 需一併部署
+                      </div>
+                      {mates.map((m) => {
+                        const ms = statuses.find((s) => s.id === m.status_id);
+                        return (
+                          <div className="deploy-bundle-mate" key={m.id}>
+                            {ms && <StatusDot color={ms.color} style={ms.style} sm />}
+                            <span>{m.title}</span>
+                            {ms && <span className="deploy-bundle-state">{ms.name}</span>}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  );
+                })()}
               </div>
             );
           })}

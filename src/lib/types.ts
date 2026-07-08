@@ -77,6 +77,7 @@ export interface Task {
   status_id: string | null;
   category_id: string | null;
   parent_id: string | null; // set on subtasks (points at the parent task)
+  bundle_id: string | null; // deploy bundle — tasks sharing it ship together
   blocked_reason: string | null; // shown when the status style is `cross`
   needs_backend: boolean;
   deploy_notes: string;

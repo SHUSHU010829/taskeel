@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { CornerUpLeft, GitBranch, Plus, Settings2 } from 'lucide-react';
+import { Check, CornerUpLeft, GitBranch, Link2, Plus, Settings2 } from 'lucide-react';
 import {
   type CategoryRow,
   type Project,
@@ -35,6 +35,9 @@ export default function TaskEditor({
   currentWorkspaceId,
   subtasks,
   parentTask,
+  bundleCandidates,
+  bundleMemberIds,
+  onSetBundle,
   onSave,
   onAddSubtask,
   onOpenTask,
@@ -50,6 +53,9 @@ export default function TaskEditor({
   currentWorkspaceId: string | null;
   subtasks: TaskWithProjects[];
   parentTask: TaskWithProjects | null;
+  bundleCandidates: Array<{ id: string; title: string; status_id: string | null }>;
+  bundleMemberIds: string[];
+  onSetBundle: (otherIds: string[]) => void;
   onSave: (draft: TaskDraft) => void;
   onAddSubtask: (title: string) => void;
   onOpenTask: (t: TaskWithProjects) => void;
@@ -79,6 +85,9 @@ export default function TaskEditor({
   const [showSettings, setShowSettings] = useState(false);
   const [moveTo, setMoveTo] = useState<Workspace | null>(null);
   const [newSubtask, setNewSubtask] = useState('');
+  // deploy bundle: ids of tasks that must ship together with this one
+  const [boundIds, setBoundIds] = useState<string[]>(bundleMemberIds);
+  const [bundleFilter, setBundleFilter] = useState('');
   // Only top-level, already-saved tasks can hold subtasks.
   const canHaveSubtasks = !!task && !task.parent_id;
 
@@ -118,6 +127,19 @@ export default function TaskEditor({
     onAddSubtask(newSubtask.trim());
     setNewSubtask('');
   }
+
+  function toggleBound(id: string) {
+    setBoundIds((prev) => {
+      const next = prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id];
+      onSetBundle(next);
+      return next;
+    });
+  }
+
+  const filteredCandidates = bundleFilter.trim()
+    ? bundleCandidates.filter((c) => c.title.toLowerCase().includes(bundleFilter.trim().toLowerCase()))
+    : bundleCandidates;
+  const boundCandidates = bundleCandidates.filter((c) => boundIds.includes(c.id));
 
   // Subtasks / parent link — shown next to the description (commonly used).
   const subtaskBlock =
@@ -371,6 +393,57 @@ export default function TaskEditor({
                     </button>
                   </div>
                 </div>
+
+                {/* deploy bundle — existing tasks only */}
+                {task && (
+                  <div className="field">
+                    <div className="field-label">部署綁定（需一併部署的任務）</div>
+                    {boundCandidates.length > 0 ? (
+                      <div className="bundle-current">
+                        <Link2 size={13} />
+                        已綁定 {boundCandidates.length} 個任務，部署時會一併提醒。
+                      </div>
+                    ) : (
+                      <div style={{ color: 'var(--text-faint)', fontSize: '0.8rem', marginBottom: 6 }}>
+                        勾選其他任務，讓它們與此任務同一次部署。
+                      </div>
+                    )}
+                    {bundleCandidates.length > 6 && (
+                      <input
+                        className="text-input"
+                        style={{ marginBottom: 6 }}
+                        placeholder="搜尋任務…"
+                        value={bundleFilter}
+                        onChange={(e) => setBundleFilter(e.target.value)}
+                      />
+                    )}
+                    {bundleCandidates.length === 0 ? (
+                      <div style={{ color: 'var(--text-faint)', fontSize: '0.8rem' }}>
+                        此工作區沒有其他可綁定的任務。
+                      </div>
+                    ) : (
+                      <div className="bundle-list">
+                        {filteredCandidates.map((c) => {
+                          const s = statuses.find((x) => x.id === c.status_id);
+                          const on = boundIds.includes(c.id);
+                          return (
+                            <button
+                              key={c.id}
+                              className={`bundle-item${on ? ' on' : ''}`}
+                              onClick={() => toggleBound(c.id)}
+                            >
+                              <span className={`bundle-check${on ? ' on' : ''}`}>
+                                {on && <Check size={12} />}
+                              </span>
+                              {s && <StatusDot color={s.color} style={s.style} sm />}
+                              <span className="bundle-item-title">{c.title}</span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                )}
             </div>
           ) : (
             <>
