@@ -22,7 +22,7 @@ import type { Project, StatusRow, Workspace } from '@/lib/types';
 import { enterSubmit } from '@/lib/useEnterSubmit';
 import StatusDot from './StatusDot';
 import WorkspaceIcon from './WorkspaceIcon';
-import { GoogleMark, GithubMark } from './ProviderMarks';
+import { GoogleMark } from './ProviderMarks';
 
 export type View = 'board' | 'history';
 
@@ -428,16 +428,6 @@ export default function Sidebar({
                   }}
                 >
                   <GoogleMark size={14} /> 連結 Google
-                </button>
-                <button
-                  className="ws-menu-item"
-                  style={{ gap: 8 }}
-                  onClick={() => {
-                    setAcctOpen(false);
-                    onLinkIdentity('github');
-                  }}
-                >
-                  <GithubMark size={14} /> 連結 GitHub
                 </button>
                 <div className="acct-sep" />
                 <button

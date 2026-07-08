@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { ArrowLeft, Diamond, Loader2, Mail, MailCheck } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
-import { GoogleMark, GithubMark } from '@/components/ProviderMarks';
+import { GoogleMark } from '@/components/ProviderMarks';
 
 type OAuthProvider = 'google' | 'github';
 
@@ -100,15 +100,6 @@ export default function LoginPage() {
               >
                 {oauthBusy === 'google' ? <Loader2 size={15} className="spin" /> : <GoogleMark />}
                 使用 Google 繼續
-              </button>
-              <button
-                type="button"
-                className="btn login-provider"
-                disabled={oauthBusy !== null}
-                onClick={() => signInWithOAuth('github')}
-              >
-                {oauthBusy === 'github' ? <Loader2 size={15} className="spin" /> : <GithubMark />}
-                使用 GitHub 繼續
               </button>
             </div>
 
