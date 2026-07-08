@@ -3,8 +3,11 @@ import { createClient } from '@/lib/supabase/server';
 import type { CategoryRow, Project, StatusRow, Workspace } from '@/lib/types';
 import Board from '@/components/Board';
 
-// Home = the task board. Server component: authenticates, then hands off to the
-// client Board (which seeds workspaces + statuses on first login).
+const TASK_SELECT = '*, task_projects(*, project:projects(*))';
+
+// Home = the task board. Server component: authenticates and loads the initial
+// data (including the first workspace's tasks) so the board paints immediately
+// without a client round-trip.
 export default async function HomePage() {
   const supabase = await createClient();
   const {
@@ -21,6 +24,17 @@ export default async function HomePage() {
       supabase.from('categories').select('*').order('position', { ascending: true }),
     ]);
 
+  const firstWs = (workspaces ?? [])[0];
+  let initialTasks: unknown[] = [];
+  if (firstWs) {
+    const { data: tasks } = await supabase
+      .from('tasks')
+      .select(TASK_SELECT)
+      .eq('workspace_id', firstWs.id)
+      .order('created_at', { ascending: false });
+    initialTasks = tasks ?? [];
+  }
+
   return (
     <Board
       userId={user.id}
@@ -29,6 +43,8 @@ export default async function HomePage() {
       initialProjects={(projects ?? []) as Project[]}
       initialStatuses={(statuses ?? []) as StatusRow[]}
       initialCategories={(cats ?? []) as CategoryRow[]}
+      initialTaskRows={initialTasks}
+      initialTasksWorkspaceId={firstWs?.id ?? null}
     />
   );
 }

@@ -34,6 +34,27 @@ import { type CategoryHandlers } from './CategoryList';
 import DeploySheet from './DeploySheet';
 import DeployHistory from './DeployHistory';
 
+const TASK_SELECT = '*, task_projects(*, project:projects(*))';
+
+// Map raw joined task rows (from either the server or the client query) into
+// TaskWithProjects.
+function mapTaskRows(data: unknown[]): TaskWithProjects[] {
+  return (data as any[]).map((t) => {
+    const { task_projects, ...rest } = t;
+    return {
+      ...rest,
+      links: (task_projects ?? []).map((tp: any) => ({
+        task_id: tp.task_id,
+        project_id: tp.project_id,
+        branch: tp.branch,
+        deploy_status: tp.deploy_status,
+        deployed_at: tp.deployed_at,
+        project: tp.project,
+      })),
+    };
+  });
+}
+
 export default function Board({
   userId,
   userEmail,
@@ -41,6 +62,8 @@ export default function Board({
   initialProjects,
   initialStatuses,
   initialCategories,
+  initialTaskRows,
+  initialTasksWorkspaceId,
 }: {
   userId: string;
   userEmail: string;
@@ -48,6 +71,8 @@ export default function Board({
   initialProjects: Project[];
   initialStatuses: StatusRow[];
   initialCategories: CategoryRow[];
+  initialTaskRows: unknown[];
+  initialTasksWorkspaceId: string | null;
 }) {
   const router = useRouter();
   const supabase = useMemo(() => createClient(), []);
@@ -57,7 +82,11 @@ export default function Board({
   const [statuses, setStatuses] = useState<StatusRow[]>(initialStatuses);
   const [categories, setCategories] = useState<CategoryRow[]>(initialCategories);
   const [currentWs, setCurrentWs] = useState<Workspace | null>(initialWorkspaces[0] ?? null);
-  const [tasks, setTasks] = useState<TaskWithProjects[]>([]);
+  const [tasks, setTasks] = useState<TaskWithProjects[]>(() =>
+    initialTasksWorkspaceId && initialTasksWorkspaceId === (initialWorkspaces[0]?.id ?? null)
+      ? mapTaskRows(initialTaskRows)
+      : []
+  );
   const [view, setView] = useState<View>('board');
   const [editing, setEditing] = useState<TaskWithProjects | null | 'new'>(null);
   const [editingProject, setEditingProject] = useState<Project | null>(null);
@@ -180,29 +209,23 @@ export default function Board({
   // ---------- data loading ----------
   const loadTasks = useCallback(async () => {
     if (!currentWs) return;
-    const { data, error } = await supabase
-      .from('tasks')
-      .select('*, task_projects(*, project:projects(*))')
-      .eq('workspace_id', currentWs.id)
-      .order('created_at', { ascending: false });
-    if (error || !data) return;
-    setTasks(
-      data.map((t: any) => {
-        const { task_projects, ...rest } = t;
-        return {
-          ...rest,
-          links: (task_projects ?? []).map((tp: any) => ({
-            task_id: tp.task_id,
-            project_id: tp.project_id,
-            branch: tp.branch,
-            deploy_status: tp.deploy_status,
-            deployed_at: tp.deployed_at,
-            project: tp.project,
-          })),
-        };
-      })
-    );
-  }, [supabase, currentWs]);
+    const run = () =>
+      supabase
+        .from('tasks')
+        .select(TASK_SELECT)
+        .eq('workspace_id', currentWs.id)
+        .order('created_at', { ascending: false });
+
+    let { data, error } = await run();
+    if (error) {
+      // one retry — transient failures (e.g. token refresh mid-flight)
+      await new Promise((r) => setTimeout(r, 400));
+      ({ data, error } = await run());
+    }
+    // keep whatever is shown if it still failed, rather than blanking out
+    if (error) return report('載入任務失敗', error);
+    if (data) setTasks(mapTaskRows(data));
+  }, [supabase, currentWs, report]);
 
   const loadStatuses = useCallback(async () => {
     const { data } = await supabase.from('task_statuses').select('*').order('position');
