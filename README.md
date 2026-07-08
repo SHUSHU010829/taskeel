@@ -35,7 +35,12 @@ Statuses and categories are per-workspace and edited in the workspace settings
 (sidebar **工作區設定** or the switcher pencil). Light/dark theme, font size, and
 a pinned landing workspace are in the account menu.
 
-Enable an auth provider — **magic link (email OTP)** is what the login page uses.
+Enable auth providers. The login page offers **magic link (email OTP)** plus
+**Google** and **GitHub** OAuth. To turn the OAuth buttons on, enable those
+providers under **Authentication → Providers** (add each one's client ID /
+secret), and add `https://<your-domain>/auth/callback` (and the Supabase
+`.../auth/v1/callback`) to the allowed redirect URLs. The buttons are always
+shown; a disabled provider just returns an error when clicked.
 
 ### 2. Environment
 
