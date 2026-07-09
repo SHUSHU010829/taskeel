@@ -1412,15 +1412,14 @@ a {
 .md-editor {
   display: flex;
   flex-direction: column;
-  flex: 1;
-  min-height: 200px;
+  min-height: 0;
 }
 
 .md-editor .modal-desc {
-  flex: 1;
-  min-height: 0;
+  flex: none;
+  min-height: 160px;
   margin-bottom: 0;
-  overflow-y: auto;
+  overflow: visible;
 }
 
 /* subtask / parent section shown above the description */
@@ -1489,7 +1488,6 @@ a {
 
 /* rendered markdown */
 .md {
-  overflow-y: auto;
   cursor: text;
 }
 
@@ -1606,18 +1604,16 @@ a {
 .editor-body {
   flex: 1;
   min-height: 0;
-  position: relative;
+  /* the body itself scrolls so a tall subtask list never overlaps the footer */
+  overflow-y: auto;
   display: flex;
   flex-direction: column;
 }
 
 /* settings shown in-place in the description region (not an overlay) */
 .settings-inline {
-  flex: 1;
-  min-height: 0;
-  overflow-y: auto;
   padding-right: 2px;
-  padding-bottom: 16px;
+  padding-bottom: 8px;
 }
 
 .settings-toggle {
