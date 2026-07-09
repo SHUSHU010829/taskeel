@@ -9,8 +9,10 @@ import StatusList, { type StatusManagerHandlers } from './StatusList';
 import CategoryList, { type CategoryHandlers } from './CategoryList';
 import WorkspaceIcon, { WS_ICON_KEYS } from './WorkspaceIcon';
 
-// Add / edit a workspace: name, colour, and (for existing workspaces) its
-// statuses. `workspace` null = new.
+// Add / edit a workspace. Existing workspaces auto-save every field (name on
+// blur, colour / icon on click), like the task editor; statuses & categories
+// already auto-save. New workspaces accumulate a draft and 建立 once. `workspace`
+// null = new.
 export default function WorkspaceEditor({
   workspace,
   canDelete,
@@ -19,6 +21,7 @@ export default function WorkspaceEditor({
   categories,
   categoryHandlers,
   onSave,
+  onPatch,
   onDelete,
   onClose,
 }: {
@@ -29,17 +32,38 @@ export default function WorkspaceEditor({
   categories: CategoryRow[];
   categoryHandlers: CategoryHandlers | null;
   onSave: (patch: { name: string; color: string; icon: string | null }) => void;
+  onPatch: (patch: Partial<{ name: string; color: string; icon: string | null }>) => void;
   onDelete?: () => void;
   onClose: () => void;
 }) {
+  const isNew = !workspace;
   const [name, setName] = useState(workspace?.name ?? '');
   const [color, setColor] = useState(workspace?.color ?? '#5E6AD2');
   const [icon, setIcon] = useState<string | null>(workspace?.icon ?? 'diamond');
   const [confirming, setConfirming] = useState(false);
 
-  function save() {
+  function create() {
     if (!name.trim()) return;
     onSave({ name: name.trim(), color, icon });
+  }
+
+  function commitName() {
+    const t = name.trim();
+    if (!t) {
+      if (workspace) setName(workspace.name); // revert empty
+      return;
+    }
+    if (workspace && t !== workspace.name) onPatch({ name: t });
+  }
+
+  function chooseColor(c: string) {
+    setColor(c);
+    if (workspace) onPatch({ color: c });
+  }
+
+  function chooseIcon(k: string) {
+    setIcon(k);
+    if (workspace) onPatch({ icon: k });
   }
 
   return (
@@ -59,7 +83,8 @@ export default function WorkspaceEditor({
           placeholder="工作區名稱"
           value={name}
           onChange={(e) => setName(e.target.value)}
-          {...enterSubmit(save)}
+          onBlur={commitName}
+          {...enterSubmit(isNew ? create : commitName)}
         />
 
         <div className="field">
@@ -69,7 +94,7 @@ export default function WorkspaceEditor({
               <button
                 key={c}
                 className="color-swatch"
-                onClick={() => setColor(c)}
+                onClick={() => chooseColor(c)}
                 style={{
                   background: c,
                   outline: color === c ? '2px solid var(--text)' : '2px solid transparent',
@@ -88,7 +113,7 @@ export default function WorkspaceEditor({
                 key={key}
                 className={`icon-swatch${icon === key ? ' on' : ''}`}
                 style={icon === key ? { color, borderColor: color } : undefined}
-                onClick={() => setIcon(key)}
+                onClick={() => chooseIcon(key)}
                 title={key}
               >
                 <WorkspaceIcon icon={key} size={16} />
@@ -112,23 +137,36 @@ export default function WorkspaceEditor({
         )}
 
         <div className="modal-actions">
-          {workspace && onDelete && (
-            <button
-              className="btn btn-ghost"
-              style={{ marginRight: 'auto', color: canDelete ? '#EB5757' : 'var(--text-faint)' }}
-              disabled={!canDelete}
-              title={canDelete ? '刪除工作區' : '至少要保留一個工作區'}
-              onClick={() => setConfirming(true)}
-            >
-              刪除工作區
-            </button>
+          {isNew ? (
+            <>
+              <button className="btn btn-ghost" onClick={onClose}>
+                取消
+              </button>
+              <button className="btn btn-primary" disabled={!name.trim()} onClick={create}>
+                建立
+              </button>
+            </>
+          ) : (
+            <>
+              {onDelete && (
+                <button
+                  className="btn btn-ghost"
+                  style={{
+                    marginRight: 'auto',
+                    color: canDelete ? '#EB5757' : 'var(--text-faint)',
+                  }}
+                  disabled={!canDelete}
+                  title={canDelete ? '刪除工作區' : '至少要保留一個工作區'}
+                  onClick={() => setConfirming(true)}
+                >
+                  刪除工作區
+                </button>
+              )}
+              <button className="btn btn-primary" onClick={onClose}>
+                完成
+              </button>
+            </>
           )}
-          <button className="btn btn-ghost" onClick={onClose}>
-            取消
-          </button>
-          <button className="btn btn-primary" disabled={!name.trim()} onClick={save}>
-            儲存
-          </button>
         </div>
       </div>
 

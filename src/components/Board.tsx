@@ -676,9 +676,11 @@ export default function Board({
     setEditingWs(null);
   }
 
-  async function updateWorkspace(
+  // Auto-save a workspace field patch (name / color / icon), keeping the editor
+  // open — mirrors the task editor's live-save model.
+  async function patchWorkspace(
     id: string,
-    patch: { name: string; color: string; icon: string | null },
+    patch: Partial<{ name: string; color: string; icon: string | null }>,
   ) {
     const { data, error } = await supabase
       .from('workspaces')
@@ -689,7 +691,7 @@ export default function Board({
     if (error || !data) return report('更新工作區失敗', error);
     setWorkspaces((prev) => prev.map((w) => (w.id === id ? (data as Workspace) : w)));
     setCurrentWs((c) => (c?.id === id ? (data as Workspace) : c));
-    setEditingWs(null);
+    setEditingWs((e) => (e && e !== 'new' && e.id === id ? (data as Workspace) : e));
   }
 
   async function deleteWorkspace(id: string) {
@@ -1122,11 +1124,8 @@ export default function Board({
           statusHandlers={editStatusHandlers}
           categories={editedWsCategories}
           categoryHandlers={editCategoryHandlers}
-          onSave={(patch) =>
-            editingWs === 'new'
-              ? addWorkspace(patch.name, patch.color, patch.icon)
-              : updateWorkspace(editingWs.id, patch)
-          }
+          onSave={(patch) => addWorkspace(patch.name, patch.color, patch.icon)}
+          onPatch={(patch) => editingWs !== 'new' && editingWs && patchWorkspace(editingWs.id, patch)}
           onDelete={editingWs === 'new' ? undefined : () => deleteWorkspace(editingWs.id)}
           onClose={() => setEditingWs(null)}
         />
