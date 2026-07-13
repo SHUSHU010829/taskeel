@@ -1711,6 +1711,11 @@ a {
   outline-offset: 2px;
 }
 
+.cat-abbr {
+  max-width: 84px;
+  flex-shrink: 0;
+}
+
 .icon-grid {
   display: flex;
   flex-wrap: wrap;

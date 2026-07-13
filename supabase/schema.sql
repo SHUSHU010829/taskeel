@@ -26,6 +26,7 @@ create table projects (
   name         text not null,
   color        text not null default '#5E6AD2',
   repo         text,                       -- 'owner/bibi-bot'，供部署歸檔比對
+  abbr         text,                       -- 快速捕捉縮寫（@abbr）
   created_at   timestamptz not null default now()
 );
 
@@ -55,6 +56,7 @@ create table categories (
   name         text not null,
   color        text not null default '#5E6AD2',
   position     int  not null default 0,
+  abbr         text,                       -- 快速捕捉縮寫（#abbr）
   created_at   timestamptz not null default now()
 );
 create index on categories (workspace_id, position);

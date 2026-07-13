@@ -131,6 +131,17 @@ export default function CategoryList({
               if (v && v !== c.name) handlers.updateCategory(c.id, { name: v });
             }}
           />
+          <input
+            className="text-input cat-abbr"
+            placeholder="縮寫"
+            title="快速捕捉用 #縮寫"
+            defaultValue={c.abbr ?? ''}
+            key={`abbr-${c.abbr ?? ''}`}
+            onBlur={(e) => {
+              const v = e.target.value.trim();
+              if (v !== (c.abbr ?? '')) handlers.updateCategory(c.id, { abbr: v || null });
+            }}
+          />
           <button
             className="icon-btn"
             title="刪除"

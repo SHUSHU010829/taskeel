@@ -409,10 +409,16 @@ export default function Board({
         const p = priorityFromToken(tk.slice(1));
         if (p) { priority = p; continue; }
       } else if (tk.length > 1 && tk[0] === '#') {
-        const c = wsCategories.find((x) => x.name.toLowerCase() === tk.slice(1).toLowerCase());
+        const key = tk.slice(1).toLowerCase();
+        const c = wsCategories.find(
+          (x) => x.name.toLowerCase() === key || x.abbr?.toLowerCase() === key
+        );
         if (c) { category_id = c.id; continue; }
       } else if (tk.length > 1 && tk[0] === '@') {
-        const p = wsProjects.find((x) => x.name.toLowerCase() === tk.slice(1).toLowerCase());
+        const key = tk.slice(1).toLowerCase();
+        const p = wsProjects.find(
+          (x) => x.name.toLowerCase() === key || x.abbr?.toLowerCase() === key
+        );
         if (p) { if (!projectIds.includes(p.id)) projectIds.push(p.id); continue; }
       }
       titleParts.push(tk);
@@ -720,7 +726,7 @@ export default function Board({
 
   async function updateProject(
     id: string,
-    patch: { name: string; repo: string | null; color: string }
+    patch: { name: string; repo: string | null; color: string; abbr: string | null }
   ) {
     const { data, error } = await supabase
       .from('projects')

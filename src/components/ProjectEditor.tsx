@@ -24,18 +24,24 @@ export default function ProjectEditor({
   onClose,
 }: {
   project: Project;
-  onSave: (patch: { name: string; repo: string | null; color: string }) => void;
+  onSave: (patch: { name: string; repo: string | null; color: string; abbr: string | null }) => void;
   onDelete: () => void;
   onClose: () => void;
 }) {
   const [name, setName] = useState(project.name);
   const [repo, setRepo] = useState(project.repo ?? '');
+  const [abbr, setAbbr] = useState(project.abbr ?? '');
   const [color, setColor] = useState(project.color);
   const [confirming, setConfirming] = useState(false);
 
   function save() {
     if (!name.trim()) return;
-    onSave({ name: name.trim(), repo: repo.trim() || null, color });
+    onSave({
+      name: name.trim(),
+      repo: repo.trim() || null,
+      color,
+      abbr: abbr.trim() || null,
+    });
   }
 
   return (
@@ -61,6 +67,17 @@ export default function ProjectEditor({
             placeholder="owner/bibi-bot"
             value={repo}
             onChange={(e) => setRepo(e.target.value)}
+            {...enterSubmit(save)}
+          />
+        </div>
+
+        <div className="field">
+          <div className="field-label">縮寫（快速捕捉用 @縮寫）</div>
+          <input
+            className="text-input"
+            placeholder="如 et"
+            value={abbr}
+            onChange={(e) => setAbbr(e.target.value)}
             {...enterSubmit(save)}
           />
         </div>

@@ -31,6 +31,7 @@ export interface Project {
   name: string;
   color: string;
   repo: string | null;
+  abbr: string | null; // quick-capture alias (@abbr)
   created_at: string;
 }
 
@@ -57,6 +58,7 @@ export interface CategoryRow {
   name: string;
   color: string;
   position: number;
+  abbr: string | null; // quick-capture alias (#abbr)
   created_at: string;
 }
 
