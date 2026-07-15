@@ -12,22 +12,24 @@ import type { DocumentRow } from '@/lib/types';
 export default function TaskDocuments({
   bound,
   candidates,
-  projectNameById,
   onBind,
   onUnbind,
 }: {
   bound: DocumentRow[];
   candidates: DocumentRow[];
-  projectNameById: Record<string, string>;
   onBind: (docId: string) => void;
   onUnbind: (docId: string) => void;
 }) {
   const [openId, setOpenId] = useState<string | null>(null);
   const [pickOpen, setPickOpen] = useState(false);
+  const [filter, setFilter] = useState('');
   const pickRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (!pickOpen) return;
+    if (!pickOpen) {
+      setFilter('');
+      return;
+    }
     const h = (e: MouseEvent) => {
       if (pickRef.current && !pickRef.current.contains(e.target as Node)) setPickOpen(false);
     };
@@ -36,7 +38,10 @@ export default function TaskDocuments({
   }, [pickOpen]);
 
   const boundIds = new Set(bound.map((d) => d.id));
-  const pickable = candidates.filter((d) => !boundIds.has(d.id));
+  const q = filter.trim().toLowerCase();
+  const pickable = candidates
+    .filter((d) => !boundIds.has(d.id))
+    .filter((d) => !q || d.title.toLowerCase().includes(q));
 
   return (
     <div className="ed-section">
@@ -45,33 +50,37 @@ export default function TaskDocuments({
         <span style={{ flex: 1 }}>參考資料{bound.length > 0 ? `（${bound.length}）` : ''}</span>
         <div ref={pickRef} style={{ position: 'relative' }}>
           <button className="doc-add-btn" onClick={() => setPickOpen((o) => !o)}>
-            <Plus size={13} /> 綁定文件
+            <Plus size={13} /> 引用文件
           </button>
           {pickOpen && (
-            <div className="popover" style={{ top: 24, right: 0, minWidth: 220 }}>
-              {pickable.length === 0 && (
-                <div className="popover-empty">沒有可綁定的文件（到專案文件區新增）。</div>
-              )}
-              {pickable.map((d) => (
-                <button
-                  key={d.id}
-                  className="popover-item"
-                  onClick={() => {
-                    onBind(d.id);
-                    setPickOpen(false);
-                  }}
-                >
-                  <FileText size={13} style={{ flexShrink: 0, color: 'var(--text-faint)' }} />
-                  <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                    {d.title}
-                  </span>
-                  {d.project_id && projectNameById[d.project_id] && (
-                    <span style={{ fontSize: '0.72rem', color: 'var(--text-faint)' }}>
-                      {projectNameById[d.project_id]}
+            <div className="popover doc-pick" style={{ top: 24, right: 0, minWidth: 240 }}>
+              <input
+                className="text-input"
+                style={{ marginBottom: 4 }}
+                placeholder="搜尋文件…"
+                autoFocus
+                value={filter}
+                onChange={(e) => setFilter(e.target.value)}
+              />
+              <div className="doc-pick-list">
+                {pickable.length === 0 && (
+                  <div className="popover-empty">
+                    {candidates.length === 0
+                      ? '沒有文件，到左側「文件」新增。'
+                      : q
+                        ? '找不到符合的文件。'
+                        : '全部文件都已引用。'}
+                  </div>
+                )}
+                {pickable.map((d) => (
+                  <button key={d.id} className="popover-item" onClick={() => onBind(d.id)}>
+                    <FileText size={13} style={{ flexShrink: 0, color: 'var(--text-faint)' }} />
+                    <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                      {d.title}
                     </span>
-                  )}
-                </button>
-              ))}
+                  </button>
+                ))}
+              </div>
             </div>
           )}
         </div>
@@ -79,7 +88,7 @@ export default function TaskDocuments({
 
       {bound.length === 0 ? (
         <div style={{ color: 'var(--text-faint)', fontSize: '0.8rem', marginTop: 6 }}>
-          綁定專案文件後，可在這裡直接閱讀內容。
+          引用文件後，可在這裡直接展開閱讀內容。
         </div>
       ) : (
         <div style={{ marginTop: 6 }}>
@@ -106,7 +115,7 @@ export default function TaskDocuments({
                       <ExternalLink size={13} />
                     </a>
                   )}
-                  <button className="icon-btn" title="取消綁定" onClick={() => onUnbind(d.id)}>
+                  <button className="icon-btn" title="移除引用" onClick={() => onUnbind(d.id)}>
                     <X size={14} />
                   </button>
                 </div>

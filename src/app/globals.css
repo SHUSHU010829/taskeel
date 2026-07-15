@@ -1569,6 +1569,11 @@ a {
   color: var(--text);
 }
 
+.doc-pick-list {
+  max-height: 240px;
+  overflow-y: auto;
+}
+
 /* ---------- documents view (standalone) ---------- */
 .docs-view {
   display: flex;
@@ -1867,10 +1872,11 @@ a {
 .editor-body {
   flex: 1;
   min-height: 0;
-  /* the body itself scrolls so a tall subtask list never overlaps the footer */
+  /* plain block flow (not flex) so children keep natural height and the body
+     scrolls — a flex column would let the description shrink and its content
+     spill over the sections below it */
+  display: block;
   overflow-y: auto;
-  display: flex;
-  flex-direction: column;
 }
 
 /* settings shown in-place in the description region (not an overlay) */

@@ -62,7 +62,6 @@ export default function TaskEditor({
   onDetachParent,
   boundDocuments,
   docCandidates,
-  projectNameById,
   comments,
   onBindDocument,
   onUnbindDocument,
@@ -91,7 +90,6 @@ export default function TaskEditor({
   onDetachParent: () => void;
   boundDocuments: DocumentRow[];
   docCandidates: DocumentRow[];
-  projectNameById: Record<string, string>;
   comments: Comment[];
   onBindDocument: (docId: string) => void;
   onUnbindDocument: (docId: string) => void;
@@ -630,7 +628,6 @@ export default function TaskEditor({
                   <TaskDocuments
                     bound={boundDocuments}
                     candidates={docCandidates}
-                    projectNameById={projectNameById}
                     onBind={onBindDocument}
                     onUnbind={onUnbindDocument}
                   />

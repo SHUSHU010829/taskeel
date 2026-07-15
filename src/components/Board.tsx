@@ -1094,8 +1094,6 @@ export default function Board({
   );
   const titleById: Record<string, string> = {};
   tasks.forEach((t) => (titleById[t.id] = t.title));
-  const projectNameById: Record<string, string> = {};
-  projects.forEach((p) => (projectNameById[p.id] = p.name));
   const leafTasks = tasks.filter((t) => !parentIds.has(t.id));
 
   const archiveIds = new Set(wsStatuses.filter((s) => s.is_archive).map((s) => s.id));
@@ -1303,7 +1301,6 @@ export default function Board({
           onDetachParent={() => editingTask && detachParent(editingTask)}
           boundDocuments={editingDocuments}
           docCandidates={wsDocuments}
-          projectNameById={projectNameById}
           comments={editingComments}
           onBindDocument={(docId) => editingTask && bindDocument(editingTask, docId)}
           onUnbindDocument={(docId) => editingTask && unbindDocument(editingTask, docId)}
