@@ -4,29 +4,35 @@ import { useDraggable } from '@dnd-kit/core';
 import { CalendarClock, Check, CornerDownRight, GitBranch } from 'lucide-react';
 import type { CategoryRow, StatusRow, TaskWithProjects } from '@/lib/types';
 import { dueMeta } from '@/lib/date';
+import type { Project } from '@/lib/types';
 import StatusControl from './StatusControl';
 import CategoryControl from './CategoryControl';
 import PriorityFlag from './PriorityFlag';
+import ProjectQuickControl from './ProjectQuickControl';
 
 // One task row in the grouped board list. Draggable (dnd-kit) between columns.
 export default function TaskRow({
   task,
   statuses,
   categories,
+  projects,
   parentLabel,
   onOpenParent,
   onOpen,
   onStatus,
   onCategory,
+  onToggleProject,
 }: {
   task: TaskWithProjects;
   statuses: StatusRow[];
   categories: CategoryRow[];
+  projects: Project[];
   parentLabel?: string;
   onOpenParent?: () => void;
   onOpen: () => void;
   onStatus: (nextId: string, reason: string | null) => void;
   onCategory: (next: string | null) => void;
+  onToggleProject: (projectId: string) => void;
 }) {
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id: task.id,
@@ -100,6 +106,12 @@ export default function TaskRow({
           </span>
         ))}
       </div>
+
+      <ProjectQuickControl
+        projects={projects}
+        selectedIds={task.links.map((l) => l.project_id)}
+        onToggle={onToggleProject}
+      />
     </div>
   );
 }

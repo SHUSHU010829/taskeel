@@ -557,6 +557,58 @@ export default function Board({
     if (error) report('更新分類失敗', error);
   }
 
+  // Row-level quick toggle: attach / detach a project (no branch) on a task.
+  async function toggleTaskProject(task: TaskWithProjects, projectId: string) {
+    const has = task.links.some((l) => l.project_id === projectId);
+    if (has) {
+      setTasks((prev) =>
+        prev.map((t) =>
+          t.id === task.id
+            ? { ...t, links: t.links.filter((l) => l.project_id !== projectId) }
+            : t
+        )
+      );
+      const { error } = await supabase
+        .from('task_projects')
+        .delete()
+        .eq('task_id', task.id)
+        .eq('project_id', projectId);
+      if (error) {
+        report('更新專案失敗', error);
+        loadTasks();
+      }
+    } else {
+      const proj = projects.find((p) => p.id === projectId);
+      if (proj) {
+        setTasks((prev) =>
+          prev.map((t) =>
+            t.id === task.id
+              ? {
+                  ...t,
+                  links: [
+                    ...t.links,
+                    {
+                      task_id: task.id,
+                      project_id: projectId,
+                      branch: null,
+                      deploy_status: 'pending' as const,
+                      deployed_at: null,
+                      project: proj,
+                    },
+                  ],
+                }
+              : t
+          )
+        );
+      }
+      const { error } = await supabase
+        .from('task_projects')
+        .insert({ task_id: task.id, project_id: projectId });
+      if (error) report('更新專案失敗', error);
+      loadTasks();
+    }
+  }
+
   // Move a task to another workspace: projects are workspace-scoped, so its
   // project/branch links are cleared and it gets the target's default status.
   // It also detaches from any parent (parents are workspace-bound).
@@ -1074,11 +1126,13 @@ export default function Board({
               tasks={boardTasks}
               statuses={wsStatuses}
               categories={wsCategories}
+              projects={wsProjects}
               parentTitleById={titleById}
               onOpen={setEditing}
               onOpenTaskId={openTaskId}
               onStatus={setTaskStatus}
               onCategory={setTaskCategory}
+              onToggleProject={toggleTaskProject}
               onMoveToStatus={(t, statusId) => setTaskStatus(t, statusId, t.blocked_reason)}
             />
           )}
@@ -1196,22 +1250,26 @@ function BoardList({
   tasks,
   statuses,
   categories,
+  projects,
   parentTitleById,
   onOpen,
   onOpenTaskId,
   onStatus,
   onCategory,
+  onToggleProject,
   onMoveToStatus,
 }: {
   boardStatuses: StatusRow[];
   tasks: TaskWithProjects[];
   statuses: StatusRow[];
   categories: CategoryRow[];
+  projects: Project[];
   parentTitleById: Record<string, string>;
   onOpen: (t: TaskWithProjects) => void;
   onOpenTaskId: (id: string) => void;
   onStatus: (t: TaskWithProjects, id: string, r: string | null) => void;
   onCategory: (t: TaskWithProjects, c: string | null) => void;
+  onToggleProject: (t: TaskWithProjects, projectId: string) => void;
   onMoveToStatus: (t: TaskWithProjects, statusId: string) => void;
 }) {
   const [activeId, setActiveId] = useState<string | null>(null);
@@ -1261,9 +1319,11 @@ function BoardList({
                   onOpenParent={
                     task.parent_id ? () => onOpenTaskId(task.parent_id!) : undefined
                   }
+                  projects={projects}
                   onOpen={() => onOpen(task)}
                   onStatus={(id, r) => onStatus(task, id, r)}
                   onCategory={(c) => onCategory(task, c)}
+                  onToggleProject={(pid) => onToggleProject(task, pid)}
                 />
               ))
             )}

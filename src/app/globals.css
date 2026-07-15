@@ -1164,6 +1164,55 @@ a {
   background: var(--bg-active);
 }
 
+.popover-empty {
+  padding: 8px;
+  color: var(--text-faint);
+  font-size: 0.8rem;
+}
+
+.mini-check {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--border-strong);
+  border-radius: 4px;
+  color: #fff;
+}
+
+.mini-check.on {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.proj-quick {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  flex-shrink: 0;
+  padding: 3px 6px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-faint);
+}
+
+.proj-quick:hover {
+  background: var(--bg-hover);
+  color: var(--text);
+}
+
+.proj-quick.on {
+  color: var(--text-dim);
+}
+
+.proj-quick-count {
+  font-size: 0.72rem;
+  font-weight: 600;
+}
+
 .popover input {
   width: 100%;
   margin-top: 4px;
