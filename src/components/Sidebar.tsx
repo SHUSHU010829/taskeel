@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import {
   ChevronDown,
   Diamond,
+  FileText,
   GitBranch,
   LayoutList,
   LogOut,
@@ -22,7 +23,7 @@ import { enterSubmit } from '@/lib/useEnterSubmit';
 import StatusDot from './StatusDot';
 import WorkspaceIcon from './WorkspaceIcon';
 
-export type View = 'board' | 'history';
+export type View = 'board' | 'history' | 'docs';
 
 const FONT_SIZES = [
   { label: '小', px: 13 },
@@ -230,6 +231,14 @@ export default function Sidebar({
         >
           <Rocket size={15} />
           {!rail && '部署歷史'}
+        </button>
+        <button
+          className={`nav-item${view === 'docs' ? ' active' : ''}`}
+          title={rail ? '文件' : undefined}
+          onClick={() => go('docs')}
+        >
+          <FileText size={15} />
+          {!rail && '文件'}
         </button>
 
         {/* projects */}

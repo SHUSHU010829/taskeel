@@ -11,7 +11,7 @@ Linear (deep-grey base, hairline borders, restrained purple accent).
 - **Search / command palette** — `⌘K` (or `/`) opens a fuzzy search over the workspace's tasks; Enter jumps to one, or create a task from the typed text.
 - **Priority & due dates** — tasks carry a priority (無/低/中/高/緊急) and an optional due date; rows show a flag and a due chip (soon/overdue coloured) and columns sort by priority → due → recency.
 - **Row project toggle** — each board row has a far-right control to attach/detach projects without opening the editor.
-- **Project documents & task references** — each project has a document area (markdown notes / links, in the project editor); a task can bind specific documents and read their content inline in its description area.
+- **Documents** — a per-workspace **文件** area (sidebar) for writing standalone markdown documents (each with its own id, not tied to a project); a task binds specific documents in its **參考資料** section and reads their content inline in its description area.
 - **Per-task discussion** — a small notes/questions thread on each task.
 - **Per-project branches** — one task can span multiple projects, each with its own repo and git branch.
 - **Batched deploy → archive** — CI pings a webhook when a branch ships; that `(project, branch)` is marked deployed. A task is archived only once *all* its projects have deployed.

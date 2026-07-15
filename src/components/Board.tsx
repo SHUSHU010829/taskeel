@@ -37,6 +37,7 @@ import { type CategoryHandlers } from './CategoryList';
 import DeploySheet from './DeploySheet';
 import DeployHistory from './DeployHistory';
 import CommandPalette from './CommandPalette';
+import DocumentsView from './DocumentsView';
 
 const TASK_SELECT = '*, task_projects(*, project:projects(*))';
 
@@ -677,21 +678,20 @@ export default function Board({
     }
   }
 
-  // ---------- documents ----------
-  async function addDocument(projectId: string, title: string) {
-    if (!currentWs || !title.trim()) return;
+  // ---------- documents (workspace-level, standalone) ----------
+  async function addDocument(title: string): Promise<string | null> {
+    if (!currentWs || !title.trim()) return null;
     const { data, error } = await supabase
       .from('documents')
-      .insert({
-        owner_id: userId,
-        workspace_id: currentWs.id,
-        project_id: projectId,
-        title: title.trim(),
-      })
+      .insert({ owner_id: userId, workspace_id: currentWs.id, title: title.trim() })
       .select('*')
       .single();
-    if (error || !data) return report('新增文件失敗', error);
+    if (error || !data) {
+      report('新增文件失敗', error);
+      return null;
+    }
     setDocuments((prev) => [...prev, data as DocumentRow]);
+    return (data as DocumentRow).id;
   }
 
   async function updateDocument(id: string, patch: Partial<DocumentRow>) {
@@ -1200,7 +1200,8 @@ export default function Board({
             <Menu size={18} />
           </button>
           <span className="breadcrumb">
-            {currentWs?.name} · {view === 'board' ? '任務看板' : '部署歷史'}
+            {currentWs?.name} ·{' '}
+            {view === 'board' ? '任務看板' : view === 'history' ? '部署歷史' : '文件'}
           </span>
           {view === 'board' && filteredProject && (
             <button
@@ -1258,6 +1259,13 @@ export default function Board({
               projects={wsProjects}
               statuses={wsStatuses}
               categories={wsCategories}
+            />
+          ) : view === 'docs' ? (
+            <DocumentsView
+              documents={wsDocuments}
+              onAdd={addDocument}
+              onUpdate={updateDocument}
+              onDelete={deleteDocument}
             />
           ) : (
             <BoardList
@@ -1317,12 +1325,6 @@ export default function Board({
       {editingProject && (
         <ProjectEditor
           project={editingProject}
-          documents={documents.filter((d) => d.project_id === editingProject.id)}
-          documentHandlers={{
-            addDocument: (title) => addDocument(editingProject.id, title),
-            updateDocument,
-            deleteDocument,
-          }}
           onSave={(patch) => updateProject(editingProject.id, patch)}
           onDelete={() => deleteProject(editingProject.id)}
           onClose={() => setEditingProject(null)}

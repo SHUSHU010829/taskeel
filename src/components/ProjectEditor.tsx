@@ -1,10 +1,9 @@
 'use client';
 
 import { useState } from 'react';
-import type { DocumentRow, Project } from '@/lib/types';
+import type { Project } from '@/lib/types';
 import { enterSubmit } from '@/lib/useEnterSubmit';
 import ConfirmDialog from './ConfirmDialog';
-import DocumentList, { type DocumentHandlers } from './DocumentList';
 
 const PRESET_COLORS = [
   '#5E6AD2',
@@ -20,15 +19,11 @@ const PRESET_COLORS = [
 // Edit / delete an existing project (name, repo, colour).
 export default function ProjectEditor({
   project,
-  documents,
-  documentHandlers,
   onSave,
   onDelete,
   onClose,
 }: {
   project: Project;
-  documents: DocumentRow[];
-  documentHandlers: DocumentHandlers;
   onSave: (patch: { name: string; repo: string | null; color: string; abbr: string | null }) => void;
   onDelete: () => void;
   onClose: () => void;
@@ -104,11 +99,6 @@ export default function ProjectEditor({
               />
             ))}
           </div>
-        </div>
-
-        <div className="field">
-          <div className="field-label">文件（此專案的參考資料）</div>
-          <DocumentList documents={documents} handlers={documentHandlers} />
         </div>
 
         <div className="modal-actions">
