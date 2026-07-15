@@ -1634,12 +1634,31 @@ a {
 .docs-main {
   flex: 1;
   min-width: 0;
-  overflow-y: auto;
-  padding: 24px;
+  min-height: 0;
+  padding: 20px 24px;
 }
 
+/* fill the pane: title/link/delete are fixed, the editor grows to fill */
 .doc-main-inner {
-  max-width: 760px;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.doc-main-inner .md-editor {
+  flex: 1;
+  min-height: 0;
+}
+
+.doc-main-inner .md-editor .modal-desc {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.doc-main-inner .doc-delete {
+  flex-shrink: 0;
+  margin-top: 12px;
 }
 
 .docs-empty {

@@ -59,7 +59,7 @@ function DocEditor({
         onSave={() => onUpdate(doc.id, { body })}
         startInEdit={!doc.body.trim()}
       />
-      <div style={{ marginTop: 12 }}>
+      <div className="doc-delete">
         <button
           className="btn btn-ghost"
           style={{ color: '#EB5757', gap: 4 }}
