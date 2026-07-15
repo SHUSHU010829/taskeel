@@ -12,7 +12,7 @@ Linear (deep-grey base, hairline borders, restrained purple accent).
 - **Priority & due dates** — tasks carry a priority (無/低/中/高/緊急) and an optional due date; rows show a flag and a due chip (soon/overdue coloured) and columns sort by priority → due → recency.
 - **Row project toggle** — each board row has a far-right control to attach/detach projects without opening the editor.
 - **Documents** — a per-workspace **文件** area (sidebar) for writing standalone markdown documents (each with its own id, not tied to a project); a task binds specific documents in its **參考資料** section and reads their content inline in its description area.
-- **Per-task discussion** — a small notes/questions thread on each task.
+- **Discussion** — a small notes/questions thread on each task, plus a workspace-wide **討論** view (sidebar) that lists every discussion with a one-click jump back to its task.
 - **Per-project branches** — one task can span multiple projects, each with its own repo and git branch.
 - **Batched deploy → archive** — CI pings a webhook when a branch ships; that `(project, branch)` is marked deployed. A task is archived only once *all* its projects have deployed.
 - **Deploy bundles** — tie tasks that must ship in the same release together (task editor → 設定 → 部署綁定). When one comes up in the deploy sheet, its bound siblings are listed as a "需一併部署" reminder.

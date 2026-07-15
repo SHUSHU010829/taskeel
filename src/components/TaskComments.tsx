@@ -1,12 +1,12 @@
 'use client';
 
 import { useState } from 'react';
-import { MessagesSquare, Send, X } from 'lucide-react';
+import { MessagesSquare, Send, Trash2 } from 'lucide-react';
 import type { Comment } from '@/lib/types';
 import { enterSubmit } from '@/lib/useEnterSubmit';
 
-// Per-task discussion / notes — a small running thread (questions for a
-// supervisor, reminders…). Single-user, so it's really a personal note log.
+// Per-task discussion — a small running thread (questions for a supervisor,
+// reminders…). Single-user, so it's really a personal note log.
 export default function TaskComments({
   comments,
   onAdd,
@@ -29,7 +29,7 @@ export default function TaskComments({
     <div className="ed-section">
       <div className="field-label" style={{ display: 'flex', alignItems: 'center', gap: 4, margin: 0 }}>
         <MessagesSquare size={12} />
-        討論／註記{comments.length > 0 ? `（${comments.length}）` : ''}
+        討論{comments.length > 0 ? `（${comments.length}）` : ''}
       </div>
 
       <div className="comment-list">
@@ -38,8 +38,8 @@ export default function TaskComments({
             <div className="comment-body">{c.body}</div>
             <div className="comment-meta">
               <span>{new Date(c.created_at).toLocaleString()}</span>
-              <button className="comment-del" title="刪除" onClick={() => onDelete(c.id)}>
-                <X size={12} />
+              <button className="comment-del" title="刪除討論" onClick={() => onDelete(c.id)}>
+                <Trash2 size={12} />
               </button>
             </div>
           </div>
@@ -49,7 +49,7 @@ export default function TaskComments({
       <div className="branch-field" style={{ marginTop: 8 }}>
         <input
           className="text-input"
-          placeholder="記一則註記或想問的問題…"
+          placeholder="寫一則討論或想問的問題…"
           value={text}
           onChange={(e) => setText(e.target.value)}
           {...enterSubmit(submit)}

@@ -8,6 +8,7 @@ import {
   GitBranch,
   LayoutList,
   LogOut,
+  MessagesSquare,
   Moon,
   PanelLeft,
   PanelLeftClose,
@@ -23,7 +24,7 @@ import { enterSubmit } from '@/lib/useEnterSubmit';
 import StatusDot from './StatusDot';
 import WorkspaceIcon from './WorkspaceIcon';
 
-export type View = 'board' | 'history' | 'docs';
+export type View = 'board' | 'history' | 'docs' | 'discussion';
 
 const FONT_SIZES = [
   { label: '小', px: 13 },
@@ -239,6 +240,14 @@ export default function Sidebar({
         >
           <FileText size={15} />
           {!rail && '文件'}
+        </button>
+        <button
+          className={`nav-item${view === 'discussion' ? ' active' : ''}`}
+          title={rail ? '討論' : undefined}
+          onClick={() => go('discussion')}
+        >
+          <MessagesSquare size={15} />
+          {!rail && '討論'}
         </button>
 
         {/* projects */}

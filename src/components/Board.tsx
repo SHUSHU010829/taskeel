@@ -38,6 +38,7 @@ import DeploySheet from './DeploySheet';
 import DeployHistory from './DeployHistory';
 import CommandPalette from './CommandPalette';
 import DocumentsView from './DocumentsView';
+import DiscussionView, { type CommentWithTask } from './DiscussionView';
 
 const TASK_SELECT = '*, task_projects(*, project:projects(*))';
 
@@ -101,6 +102,7 @@ export default function Board({
   const [documents, setDocuments] = useState<DocumentRow[]>([]);
   const [editingComments, setEditingComments] = useState<Comment[]>([]);
   const [editingDocuments, setEditingDocuments] = useState<DocumentRow[]>([]);
+  const [wsComments, setWsComments] = useState<CommentWithTask[]>([]);
   const [currentWs, setCurrentWs] = useState<Workspace | null>(initialWorkspaces[0] ?? null);
   const [tasks, setTasks] = useState<TaskWithProjects[]>(() =>
     initialTasksWorkspaceId && initialTasksWorkspaceId === (initialWorkspaces[0]?.id ?? null)
@@ -280,6 +282,31 @@ export default function Board({
   useEffect(() => {
     loadDocuments();
   }, [loadDocuments]);
+
+  // Workspace-wide discussion feed (all comments across the ws's tasks).
+  const loadWsComments = useCallback(async () => {
+    if (!currentWs) return;
+    const { data } = await supabase
+      .from('comments')
+      .select('id, body, created_at, task_id, task:tasks!inner(id, title, workspace_id)')
+      .eq('task.workspace_id', currentWs.id)
+      .order('created_at', { ascending: false });
+    if (data) {
+      setWsComments(
+        (data as any[]).map((c) => ({
+          id: c.id,
+          body: c.body,
+          created_at: c.created_at,
+          task_id: c.task_id,
+          task: c.task ? { id: c.task.id, title: c.task.title } : null,
+        }))
+      );
+    }
+  }, [supabase, currentWs]);
+
+  useEffect(() => {
+    if (view === 'discussion') loadWsComments();
+  }, [view, loadWsComments]);
 
   // Lazy-load the open task's comments + bound documents (by id, so field edits
   // don't refetch). Kept separate from the board task query so a missing 0010
@@ -736,14 +763,15 @@ export default function Board({
       .insert({ owner_id: userId, task_id: taskId, body: body.trim() })
       .select('*')
       .single();
-    if (error || !data) return report('新增註記失敗', error);
+    if (error || !data) return report('新增討論失敗', error);
     setEditingComments((prev) => [...prev, data as Comment]);
   }
 
   async function deleteComment(id: string) {
     const { error } = await supabase.from('comments').delete().eq('id', id);
-    if (error) return report('刪除註記失敗', error);
+    if (error) return report('刪除討論失敗', error);
     setEditingComments((prev) => prev.filter((c) => c.id !== id));
+    setWsComments((prev) => prev.filter((c) => c.id !== id));
   }
 
   // Move a task to another workspace: projects are workspace-scoped, so its
@@ -1199,7 +1227,13 @@ export default function Board({
           </button>
           <span className="breadcrumb">
             {currentWs?.name} ·{' '}
-            {view === 'board' ? '任務看板' : view === 'history' ? '部署歷史' : '文件'}
+            {view === 'board'
+              ? '任務看板'
+              : view === 'history'
+                ? '部署歷史'
+                : view === 'docs'
+                  ? '文件'
+                  : '討論'}
           </span>
           {view === 'board' && filteredProject && (
             <button
@@ -1264,6 +1298,15 @@ export default function Board({
               onAdd={addDocument}
               onUpdate={updateDocument}
               onDelete={deleteDocument}
+            />
+          ) : view === 'discussion' ? (
+            <DiscussionView
+              comments={wsComments}
+              onOpenTask={(taskId) => {
+                const t = tasks.find((x) => x.id === taskId);
+                if (t) setEditing(t);
+              }}
+              onDelete={deleteComment}
             />
           ) : (
             <BoardList
