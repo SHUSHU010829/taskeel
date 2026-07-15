@@ -1497,6 +1497,122 @@ a {
   color: var(--text);
 }
 
+/* ---------- documents (project editor + task refs) ---------- */
+.doc-item {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  margin-bottom: 6px;
+  overflow: hidden;
+}
+
+.doc-item-head {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 6px;
+}
+
+.doc-toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 1;
+  min-width: 0;
+  border: none;
+  background: transparent;
+  color: var(--text);
+  text-align: left;
+  padding: 4px;
+}
+
+.doc-toggle:hover {
+  color: var(--text);
+}
+
+.doc-title-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.doc-edit {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px;
+  border-top: 1px solid var(--border);
+}
+
+.doc-read {
+  padding: 8px 10px;
+  border-top: 1px solid var(--border);
+  background: var(--bg);
+  font-size: 0.9rem;
+}
+
+.doc-add-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 3px 8px;
+  border: 1px solid var(--border-strong);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-dim);
+  font-size: 0.78rem;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.doc-add-btn:hover {
+  background: var(--bg-hover);
+  color: var(--text);
+}
+
+/* ---------- comments ---------- */
+.comment-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.comment {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 8px 10px;
+}
+
+.comment-body {
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-size: 0.9rem;
+}
+
+.comment-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 4px;
+  font-size: 0.72rem;
+  color: var(--text-faint);
+}
+
+.comment-del {
+  margin-left: auto;
+  border: none;
+  background: transparent;
+  color: var(--text-faint);
+  display: inline-flex;
+  padding: 2px;
+  border-radius: 4px;
+}
+
+.comment-del:hover {
+  color: #eb5757;
+  background: var(--bg-hover);
+}
+
 .md-editor textarea.modal-desc {
   resize: none;
 }

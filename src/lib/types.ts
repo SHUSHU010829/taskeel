@@ -70,6 +70,28 @@ export interface TaskProject {
   deployed_at: string | null;
 }
 
+// A reference document, usually attached to a project (markdown body).
+export interface DocumentRow {
+  id: string;
+  owner_id: string;
+  workspace_id: string;
+  project_id: string | null;
+  title: string;
+  body: string;
+  url: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+// A per-task discussion note.
+export interface Comment {
+  id: string;
+  owner_id: string;
+  task_id: string;
+  body: string;
+  created_at: string;
+}
+
 export interface Task {
   id: string;
   workspace_id: string;

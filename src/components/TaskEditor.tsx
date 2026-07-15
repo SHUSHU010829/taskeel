@@ -14,6 +14,8 @@ import {
 import {
   PRIORITIES,
   type CategoryRow,
+  type Comment,
+  type DocumentRow,
   type Project,
   type StatusRow,
   type Task,
@@ -25,6 +27,8 @@ import StatusDot from './StatusDot';
 import PriorityFlag from './PriorityFlag';
 import ConfirmDialog from './ConfirmDialog';
 import MarkdownEditor from './MarkdownEditor';
+import TaskDocuments from './TaskDocuments';
+import TaskComments from './TaskComments';
 
 export interface TaskDraft {
   title: string;
@@ -56,6 +60,14 @@ export default function TaskEditor({
   bundleMemberIds,
   onSetBundle,
   onDetachParent,
+  boundDocuments,
+  docCandidates,
+  projectNameById,
+  comments,
+  onBindDocument,
+  onUnbindDocument,
+  onAddComment,
+  onDeleteComment,
   onSave,
   onPatch,
   onSetProjects,
@@ -77,6 +89,14 @@ export default function TaskEditor({
   bundleMemberIds: string[];
   onSetBundle: (otherIds: string[]) => void;
   onDetachParent: () => void;
+  boundDocuments: DocumentRow[];
+  docCandidates: DocumentRow[];
+  projectNameById: Record<string, string>;
+  comments: Comment[];
+  onBindDocument: (docId: string) => void;
+  onUnbindDocument: (docId: string) => void;
+  onAddComment: (body: string) => void;
+  onDeleteComment: (id: string) => void;
   onSave: (draft: TaskDraft) => void;
   onPatch: (patch: Partial<Task>) => void;
   onSetProjects: (links: Array<{ project_id: string; branch: string }>) => void;
@@ -605,6 +625,22 @@ export default function TaskEditor({
                 onSave={() => commit({ description })}
                 startInEdit={isNew}
               />
+              {task && (
+                <>
+                  <TaskDocuments
+                    bound={boundDocuments}
+                    candidates={docCandidates}
+                    projectNameById={projectNameById}
+                    onBind={onBindDocument}
+                    onUnbind={onUnbindDocument}
+                  />
+                  <TaskComments
+                    comments={comments}
+                    onAdd={onAddComment}
+                    onDelete={onDeleteComment}
+                  />
+                </>
+              )}
             </>
           )}
         </div>

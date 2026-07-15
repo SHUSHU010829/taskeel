@@ -92,12 +92,44 @@ create table task_projects (
   primary key (task_id, project_id)
 );
 
+-- ---------- DOCUMENTS (每專案的參考文件，markdown 內容) ----------
+create table documents (
+  id           uuid primary key default gen_random_uuid(),
+  owner_id     uuid not null references auth.users(id) on delete cascade,
+  workspace_id uuid not null references workspaces(id) on delete cascade,
+  project_id   uuid references projects(id) on delete cascade,
+  title        text not null,
+  body         text not null default '',
+  url          text,
+  created_at   timestamptz not null default now(),
+  updated_at   timestamptz not null default now()
+);
+
+-- ---------- TASK ↔ DOCUMENT (任務的參考資料綁定) ----------
+create table task_documents (
+  task_id     uuid not null references tasks(id) on delete cascade,
+  document_id uuid not null references documents(id) on delete cascade,
+  primary key (task_id, document_id)
+);
+
+-- ---------- COMMENTS (每任務的討論／註記) ----------
+create table comments (
+  id         uuid primary key default gen_random_uuid(),
+  owner_id   uuid not null references auth.users(id) on delete cascade,
+  task_id    uuid not null references tasks(id) on delete cascade,
+  body       text not null,
+  created_at timestamptz not null default now()
+);
+
 -- updated_at 自動更新
 create or replace function touch_updated_at() returns trigger as $$
 begin new.updated_at = now(); return new; end;
 $$ language plpgsql;
 
 create trigger tasks_touch before update on tasks
+  for each row execute function touch_updated_at();
+
+create trigger documents_touch before update on documents
   for each row execute function touch_updated_at();
 
 -- ---------- INDEXES ----------
@@ -108,6 +140,9 @@ create index on projects (workspace_id);
 create index on projects (repo);
 create index on task_projects (project_id, branch);
 create index on task_statuses (workspace_id, position);
+create index on documents (project_id);
+create index on documents (workspace_id);
+create index on comments (task_id, created_at);
 
 -- ============================================================
 -- ROW LEVEL SECURITY
@@ -118,9 +153,25 @@ alter table task_statuses enable row level security;
 alter table categories    enable row level security;
 alter table tasks         enable row level security;
 alter table task_projects enable row level security;
+alter table documents      enable row level security;
+alter table task_documents enable row level security;
+alter table comments       enable row level security;
 
 create policy "own workspaces" on workspaces
   for all using (owner_id = auth.uid()) with check (owner_id = auth.uid());
+
+create policy "own documents" on documents
+  for all using (owner_id = auth.uid()) with check (owner_id = auth.uid());
+
+create policy "own comments" on comments
+  for all using (owner_id = auth.uid()) with check (owner_id = auth.uid());
+
+create policy "own task_documents" on task_documents
+  for all using (
+    task_id in (select id from tasks where owner_id = auth.uid())
+  ) with check (
+    task_id in (select id from tasks where owner_id = auth.uid())
+  );
 
 create policy "own projects" on projects
   for all using (
@@ -153,7 +204,8 @@ grant usage on schema public to anon, authenticated;
 
 grant select, insert, update, delete on
   public.workspaces, public.projects, public.task_statuses, public.categories,
-  public.tasks, public.task_projects
+  public.tasks, public.task_projects,
+  public.documents, public.task_documents, public.comments
   to authenticated;
 
 -- ============================================================
@@ -163,6 +215,9 @@ alter publication supabase_realtime add table tasks;
 alter publication supabase_realtime add table task_projects;
 alter publication supabase_realtime add table task_statuses;
 alter publication supabase_realtime add table categories;
+alter publication supabase_realtime add table documents;
+alter publication supabase_realtime add table task_documents;
+alter publication supabase_realtime add table comments;
 
 -- ============================================================
 -- 分批部署歸檔函式 (給 deploy-hook 呼叫)

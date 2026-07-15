@@ -19,6 +19,8 @@ import {
   DEFAULT_STATUSES,
   DEFAULT_CATEGORIES,
   type CategoryRow,
+  type Comment,
+  type DocumentRow,
   type Project,
   type StatusRow,
   type Task,
@@ -95,6 +97,9 @@ export default function Board({
   const [projects, setProjects] = useState<Project[]>(initialProjects);
   const [statuses, setStatuses] = useState<StatusRow[]>(initialStatuses);
   const [categories, setCategories] = useState<CategoryRow[]>(initialCategories);
+  const [documents, setDocuments] = useState<DocumentRow[]>([]);
+  const [editingComments, setEditingComments] = useState<Comment[]>([]);
+  const [editingDocuments, setEditingDocuments] = useState<DocumentRow[]>([]);
   const [currentWs, setCurrentWs] = useState<Workspace | null>(initialWorkspaces[0] ?? null);
   const [tasks, setTasks] = useState<TaskWithProjects[]>(() =>
     initialTasksWorkspaceId && initialTasksWorkspaceId === (initialWorkspaces[0]?.id ?? null)
@@ -147,6 +152,10 @@ export default function Board({
         .filter((c) => c.workspace_id === currentWs?.id)
         .sort((a, b) => a.position - b.position),
     [categories, currentWs]
+  );
+  const wsDocuments = useMemo(
+    () => documents.filter((d) => d.workspace_id === currentWs?.id),
+    [documents, currentWs]
   );
 
   // ---------- first-login: seed the two default workspaces ----------
@@ -253,9 +262,67 @@ export default function Board({
     if (data) setCategories(data as CategoryRow[]);
   }, [supabase]);
 
+  const loadDocuments = useCallback(async () => {
+    if (!currentWs) return;
+    const { data } = await supabase
+      .from('documents')
+      .select('*')
+      .eq('workspace_id', currentWs.id)
+      .order('created_at', { ascending: true });
+    if (data) setDocuments(data as DocumentRow[]);
+  }, [supabase, currentWs]);
+
   useEffect(() => {
     loadTasks();
   }, [loadTasks]);
+
+  useEffect(() => {
+    loadDocuments();
+  }, [loadDocuments]);
+
+  // Lazy-load the open task's comments + bound documents (by id, so field edits
+  // don't refetch). Kept separate from the board task query so a missing 0010
+  // migration can't break the board.
+  const editingId = editing && editing !== 'new' ? editing.id : null;
+
+  const loadEditingDocs = useCallback(async () => {
+    if (!editingId) return;
+    const { data } = await supabase
+      .from('task_documents')
+      .select('document:documents(*)')
+      .eq('task_id', editingId);
+    if (data) {
+      setEditingDocuments(
+        (data as any[]).map((r) => r.document).filter(Boolean) as DocumentRow[]
+      );
+    }
+  }, [editingId, supabase]);
+
+  useEffect(() => {
+    if (!editingId) {
+      setEditingComments([]);
+      setEditingDocuments([]);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      const [{ data: cs }, { data: ds }] = await Promise.all([
+        supabase
+          .from('comments')
+          .select('*')
+          .eq('task_id', editingId)
+          .order('created_at', { ascending: true }),
+        supabase.from('task_documents').select('document:documents(*)').eq('task_id', editingId),
+      ]);
+      if (cancelled) return;
+      if (cs) setEditingComments(cs as Comment[]);
+      if (ds)
+        setEditingDocuments((ds as any[]).map((r) => r.document).filter(Boolean) as DocumentRow[]);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [editingId, supabase]);
 
   // ---------- realtime ----------
   useEffect(() => {
@@ -275,12 +342,13 @@ export default function Board({
       .on('postgres_changes', { event: '*', schema: 'public', table: 'task_projects' }, refetch)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'task_statuses' }, loadStatuses)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'categories' }, loadCategories)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'documents' }, loadDocuments)
       .subscribe();
     return () => {
       if (timer) clearTimeout(timer);
       supabase.removeChannel(channel);
     };
-  }, [supabase, currentWs, loadTasks, loadStatuses, loadCategories]);
+  }, [supabase, currentWs, loadTasks, loadStatuses, loadCategories, loadDocuments]);
 
   // ---------- font-size preference ----------
   useEffect(() => {
@@ -607,6 +675,75 @@ export default function Board({
       if (error) report('更新專案失敗', error);
       loadTasks();
     }
+  }
+
+  // ---------- documents ----------
+  async function addDocument(projectId: string, title: string) {
+    if (!currentWs || !title.trim()) return;
+    const { data, error } = await supabase
+      .from('documents')
+      .insert({
+        owner_id: userId,
+        workspace_id: currentWs.id,
+        project_id: projectId,
+        title: title.trim(),
+      })
+      .select('*')
+      .single();
+    if (error || !data) return report('新增文件失敗', error);
+    setDocuments((prev) => [...prev, data as DocumentRow]);
+  }
+
+  async function updateDocument(id: string, patch: Partial<DocumentRow>) {
+    setDocuments((prev) => prev.map((d) => (d.id === id ? { ...d, ...patch } : d)));
+    const { error } = await supabase.from('documents').update(patch).eq('id', id);
+    if (error) {
+      report('更新文件失敗', error);
+      loadDocuments();
+    }
+  }
+
+  async function deleteDocument(id: string) {
+    const { error } = await supabase.from('documents').delete().eq('id', id);
+    if (error) return report('刪除文件失敗', error);
+    setDocuments((prev) => prev.filter((d) => d.id !== id));
+    loadTasks(); // any task references cascade-delete
+  }
+
+  async function bindDocument(task: TaskWithProjects, docId: string) {
+    const { error } = await supabase
+      .from('task_documents')
+      .insert({ task_id: task.id, document_id: docId });
+    if (error) return report('綁定文件失敗', error);
+    loadEditingDocs();
+  }
+
+  async function unbindDocument(task: TaskWithProjects, docId: string) {
+    const { error } = await supabase
+      .from('task_documents')
+      .delete()
+      .eq('task_id', task.id)
+      .eq('document_id', docId);
+    if (error) return report('取消綁定失敗', error);
+    loadEditingDocs();
+  }
+
+  // ---------- comments ----------
+  async function addComment(taskId: string, body: string) {
+    if (!body.trim()) return;
+    const { data, error } = await supabase
+      .from('comments')
+      .insert({ owner_id: userId, task_id: taskId, body: body.trim() })
+      .select('*')
+      .single();
+    if (error || !data) return report('新增註記失敗', error);
+    setEditingComments((prev) => [...prev, data as Comment]);
+  }
+
+  async function deleteComment(id: string) {
+    const { error } = await supabase.from('comments').delete().eq('id', id);
+    if (error) return report('刪除註記失敗', error);
+    setEditingComments((prev) => prev.filter((c) => c.id !== id));
   }
 
   // Move a task to another workspace: projects are workspace-scoped, so its
@@ -957,6 +1094,8 @@ export default function Board({
   );
   const titleById: Record<string, string> = {};
   tasks.forEach((t) => (titleById[t.id] = t.title));
+  const projectNameById: Record<string, string> = {};
+  projects.forEach((p) => (projectNameById[p.id] = p.name));
   const leafTasks = tasks.filter((t) => !parentIds.has(t.id));
 
   const archiveIds = new Set(wsStatuses.filter((s) => s.is_archive).map((s) => s.id));
@@ -1154,6 +1293,14 @@ export default function Board({
           bundleMemberIds={bundleMemberIds}
           onSetBundle={(otherIds) => editingTask && setBundle(editingTask, otherIds)}
           onDetachParent={() => editingTask && detachParent(editingTask)}
+          boundDocuments={editingDocuments}
+          docCandidates={wsDocuments}
+          projectNameById={projectNameById}
+          comments={editingComments}
+          onBindDocument={(docId) => editingTask && bindDocument(editingTask, docId)}
+          onUnbindDocument={(docId) => editingTask && unbindDocument(editingTask, docId)}
+          onAddComment={(body) => editingTask && addComment(editingTask.id, body)}
+          onDeleteComment={deleteComment}
           onSave={saveTask}
           onPatch={(patch) => editingTask && patchTask(editingTask, patch)}
           onSetProjects={(links) => editingTask && setTaskProjects(editingTask, links)}
@@ -1170,6 +1317,12 @@ export default function Board({
       {editingProject && (
         <ProjectEditor
           project={editingProject}
+          documents={documents.filter((d) => d.project_id === editingProject.id)}
+          documentHandlers={{
+            addDocument: (title) => addDocument(editingProject.id, title),
+            updateDocument,
+            deleteDocument,
+          }}
           onSave={(patch) => updateProject(editingProject.id, patch)}
           onDelete={() => deleteProject(editingProject.id)}
           onClose={() => setEditingProject(null)}
