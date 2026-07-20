@@ -70,6 +70,9 @@ export default function CommandPalette({
   }
 
   function onKeyDown(e: React.KeyboardEvent) {
+    // While an IME is composing, Enter/arrows belong to candidate selection —
+    // don't hijack them to pick a result.
+    if (e.nativeEvent.isComposing || e.keyCode === 229) return;
     if (e.key === 'ArrowDown') {
       e.preventDefault();
       setSel((s) => Math.min(s + 1, itemCount - 1));
