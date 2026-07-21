@@ -127,6 +127,12 @@ export default function Board({
   const seedWsRef = useRef(false);
   const seedingStatusRef = useRef<Set<string>>(new Set());
   const seedingCategoryRef = useRef<Set<string>>(new Set());
+  // SSR already delivered the first workspace's tasks — skip the redundant
+  // client re-fetch on mount so the board paints instantly with no reload.
+  const skipFirstTaskLoadRef = useRef(
+    !!initialTasksWorkspaceId &&
+      initialTasksWorkspaceId === (initialWorkspaces[0]?.id ?? null)
+  );
 
   const report = useCallback((label: string, err: unknown) => {
     const msg =
@@ -276,12 +282,19 @@ export default function Board({
   }, [supabase, currentWs]);
 
   useEffect(() => {
+    if (skipFirstTaskLoadRef.current) {
+      skipFirstTaskLoadRef.current = false; // consume once; SSR data is fresh
+      return;
+    }
     loadTasks();
   }, [loadTasks]);
 
+  // Documents are only needed in the 文件 view and the task editor's picker —
+  // keep them off the initial critical path.
+  const editorOpen = editing !== null;
   useEffect(() => {
-    loadDocuments();
-  }, [loadDocuments]);
+    if (view === 'docs' || editorOpen) loadDocuments();
+  }, [view, editorOpen, loadDocuments]);
 
   // Workspace-wide discussion feed (all comments across the ws's tasks).
   const loadWsComments = useCallback(async () => {

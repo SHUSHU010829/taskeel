@@ -10,9 +10,13 @@ const TASK_SELECT = '*, task_projects(*, project:projects(*))';
 // without a client round-trip.
 export default async function HomePage() {
   const supabase = await createClient();
+  // middleware.ts already revalidated the token with getUser() and redirects
+  // unauthed requests, so here we read the (fresh) session from cookies without
+  // a second auth round-trip on the critical path.
   const {
-    data: { user },
-  } = await supabase.auth.getUser();
+    data: { session },
+  } = await supabase.auth.getSession();
+  const user = session?.user;
 
   if (!user) redirect('/login');
 
