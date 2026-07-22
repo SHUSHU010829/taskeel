@@ -13,6 +13,7 @@ Linear (deep-grey base, hairline borders, restrained purple accent).
 - **Row project toggle** — each board row has a far-right control to attach/detach projects without opening the editor.
 - **Documents** — a per-workspace **文件** area (sidebar) for writing standalone markdown documents (each with its own id, not tied to a project); a task binds specific documents in its **參考資料** section and reads their content inline in its description area.
 - **Discussion** — a small notes/questions thread on each task, plus a workspace-wide **討論** view (sidebar) that lists every discussion with a one-click jump back to its task.
+- **Spin-off (延伸自)** — when a task pivots into a new direction, 延伸出新任務 creates an independent task that inherits the source's projects/category and records where it branched from; both tasks cross-link (延伸自 / 延伸出的任務).
 - **Per-project branches** — one task can span multiple projects, each with its own repo and git branch.
 - **Batched deploy → archive** — CI pings a webhook when a branch ships; that `(project, branch)` is marked deployed. A task is archived only once *all* its projects have deployed.
 - **Deploy bundles** — tie tasks that must ship in the same release together (task editor → 設定 → 部署綁定). When one comes up in the deploy sheet, its bound siblings are listed as a "需一併部署" reminder.
@@ -35,7 +36,7 @@ publication, and the `archive_branch(repo, branch, owner)` function.
 with an icon), `0003` (statuses per workspace), `0004` (categories per
 workspace, editable), `0005` (subtasks / parent_id), `0006` (workspace icon),
 `0007` (deploy bundles / bundle_id), `0008` (priority + due_date), `0009` (project/category abbr), `0010` (documents / task_documents /
-comments). Fresh installs just run `schema.sql`.
+comments), `0011` (task origin_id). Fresh installs just run `schema.sql`.
 
 Statuses and categories are per-workspace and edited in the workspace settings
 (sidebar **工作區設定** or the switcher pencil). Light/dark theme, font size, and

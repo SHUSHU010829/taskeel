@@ -666,6 +666,36 @@ export default function Board({
     if (error) report('更新分類失敗', error);
   }
 
+  // Branch off a new task from `source` (a pivot / new direction). It stays a
+  // top-level board task but records `origin_id` back to the source; it inherits
+  // the source's projects + category so the context carries over.
+  async function spinOff(source: TaskWithProjects) {
+    if (!currentWs) return;
+    const def = wsStatuses.find((s) => s.is_default) ?? wsStatuses[0];
+    const { data, error } = await supabase
+      .from('tasks')
+      .insert({
+        workspace_id: source.workspace_id,
+        owner_id: userId,
+        origin_id: source.id,
+        title: source.title,
+        status_id: def?.id ?? null,
+        category_id: source.category_id,
+        priority: source.priority,
+      })
+      .select('id')
+      .single();
+    if (error || !data) return report('延伸任務失敗', error);
+    if (source.links.length) {
+      await supabase.from('task_projects').insert(
+        source.links.map((l) => ({ task_id: data.id, project_id: l.project_id, branch: l.branch }))
+      );
+    }
+    const { data: full } = await supabase.from('tasks').select(TASK_SELECT).eq('id', data.id).single();
+    await loadTasks();
+    if (full) setEditing(mapTaskRows([full])[0]);
+  }
+
   // Row-level quick toggle: attach / detach a project (no branch) on a task.
   async function toggleTaskProject(task: TaskWithProjects, projectId: string) {
     const has = task.links.some((l) => l.project_id === projectId);
@@ -800,6 +830,7 @@ export default function Board({
         status_id: def?.id ?? null,
         blocked_reason: null,
         parent_id: null,
+        origin_id: null,
         bundle_id: null,
       })
       .eq('id', task.id);
@@ -1168,6 +1199,13 @@ export default function Board({
   const editingParent = editingTask?.parent_id
     ? tasks.find((t) => t.id === editingTask.parent_id) ?? null
     : null;
+  // 延伸自 / 延伸出 — origin task and tasks branched off from this one
+  const editingOrigin = editingTask?.origin_id
+    ? tasks.find((t) => t.id === editingTask.origin_id) ?? null
+    : null;
+  const editingDerived = editingTask
+    ? tasks.filter((t) => t.origin_id === editingTask.id)
+    : [];
   // deploy-bundle: sibling tasks that must ship together with the edited task
   const bundleMemberIds = editingTask?.bundle_id
     ? tasks
@@ -1355,6 +1393,9 @@ export default function Board({
           bundleMemberIds={bundleMemberIds}
           onSetBundle={(otherIds) => editingTask && setBundle(editingTask, otherIds)}
           onDetachParent={() => editingTask && detachParent(editingTask)}
+          originTask={editingOrigin}
+          derivedTasks={editingDerived}
+          onSpinOff={() => editingTask && spinOff(editingTask)}
           boundDocuments={editingDocuments}
           docCandidates={wsDocuments}
           comments={editingComments}

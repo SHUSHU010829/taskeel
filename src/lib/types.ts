@@ -101,6 +101,7 @@ export interface Task {
   status_id: string | null;
   category_id: string | null;
   parent_id: string | null; // set on subtasks (points at the parent task)
+  origin_id: string | null; // 延伸自 — the task this one branched off from
   bundle_id: string | null; // deploy bundle — tasks sharing it ship together
   blocked_reason: string | null; // shown when the status style is `cross`
   priority: number; // 0 none, 1 low, 2 medium, 3 high, 4 urgent

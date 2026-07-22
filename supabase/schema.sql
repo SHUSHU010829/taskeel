@@ -71,6 +71,7 @@ create table tasks (
   status_id      uuid references task_statuses(id) on delete set null,
   category_id    uuid references categories(id) on delete set null,
   parent_id      uuid references tasks(id) on delete set null,  -- 主任務（子任務拆分）
+  origin_id      uuid references tasks(id) on delete set null,  -- 延伸自：從哪個任務分支出來
   bundle_id      uuid,                      -- 部署綁定：同 bundle_id 的任務需一併部署
   blocked_reason text,                     -- 僅當狀態圖示為 cross 時有意義
   priority       smallint not null default 0, -- 0 無 1 低 2 中 3 高 4 緊急
@@ -135,6 +136,7 @@ create trigger documents_touch before update on documents
 -- ---------- INDEXES ----------
 create index on tasks (workspace_id, status_id);
 create index on tasks (parent_id);
+create index on tasks (origin_id);
 create index on tasks (bundle_id);
 create index on projects (workspace_id);
 create index on projects (repo);

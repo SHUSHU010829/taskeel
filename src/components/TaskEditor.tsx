@@ -6,6 +6,7 @@ import {
   Check,
   CornerUpLeft,
   GitBranch,
+  GitFork,
   Link2,
   Pencil,
   Plus,
@@ -60,6 +61,9 @@ export default function TaskEditor({
   bundleMemberIds,
   onSetBundle,
   onDetachParent,
+  originTask,
+  derivedTasks,
+  onSpinOff,
   boundDocuments,
   docCandidates,
   comments,
@@ -88,6 +92,9 @@ export default function TaskEditor({
   bundleMemberIds: string[];
   onSetBundle: (otherIds: string[]) => void;
   onDetachParent: () => void;
+  originTask: TaskWithProjects | null;
+  derivedTasks: TaskWithProjects[];
+  onSpinOff: () => void;
   boundDocuments: DocumentRow[];
   docCandidates: DocumentRow[];
   comments: Comment[];
@@ -617,6 +624,49 @@ export default function TaskEditor({
           ) : (
             <>
               {subtaskBlock}
+              {task && (
+                <div className="ed-section">
+                  {originTask && (
+                    <div className="ed-parent" style={{ marginBottom: 10 }}>
+                      <span className="field-label" style={{ margin: 0 }}>
+                        延伸自
+                      </span>
+                      <button className="parent-chip lg" onClick={() => onOpenTask(originTask)}>
+                        <GitFork size={13} />
+                        {originTask.title}
+                      </button>
+                    </div>
+                  )}
+                  <div style={{ display: 'flex', alignItems: 'center' }}>
+                    <span className="field-label" style={{ flex: 1, margin: 0 }}>
+                      延伸出的任務{derivedTasks.length > 0 ? `（${derivedTasks.length}）` : ''}
+                    </span>
+                    <button className="doc-add-btn" onClick={onSpinOff}>
+                      <GitFork size={13} /> 延伸出新任務
+                    </button>
+                  </div>
+                  {derivedTasks.length > 0 && (
+                    <div style={{ marginTop: 6 }}>
+                      {derivedTasks.map((d) => {
+                        const s = statuses.find((x) => x.id === d.status_id);
+                        return (
+                          <button
+                            key={d.id}
+                            className="subtask-item"
+                            onClick={() => onOpenTask(d)}
+                          >
+                            {s && <StatusDot color={s.color} style={s.style} sm />}
+                            <span className="subtask-title">{d.title}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                  <div style={{ color: 'var(--text-faint)', fontSize: '0.78rem', marginTop: 6 }}>
+                    「延伸」會建立一個獨立的新任務，並記住是從此任務分支出來的。
+                  </div>
+                </div>
+              )}
               <MarkdownEditor
                 value={description}
                 onChange={setDescription}
