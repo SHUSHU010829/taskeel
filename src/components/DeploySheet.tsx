@@ -1,6 +1,7 @@
 'use client';
 
-import { GitBranch, Link2, TriangleAlert, X } from 'lucide-react';
+import { useState } from 'react';
+import { Check, Copy, Download, FileText, GitBranch, Link2, List, TriangleAlert, X } from 'lucide-react';
 import type { StatusRow, TaskWithProjects } from '@/lib/types';
 import StatusDot from './StatusDot';
 
@@ -38,6 +39,56 @@ export default function DeploySheet({
     }))
     .filter((x) => x.links.length > 0);
 
+  // Build an editable, project-grouped plain-text deploy list.
+  function buildText() {
+    const byProject = new Map<string, { name: string; items: string[] }>();
+    const order: string[] = [];
+    pending.forEach(({ task, links }) => {
+      links.forEach((l) => {
+        if (!byProject.has(l.project_id)) {
+          byProject.set(l.project_id, { name: l.project.name, items: [] });
+          order.push(l.project_id);
+        }
+        const branch = l.branch ? `（${l.branch}）` : '';
+        const backend = task.needs_backend ? ' [需後端]' : '';
+        byProject.get(l.project_id)!.items.push(`- ${task.title}${branch}${backend}`);
+      });
+    });
+    const lines: string[] = [`部署清單（${pending.length} 項）`, ''];
+    for (const id of order) {
+      const g = byProject.get(id)!;
+      lines.push(`【${g.name}】`, ...g.items, '');
+    }
+    return lines.join('\n').trim();
+  }
+
+  const [textMode, setTextMode] = useState(false);
+  const [text, setText] = useState('');
+  const [copied, setCopied] = useState(false);
+
+  function openText() {
+    setText(buildText());
+    setCopied(false);
+    setTextMode(true);
+  }
+
+  function copy() {
+    navigator.clipboard?.writeText(text).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    });
+  }
+
+  function download() {
+    const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = '部署清單.txt';
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
   return (
     <>
       <div className="sheet-overlay" onClick={onClose} />
@@ -48,10 +99,46 @@ export default function DeploySheet({
             {pending.length}
           </span>
           <div className="spacer" />
+          {pending.length > 0 && (
+            <button
+              className="btn deploy-text-toggle"
+              onClick={() => (textMode ? setTextMode(false) : openText())}
+            >
+              {textMode ? (
+                <>
+                  <List size={14} /> 清單
+                </>
+              ) : (
+                <>
+                  <FileText size={14} /> 文字檔
+                </>
+              )}
+            </button>
+          )}
           <button className="icon-btn" onClick={onClose}>
             <X size={16} />
           </button>
         </div>
+
+        {textMode ? (
+          <div className="deploy-text-pane">
+            <div className="deploy-text-actions">
+              <button className="btn" onClick={copy}>
+                {copied ? <Check size={14} /> : <Copy size={14} />}
+                {copied ? '已複製' : '複製'}
+              </button>
+              <button className="btn" onClick={download}>
+                <Download size={14} /> 下載 .txt
+              </button>
+            </div>
+            <textarea
+              className="deploy-textarea"
+              value={text}
+              onChange={(e) => setText(e.target.value)}
+              spellCheck={false}
+            />
+          </div>
+        ) : (
         <div className="sheet-body">
           {pending.length === 0 && (
             <div className="empty">沒有待部署的任務。</div>
@@ -113,6 +200,7 @@ export default function DeploySheet({
             );
           })}
         </div>
+        )}
       </div>
     </>
   );

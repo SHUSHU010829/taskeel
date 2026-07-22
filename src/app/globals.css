@@ -2228,6 +2228,48 @@ a {
   padding: 8px 16px;
 }
 
+.sheet-header .btn {
+  gap: 5px;
+}
+
+.deploy-text-pane {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 12px 16px 16px;
+}
+
+.deploy-text-actions {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.deploy-text-actions .btn {
+  gap: 5px;
+}
+
+.deploy-textarea {
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  resize: none;
+  background: var(--bg);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+  color: var(--text);
+  padding: 12px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.85rem;
+  line-height: 1.6;
+  outline: none;
+}
+
+.deploy-textarea:focus {
+  border-color: var(--accent);
+}
+
 .deploy-card {
   padding: 12px 0;
   border-bottom: 1px solid var(--border);
