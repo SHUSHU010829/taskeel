@@ -12,14 +12,14 @@ export default function DeploySheet({
   tasks,
   allTasks,
   statuses,
-  onMarkDeployed,
+  onMarkTasks,
   onMarkLink,
   onClose,
 }: {
   tasks: TaskWithProjects[];
   allTasks: TaskWithProjects[];
   statuses: StatusRow[];
-  onMarkDeployed: (task: TaskWithProjects) => void;
+  onMarkTasks: (tasks: TaskWithProjects[]) => void;
   onMarkLink: (task: TaskWithProjects, projectId: string) => void;
   onClose: () => void;
 }) {
@@ -69,6 +69,28 @@ export default function DeploySheet({
   const [textMode, setTextMode] = useState(false);
   const [text, setText] = useState('');
   const [copied, setCopied] = useState(false);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+
+  const allSelected = pending.length > 0 && selected.size === pending.length;
+
+  function toggleOne(id: string) {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  function toggleAll() {
+    setSelected(allSelected ? new Set() : new Set(pending.map((p) => p.task.id)));
+  }
+
+  function markSelected() {
+    const chosen = pending.filter((p) => selected.has(p.task.id)).map((p) => p.task);
+    if (chosen.length) onMarkTasks(chosen);
+    setSelected(new Set());
+  }
 
   function openText() {
     setText(buildText());
@@ -124,6 +146,25 @@ export default function DeploySheet({
           </button>
         </div>
 
+        {!textMode && pending.length > 0 && (
+          <div className="deploy-toolbar">
+            <label className="deploy-selall">
+              <input type="checkbox" checked={allSelected} onChange={toggleAll} />
+              全選
+            </label>
+            <span className="deploy-hint">勾選標記整項；點專案可只標單項</span>
+            <div className="spacer" />
+            <button
+              className="btn deploy-done-btn"
+              disabled={selected.size === 0}
+              onClick={markSelected}
+            >
+              <CircleCheck size={14} /> 標記已部署
+              {selected.size > 0 ? `（${selected.size}）` : ''}
+            </button>
+          </div>
+        )}
+
         {textMode ? (
           <div className="deploy-text-pane">
             <div className="deploy-text-actions">
@@ -150,10 +191,16 @@ export default function DeploySheet({
           {pending.map(({ task, links }) => {
             const st = statuses.find((s) => s.id === task.status_id);
             return (
-              <div className="deploy-card" key={task.id}>
+              <div className={`deploy-card${selected.has(task.id) ? ' selected' : ''}`} key={task.id}>
                 <div className="deploy-card-title">
+                  <input
+                    type="checkbox"
+                    className="deploy-check"
+                    checked={selected.has(task.id)}
+                    onChange={() => toggleOne(task.id)}
+                  />
                   {st && <StatusDot color={st.color} style={st.style} sm />}
-                  <span>{task.title}</span>
+                  <span style={{ flex: 1 }}>{task.title}</span>
                   {task.needs_backend && (
                     <span className="badge-backend">後端</span>
                   )}
@@ -185,18 +232,6 @@ export default function DeploySheet({
                     <TriangleAlert size={13} /> {task.deploy_notes}
                   </div>
                 )}
-                <div className="deploy-card-actions">
-                  {links.length > 1 && (
-                    <span className="deploy-hint">點專案標記單項，或</span>
-                  )}
-                  <button
-                    className="btn deploy-done-btn"
-                    title="標記此任務所有專案為已部署，並歸檔"
-                    onClick={() => onMarkDeployed(task)}
-                  >
-                    <CircleCheck size={14} /> 全部標記已部署
-                  </button>
-                </div>
                 {(() => {
                   const mates = bundleMates(task);
                   if (mates.length === 0) return null;

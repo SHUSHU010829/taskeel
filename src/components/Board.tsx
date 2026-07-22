@@ -666,21 +666,21 @@ export default function Board({
     if (error) report('更新分類失敗', error);
   }
 
-  // Manually mark a task deployed from the deploy sheet: stamp all its pending
-  // project links deployed (with a timestamp) and archive the task.
-  async function markTaskDeployed(task: TaskWithProjects) {
+  // Manually mark one or more tasks fully deployed from the deploy sheet: stamp
+  // all their pending project links deployed (timestamped) and archive them.
+  async function markTasksDeployed(taskList: TaskWithProjects[]) {
+    const ids = taskList.map((t) => t.id);
+    if (!ids.length) return;
     const now = new Date().toISOString();
     const { error: e1 } = await supabase
       .from('task_projects')
       .update({ deploy_status: 'deployed', deployed_at: now })
-      .eq('task_id', task.id)
+      .in('task_id', ids)
       .eq('deploy_status', 'pending');
     if (e1) return report('標記部署失敗', e1);
     const archive = wsStatuses.find((s) => s.is_archive);
-    const { error: e2 } = await supabase
-      .from('tasks')
-      .update({ status_id: archive?.id ?? task.status_id, archived_at: now })
-      .eq('id', task.id);
+    const patch = archive ? { status_id: archive.id, archived_at: now } : { archived_at: now };
+    const { error: e2 } = await supabase.from('tasks').update(patch).in('id', ids);
     if (e2) return report('歸檔失敗', e2);
     loadTasks();
   }
@@ -1488,7 +1488,7 @@ export default function Board({
           tasks={leafTasks}
           allTasks={tasks}
           statuses={wsStatuses}
-          onMarkDeployed={markTaskDeployed}
+          onMarkTasks={markTasksDeployed}
           onMarkLink={markLinkDeployed}
           onClose={() => setDeployOpen(false)}
         />

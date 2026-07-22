@@ -2294,12 +2294,36 @@ a {
   font-size: 0.8rem;
 }
 
-.deploy-card-actions {
+.deploy-toolbar {
   display: flex;
   align-items: center;
-  justify-content: flex-end;
-  gap: 8px;
-  margin-top: 10px;
+  gap: 10px;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.deploy-selall {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.85rem;
+  color: var(--text-dim);
+  cursor: pointer;
+}
+
+.deploy-toolbar .deploy-done-btn {
+  gap: 5px;
+}
+
+.deploy-check {
+  flex-shrink: 0;
+  margin-right: 2px;
+  cursor: pointer;
+}
+
+.deploy-card.selected {
+  background: rgba(94, 106, 210, 0.06);
+  border-radius: var(--radius);
 }
 
 .deploy-hint {
