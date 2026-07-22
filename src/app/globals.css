@@ -1058,6 +1058,58 @@ a {
   color: #e2b33e;
 }
 
+/* row hover quick-actions (priority / due / delete) */
+.row-hover-actions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex-shrink: 0;
+  opacity: 0;
+  transition: opacity 0.12s;
+}
+
+.task-row:hover .row-hover-actions,
+.task-row.focused .row-hover-actions {
+  opacity: 1;
+}
+
+.row-act {
+  width: 26px;
+  height: 26px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: transparent;
+  color: var(--text-faint);
+  border-radius: 6px;
+}
+
+.row-act:hover {
+  background: var(--bg-hover);
+  color: var(--text);
+}
+
+.row-act.on {
+  color: var(--text-dim);
+}
+
+.row-del:hover {
+  color: #eb5757;
+}
+
+.task-row.focused {
+  box-shadow: inset 2px 0 0 var(--accent);
+  background: var(--bg-hover);
+}
+
+@media (max-width: 720px) {
+  /* touch has no hover — quick-actions live in the editor on phones */
+  .row-hover-actions {
+    display: none;
+  }
+}
+
 .due-chip {
   display: inline-flex;
   align-items: center;

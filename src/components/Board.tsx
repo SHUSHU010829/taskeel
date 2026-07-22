@@ -39,6 +39,7 @@ import DeployHistory from './DeployHistory';
 import CommandPalette from './CommandPalette';
 import DocumentsView from './DocumentsView';
 import DiscussionView, { type CommentWithTask } from './DiscussionView';
+import ConfirmDialog from './ConfirmDialog';
 
 const TASK_SELECT = '*, task_projects(*, project:projects(*))';
 
@@ -123,11 +124,26 @@ export default function Board({
   );
   const toastKeyRef = useRef(0);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // latest board data + handlers for the global keyboard shortcuts
+  const kbdRef = useRef<{
+    boardTasks: TaskWithProjects[];
+    boardStatuses: StatusRow[];
+    focusedTaskId: string | null;
+    view: View;
+    busy: boolean;
+    open: (t: TaskWithProjects) => void;
+    setFocus: (id: string | null) => void;
+    setStatus: (t: TaskWithProjects, id: string) => void;
+    requestDelete: (t: TaskWithProjects) => void;
+    newTask: () => void;
+  } | null>(null);
   const [capture, setCapture] = useState('');
   const [fontPx, setFontPx] = useState(15);
   const [theme, setTheme] = useState<'dark' | 'light'>('dark');
   const [pinnedWsId, setPinnedWsId] = useState<string | null>(null);
   const [projectFilter, setProjectFilter] = useState<string | null>(null);
+  const [focusedTaskId, setFocusedTaskId] = useState<string | null>(null);
+  const [deletingTask, setDeletingTask] = useState<TaskWithProjects | null>(null);
   const captureRef = useRef<HTMLInputElement>(null);
   const seedWsRef = useRef(false);
   const seedingStatusRef = useRef<Set<string>>(new Set());
@@ -505,12 +521,54 @@ export default function Board({
       const tag = (e.target as HTMLElement)?.tagName;
       if (tag === 'INPUT' || tag === 'TEXTAREA' || (e.target as HTMLElement)?.isContentEditable)
         return;
+      const k = kbdRef.current;
+      // don't drive board navigation while a modal/editor is open or off-board
+      const navOK = k && !k.busy && k.view === 'board';
+
       if (e.key === 'c') {
         e.preventDefault();
         captureRef.current?.focus();
-      } else if (e.key === '/') {
+        return;
+      }
+      if (e.key === '/') {
         e.preventDefault();
         setPaletteOpen(true);
+        return;
+      }
+      if (e.key === 'n' && navOK) {
+        e.preventDefault();
+        k!.newTask();
+        return;
+      }
+      if (!navOK) return;
+      const list = k!.boardTasks;
+      const idx = list.findIndex((t) => t.id === k!.focusedTaskId);
+      if (e.key === 'j' || e.key === 'ArrowDown') {
+        e.preventDefault();
+        const next = list[Math.min(idx + 1, list.length - 1)] ?? list[0];
+        if (next) {
+          k!.setFocus(next.id);
+          document.getElementById(`task-${next.id}`)?.scrollIntoView({ block: 'nearest' });
+        }
+      } else if (e.key === 'k' || e.key === 'ArrowUp') {
+        e.preventDefault();
+        const prev = idx <= 0 ? list[0] : list[idx - 1];
+        if (prev) {
+          k!.setFocus(prev.id);
+          document.getElementById(`task-${prev.id}`)?.scrollIntoView({ block: 'nearest' });
+        }
+      } else if ((e.key === 'e' || e.key === 'Enter') && idx >= 0) {
+        e.preventDefault();
+        k!.open(list[idx]);
+      } else if (e.key === 'x' && idx >= 0) {
+        e.preventDefault();
+        k!.requestDelete(list[idx]);
+      } else if (/^[1-9]$/.test(e.key) && idx >= 0) {
+        const st = k!.boardStatuses[parseInt(e.key, 10) - 1];
+        if (st) {
+          e.preventDefault();
+          k!.setStatus(list[idx], st.id);
+        }
       }
     }
     window.addEventListener('keydown', onKey);
@@ -675,6 +733,27 @@ export default function Board({
     setTasks((prev) => prev.map((t) => (t.id === task.id ? { ...t, category_id: catId } : t)));
     const { error } = await supabase.from('tasks').update({ category_id: catId }).eq('id', task.id);
     if (error) report('更新分類失敗', error);
+  }
+
+  async function setTaskPriority(task: TaskWithProjects, priority: number) {
+    setTasks((prev) => prev.map((t) => (t.id === task.id ? { ...t, priority } : t)));
+    const { error } = await supabase.from('tasks').update({ priority }).eq('id', task.id);
+    if (error) report('更新優先度失敗', error);
+  }
+
+  async function setTaskDue(task: TaskWithProjects, due: string | null) {
+    setTasks((prev) => prev.map((t) => (t.id === task.id ? { ...t, due_date: due } : t)));
+    const { error } = await supabase.from('tasks').update({ due_date: due }).eq('id', task.id);
+    if (error) report('更新截止日失敗', error);
+  }
+
+  async function confirmDeleteTask(id: string) {
+    const { error } = await supabase.from('tasks').delete().eq('id', id);
+    if (error) return report('刪除任務失敗', error);
+    if (editing !== 'new' && editing?.id === id) setEditing(null);
+    setDeletingTask(null);
+    loadTasks();
+    showToast('已刪除任務');
   }
 
   // Manually mark one or more tasks fully deployed from the deploy sheet: stamp
@@ -1328,6 +1407,26 @@ export default function Board({
     if (t) setEditing(t);
   };
 
+  // keep the keyboard handler pointed at current data + handlers
+  kbdRef.current = {
+    boardTasks,
+    boardStatuses,
+    focusedTaskId,
+    view,
+    busy:
+      editing !== null ||
+      editingProject !== null ||
+      editingWs !== null ||
+      deployOpen ||
+      paletteOpen ||
+      deletingTask !== null,
+    open: (t) => setEditing(t),
+    setFocus: setFocusedTaskId,
+    setStatus: (t, id) => setTaskStatus(t, id, t.blocked_reason),
+    requestDelete: (t) => setDeletingTask(t),
+    newTask: () => setEditing('new'),
+  };
+
   return (
     <div className="app">
       <Sidebar
@@ -1464,11 +1563,15 @@ export default function Board({
               categories={wsCategories}
               projects={wsProjects}
               parentTitleById={titleById}
+              focusedTaskId={focusedTaskId}
               onOpen={setEditing}
               onOpenTaskId={openTaskId}
               onStatus={setTaskStatus}
               onCategory={setTaskCategory}
               onToggleProject={toggleTaskProject}
+              onPriority={setTaskPriority}
+              onDue={setTaskDue}
+              onRequestDelete={setDeletingTask}
               onMoveToStatus={(t, statusId) => setTaskStatus(t, statusId, t.blocked_reason)}
             />
           )}
@@ -1565,6 +1668,17 @@ export default function Board({
         onClose={() => setPaletteOpen(false)}
       />
 
+      {deletingTask && (
+        <ConfirmDialog
+          title="刪除任務"
+          message={`刪除「${deletingTask.title}」？此任務的子任務會脫離、綁定與參考關聯也會一併移除，無法復原。`}
+          confirmLabel="刪除"
+          danger
+          onConfirm={() => confirmDeleteTask(deletingTask.id)}
+          onCancel={() => setDeletingTask(null)}
+        />
+      )}
+
       {toast && (
         <div className="toast" key={toast.key}>
           <span className="toast-msg">{toast.message}</span>
@@ -1620,11 +1734,15 @@ function BoardList({
   categories,
   projects,
   parentTitleById,
+  focusedTaskId,
   onOpen,
   onOpenTaskId,
   onStatus,
   onCategory,
   onToggleProject,
+  onPriority,
+  onDue,
+  onRequestDelete,
   onMoveToStatus,
 }: {
   boardStatuses: StatusRow[];
@@ -1633,11 +1751,15 @@ function BoardList({
   categories: CategoryRow[];
   projects: Project[];
   parentTitleById: Record<string, string>;
+  focusedTaskId: string | null;
   onOpen: (t: TaskWithProjects) => void;
   onOpenTaskId: (id: string) => void;
   onStatus: (t: TaskWithProjects, id: string, r: string | null) => void;
   onCategory: (t: TaskWithProjects, c: string | null) => void;
   onToggleProject: (t: TaskWithProjects, projectId: string) => void;
+  onPriority: (t: TaskWithProjects, v: number) => void;
+  onDue: (t: TaskWithProjects, v: string | null) => void;
+  onRequestDelete: (t: TaskWithProjects) => void;
   onMoveToStatus: (t: TaskWithProjects, statusId: string) => void;
 }) {
   const [activeId, setActiveId] = useState<string | null>(null);
@@ -1688,10 +1810,14 @@ function BoardList({
                     task.parent_id ? () => onOpenTaskId(task.parent_id!) : undefined
                   }
                   projects={projects}
+                  focused={focusedTaskId === task.id}
                   onOpen={() => onOpen(task)}
                   onStatus={(id, r) => onStatus(task, id, r)}
                   onCategory={(c) => onCategory(task, c)}
                   onToggleProject={(pid) => onToggleProject(task, pid)}
+                  onPriority={(v) => onPriority(task, v)}
+                  onDue={(v) => onDue(task, v)}
+                  onRequestDelete={() => onRequestDelete(task)}
                 />
               ))
             )}

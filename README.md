@@ -9,6 +9,7 @@ Linear (deep-grey base, hairline borders, restrained purple accent).
 
 - **Quick capture** — type a line, press Enter, it lands in the workspace inbox. Press `c` anywhere to focus the capture box. Inline tokens file it in one line: `#分類 @專案 !p1` (priority `!p0`–`!p3`). Projects and categories can each carry a short **abbreviation** (project/category editor) so `@et` matches "Easytax 後台".
 - **Search / command palette** — `⌘K` (or `/`) opens a fuzzy search over the workspace's tasks; Enter jumps to one, or create a task from the typed text.
+- **Keyboard & hover** — on the board: `c` capture, `n` new task, `j`/`k` move focus, `e`/`Enter` open, `1`–`9` set status, `x` delete. Hovering a row reveals quick priority / due-date / delete controls. Destructive/deploy actions surface an undo toast.
 - **Priority & due dates** — tasks carry a priority (無/低/中/高/緊急) and an optional due date; rows show a flag and a due chip (soon/overdue coloured) and columns sort by priority → due → recency.
 - **Row project toggle** — each board row has a far-right control to attach/detach projects without opening the editor.
 - **Documents** — a per-workspace **文件** area (sidebar) for writing standalone markdown documents (each with its own id, not tied to a project); a task binds specific documents in its **參考資料** section and reads their content inline in its description area.

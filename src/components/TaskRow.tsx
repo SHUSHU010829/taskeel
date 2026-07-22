@@ -1,13 +1,15 @@
 'use client';
 
 import { useDraggable } from '@dnd-kit/core';
-import { CalendarClock, Check, CornerDownRight, GitBranch } from 'lucide-react';
+import { CalendarClock, Check, CornerDownRight, GitBranch, Trash2 } from 'lucide-react';
 import type { CategoryRow, StatusRow, TaskWithProjects } from '@/lib/types';
 import { dueMeta } from '@/lib/date';
 import type { Project } from '@/lib/types';
 import StatusControl from './StatusControl';
 import CategoryControl from './CategoryControl';
 import PriorityFlag from './PriorityFlag';
+import PriorityControl from './PriorityControl';
+import DueControl from './DueControl';
 import ProjectQuickControl from './ProjectQuickControl';
 
 // One task row in the grouped board list. Draggable (dnd-kit) between columns.
@@ -17,22 +19,30 @@ export default function TaskRow({
   categories,
   projects,
   parentLabel,
+  focused,
   onOpenParent,
   onOpen,
   onStatus,
   onCategory,
   onToggleProject,
+  onPriority,
+  onDue,
+  onRequestDelete,
 }: {
   task: TaskWithProjects;
   statuses: StatusRow[];
   categories: CategoryRow[];
   projects: Project[];
   parentLabel?: string;
+  focused?: boolean;
   onOpenParent?: () => void;
   onOpen: () => void;
   onStatus: (nextId: string, reason: string | null) => void;
   onCategory: (next: string | null) => void;
   onToggleProject: (projectId: string) => void;
+  onPriority: (v: number) => void;
+  onDue: (v: string | null) => void;
+  onRequestDelete: () => void;
 }) {
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id: task.id,
@@ -42,7 +52,8 @@ export default function TaskRow({
   return (
     <div
       ref={setNodeRef}
-      className={`task-row${isDragging ? ' dragging' : ''}`}
+      id={`task-${task.id}`}
+      className={`task-row${isDragging ? ' dragging' : ''}${focused ? ' focused' : ''}`}
       {...attributes}
       {...listeners}
     >
@@ -105,6 +116,21 @@ export default function TaskRow({
             {link.deploy_status === 'deployed' && <Check size={12} />}
           </span>
         ))}
+      </div>
+
+      <div className="row-hover-actions">
+        <PriorityControl value={task.priority} onChange={onPriority} />
+        <DueControl value={task.due_date} onChange={onDue} />
+        <button
+          className="row-act row-del"
+          title="刪除任務"
+          onClick={(e) => {
+            e.stopPropagation();
+            onRequestDelete();
+          }}
+        >
+          <Trash2 size={13} />
+        </button>
       </div>
 
       <ProjectQuickControl
