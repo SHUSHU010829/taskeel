@@ -118,6 +118,11 @@ export default function Board({
   const [collapsed, setCollapsed] = useState(false);
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [toast, setToast] = useState<{ key: number; message: string; undo?: () => void } | null>(
+    null
+  );
+  const toastKeyRef = useRef(0);
+  const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [capture, setCapture] = useState('');
   const [fontPx, setFontPx] = useState(15);
   const [theme, setTheme] = useState<'dark' | 'light'>('dark');
@@ -133,6 +138,12 @@ export default function Board({
     !!initialTasksWorkspaceId &&
       initialTasksWorkspaceId === (initialWorkspaces[0]?.id ?? null)
   );
+
+  const showToast = useCallback((message: string, undo?: () => void) => {
+    if (toastTimer.current) clearTimeout(toastTimer.current);
+    setToast({ key: (toastKeyRef.current += 1), message, undo });
+    toastTimer.current = setTimeout(() => setToast(null), 6000);
+  }, []);
 
   const report = useCallback((label: string, err: unknown) => {
     const msg =
@@ -671,6 +682,12 @@ export default function Board({
   async function markTasksDeployed(taskList: TaskWithProjects[]) {
     const ids = taskList.map((t) => t.id);
     if (!ids.length) return;
+    // snapshot for undo: each task's prior status + which links were pending
+    const snap = taskList.map((t) => ({
+      id: t.id,
+      status_id: t.status_id,
+      pending: t.links.filter((l) => l.deploy_status === 'pending').map((l) => l.project_id),
+    }));
     const now = new Date().toISOString();
     const { error: e1 } = await supabase
       .from('task_projects')
@@ -683,12 +700,34 @@ export default function Board({
     const { error: e2 } = await supabase.from('tasks').update(patch).in('id', ids);
     if (e2) return report('歸檔失敗', e2);
     loadTasks();
+    showToast(`已標記 ${ids.length} 項部署`, () => undoMarkDeployed(snap));
+  }
+
+  async function undoMarkDeployed(
+    snap: Array<{ id: string; status_id: string | null; pending: string[] }>
+  ) {
+    for (const s of snap) {
+      if (s.pending.length) {
+        await supabase
+          .from('task_projects')
+          .update({ deploy_status: 'pending', deployed_at: null })
+          .eq('task_id', s.id)
+          .in('project_id', s.pending);
+      }
+      await supabase
+        .from('tasks')
+        .update({ status_id: s.status_id, archived_at: null })
+        .eq('id', s.id);
+    }
+    loadTasks();
+    showToast('已復原部署標記');
   }
 
   // Mark a single (task, project) link deployed. If that was the last pending
   // one, archive the task too.
   async function markLinkDeployed(task: TaskWithProjects, projectId: string) {
     const now = new Date().toISOString();
+    const prevStatus = task.status_id;
     const { error } = await supabase
       .from('task_projects')
       .update({ deploy_status: 'deployed', deployed_at: now })
@@ -707,6 +746,21 @@ export default function Board({
       if (e2) return report('歸檔失敗', e2);
     }
     loadTasks();
+    showToast('已標記部署', async () => {
+      await supabase
+        .from('task_projects')
+        .update({ deploy_status: 'pending', deployed_at: null })
+        .eq('task_id', task.id)
+        .eq('project_id', projectId);
+      if (allDeployed) {
+        await supabase
+          .from('tasks')
+          .update({ status_id: prevStatus, archived_at: null })
+          .eq('id', task.id);
+      }
+      loadTasks();
+      showToast('已復原部署標記');
+    });
   }
 
   // Branch off a new task from `source` (a pivot / new direction). It stays a
@@ -1510,6 +1564,26 @@ export default function Board({
         }}
         onClose={() => setPaletteOpen(false)}
       />
+
+      {toast && (
+        <div className="toast" key={toast.key}>
+          <span className="toast-msg">{toast.message}</span>
+          {toast.undo && (
+            <button
+              className="toast-undo"
+              onClick={() => {
+                toast.undo?.();
+                setToast(null);
+              }}
+            >
+              復原
+            </button>
+          )}
+          <button className="toast-close" onClick={() => setToast(null)}>
+            <X size={14} />
+          </button>
+        </div>
+      )}
     </div>
   );
 }

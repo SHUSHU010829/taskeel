@@ -1235,6 +1235,73 @@ a {
   padding: 24px;
 }
 
+/* ---------- toast / undo ---------- */
+.toast {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  z-index: 80;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px 10px 16px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45);
+  animation: toast-in 0.18s ease;
+  max-width: min(90vw, 420px);
+}
+
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+
+.toast-msg {
+  font-size: 0.9rem;
+  color: var(--text);
+}
+
+.toast-undo {
+  border: none;
+  background: transparent;
+  color: var(--accent);
+  font-weight: 600;
+  font-size: 0.85rem;
+  padding: 4px 6px;
+  border-radius: 4px;
+}
+
+.toast-undo:hover {
+  background: rgba(94, 106, 210, 0.14);
+}
+
+.toast-close {
+  border: none;
+  background: transparent;
+  color: var(--text-faint);
+  display: inline-flex;
+  padding: 4px;
+  border-radius: 4px;
+}
+
+.toast-close:hover {
+  color: var(--text);
+  background: var(--bg-hover);
+}
+
+@media (max-width: 720px) {
+  .toast {
+    left: 12px;
+    right: 12px;
+    bottom: 12px;
+    max-width: none;
+  }
+}
+
 /* ---------- command palette (⌘K) ---------- */
 .cmdk-overlay {
   position: fixed;
