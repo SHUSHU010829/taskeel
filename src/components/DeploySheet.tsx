@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Check, Copy, Download, FileText, GitBranch, Link2, List, TriangleAlert, X } from 'lucide-react';
+import { Check, CircleCheck, Copy, Download, FileText, GitBranch, Link2, List, TriangleAlert, X } from 'lucide-react';
 import type { StatusRow, TaskWithProjects } from '@/lib/types';
 import StatusDot from './StatusDot';
 
@@ -12,11 +12,13 @@ export default function DeploySheet({
   tasks,
   allTasks,
   statuses,
+  onMarkDeployed,
   onClose,
 }: {
   tasks: TaskWithProjects[];
   allTasks: TaskWithProjects[];
   statuses: StatusRow[];
+  onMarkDeployed: (task: TaskWithProjects) => void;
   onClose: () => void;
 }) {
   const deployIds = new Set(
@@ -175,6 +177,15 @@ export default function DeploySheet({
                     <TriangleAlert size={13} /> {task.deploy_notes}
                   </div>
                 )}
+                <div className="deploy-card-actions">
+                  <button
+                    className="btn deploy-done-btn"
+                    title="標記此任務所有專案為已部署，並歸檔"
+                    onClick={() => onMarkDeployed(task)}
+                  >
+                    <CircleCheck size={14} /> 標記已部署完畢
+                  </button>
+                </div>
                 {(() => {
                   const mates = bundleMates(task);
                   if (mates.length === 0) return null;

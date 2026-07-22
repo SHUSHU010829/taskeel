@@ -2294,6 +2294,22 @@ a {
   font-size: 0.8rem;
 }
 
+.deploy-card-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 10px;
+}
+
+.deploy-done-btn {
+  gap: 5px;
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.deploy-done-btn:hover {
+  background: rgba(94, 106, 210, 0.12);
+}
+
 .deploy-bundle {
   margin-top: 8px;
   padding: 8px 10px;
