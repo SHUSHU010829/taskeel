@@ -2296,8 +2296,36 @@ a {
 
 .deploy-card-actions {
   display: flex;
+  align-items: center;
   justify-content: flex-end;
+  gap: 8px;
   margin-top: 10px;
+}
+
+.deploy-hint {
+  font-size: 0.72rem;
+  color: var(--text-faint);
+}
+
+.chip-btn {
+  cursor: pointer;
+  background: transparent;
+  color: var(--text-dim);
+  font: inherit;
+}
+
+.chip-btn:hover {
+  border-color: var(--accent);
+  color: var(--text);
+}
+
+.chip-check {
+  opacity: 0;
+  color: var(--accent);
+}
+
+.chip-btn:hover .chip-check {
+  opacity: 1;
 }
 
 .deploy-done-btn {

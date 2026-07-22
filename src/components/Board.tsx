@@ -685,6 +685,30 @@ export default function Board({
     loadTasks();
   }
 
+  // Mark a single (task, project) link deployed. If that was the last pending
+  // one, archive the task too.
+  async function markLinkDeployed(task: TaskWithProjects, projectId: string) {
+    const now = new Date().toISOString();
+    const { error } = await supabase
+      .from('task_projects')
+      .update({ deploy_status: 'deployed', deployed_at: now })
+      .eq('task_id', task.id)
+      .eq('project_id', projectId);
+    if (error) return report('標記部署失敗', error);
+    const allDeployed = task.links.every(
+      (l) => l.project_id === projectId || l.deploy_status === 'deployed'
+    );
+    if (allDeployed) {
+      const archive = wsStatuses.find((s) => s.is_archive);
+      const { error: e2 } = await supabase
+        .from('tasks')
+        .update({ status_id: archive?.id ?? task.status_id, archived_at: now })
+        .eq('id', task.id);
+      if (e2) return report('歸檔失敗', e2);
+    }
+    loadTasks();
+  }
+
   // Branch off a new task from `source` (a pivot / new direction). It stays a
   // top-level board task but records `origin_id` back to the source; it inherits
   // the source's projects + category so the context carries over.
@@ -1465,6 +1489,7 @@ export default function Board({
           allTasks={tasks}
           statuses={wsStatuses}
           onMarkDeployed={markTaskDeployed}
+          onMarkLink={markLinkDeployed}
           onClose={() => setDeployOpen(false)}
         />
       )}

@@ -13,12 +13,14 @@ export default function DeploySheet({
   allTasks,
   statuses,
   onMarkDeployed,
+  onMarkLink,
   onClose,
 }: {
   tasks: TaskWithProjects[];
   allTasks: TaskWithProjects[];
   statuses: StatusRow[];
   onMarkDeployed: (task: TaskWithProjects) => void;
+  onMarkLink: (task: TaskWithProjects, projectId: string) => void;
   onClose: () => void;
 }) {
   const deployIds = new Set(
@@ -158,7 +160,12 @@ export default function DeploySheet({
                 </div>
                 <div className="history-meta">
                   {links.map((l) => (
-                    <span key={l.project_id} className="chip">
+                    <button
+                      key={l.project_id}
+                      className="chip chip-btn"
+                      title="標記此專案已部署"
+                      onClick={() => onMarkLink(task, l.project_id)}
+                    >
                       <span
                         className="dot"
                         style={{ background: l.project.color, width: 6, height: 6 }}
@@ -169,7 +176,8 @@ export default function DeploySheet({
                           <GitBranch size={11} /> {l.branch}
                         </span>
                       )}
-                    </span>
+                      <Check size={12} className="chip-check" />
+                    </button>
                   ))}
                 </div>
                 {task.deploy_notes.trim() && (
@@ -178,12 +186,15 @@ export default function DeploySheet({
                   </div>
                 )}
                 <div className="deploy-card-actions">
+                  {links.length > 1 && (
+                    <span className="deploy-hint">點專案標記單項，或</span>
+                  )}
                   <button
                     className="btn deploy-done-btn"
                     title="標記此任務所有專案為已部署，並歸檔"
                     onClick={() => onMarkDeployed(task)}
                   >
-                    <CircleCheck size={14} /> 標記已部署完畢
+                    <CircleCheck size={14} /> 全部標記已部署
                   </button>
                 </div>
                 {(() => {
