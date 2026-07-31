@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Menu, Plus, Search, X, TriangleAlert } from 'lucide-react';
+import { Menu, Plus, Search, Sparkles, X, TriangleAlert } from 'lucide-react';
 import {
   DndContext,
   DragOverlay,
@@ -40,6 +40,7 @@ import CommandPalette from './CommandPalette';
 import DocumentsView from './DocumentsView';
 import DiscussionView, { type CommentWithTask } from './DiscussionView';
 import ConfirmDialog from './ConfirmDialog';
+import OrganizeModal, { type OrganizedTask } from './OrganizeModal';
 
 const TASK_SELECT = '*, task_projects(*, project:projects(*))';
 
@@ -115,6 +116,7 @@ export default function Board({
   const [editingProject, setEditingProject] = useState<Project | null>(null);
   const [editingWs, setEditingWs] = useState<Workspace | null | 'new'>(null);
   const [deployOpen, setDeployOpen] = useState(false);
+  const [organizeOpen, setOrganizeOpen] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
   const [paletteOpen, setPaletteOpen] = useState(false);
@@ -635,6 +637,53 @@ export default function Board({
     if (!v.trim()) return;
     setCapture('');
     quickCapture(v);
+  }
+
+  // Create the AI-organised parent tasks + their subtasks.
+  async function createOrganized(items: OrganizedTask[]) {
+    if (!currentWs) return;
+    const def = wsStatuses.find((s) => s.is_default) ?? wsStatuses[0];
+    let count = 0;
+    for (const it of items) {
+      const catId = wsCategories.find((c) => c.name === it.category)?.id ?? null;
+      const { data: parent, error } = await supabase
+        .from('tasks')
+        .insert({
+          workspace_id: currentWs.id,
+          owner_id: userId,
+          title: it.title,
+          description: it.description || '',
+          status_id: def?.id ?? null,
+          category_id: catId,
+          priority: it.priority ?? 0,
+        })
+        .select('id')
+        .single();
+      if (error || !parent) {
+        report('建立任務失敗', error);
+        continue;
+      }
+      count += 1;
+      if (it.subtasks.length) {
+        const { error: e2 } = await supabase.from('tasks').insert(
+          it.subtasks.map((s) => ({
+            workspace_id: currentWs.id,
+            owner_id: userId,
+            parent_id: parent.id,
+            title: s.title,
+            description: s.description || '',
+            status_id: def?.id ?? null,
+            category_id: catId,
+            priority: it.priority ?? 0,
+          }))
+        );
+        if (e2) report('建立子任務失敗', e2);
+        else count += it.subtasks.length;
+      }
+    }
+    setOrganizeOpen(false);
+    loadTasks();
+    showToast(`已建立 ${count} 個任務`);
   }
 
   async function saveTask(draft: TaskDraft) {
@@ -1501,6 +1550,10 @@ export default function Board({
           </button>
           {view === 'board' && (
             <>
+              <button className="btn topbar-organize" title="用 AI 把一段說明整理成任務" onClick={() => setOrganizeOpen(true)}>
+                <Sparkles size={14} />
+                <span className="topbar-organize-label">整理</span>
+              </button>
               <button className="btn" onClick={() => setDeployOpen(true)}>
                 部署
                 {pendingDeployCount > 0 && <span className="badge-count">{pendingDeployCount}</span>}
@@ -1667,6 +1720,14 @@ export default function Board({
         }}
         onClose={() => setPaletteOpen(false)}
       />
+
+      {organizeOpen && (
+        <OrganizeModal
+          categories={wsCategories.map((c) => c.name)}
+          onCreate={createOrganized}
+          onClose={() => setOrganizeOpen(false)}
+        />
+      )}
 
       {deletingTask && (
         <ConfirmDialog

@@ -1287,6 +1287,95 @@ a {
   padding: 24px;
 }
 
+/* ---------- AI 整理任務 ---------- */
+.organize-modal {
+  width: 680px;
+}
+
+.organize-input {
+  width: 100%;
+  min-height: 180px;
+  resize: vertical;
+}
+
+.organize-review {
+  max-height: 56vh;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 6px 0 4px;
+}
+
+.org-task {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 10px;
+}
+
+.org-task.off {
+  opacity: 0.5;
+}
+
+.org-task-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.org-title {
+  flex: 1;
+  font-weight: 500;
+}
+
+.org-task-body {
+  margin-top: 8px;
+  padding-left: 24px;
+}
+
+.org-desc {
+  width: 100%;
+  resize: vertical;
+  min-height: 44px;
+  font-size: 0.85rem;
+}
+
+.org-subs {
+  margin-top: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.org-sub {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.org-sub .text-input {
+  flex: 1;
+}
+
+.org-sub-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--text-faint);
+  flex-shrink: 0;
+}
+
+.topbar-organize {
+  gap: 5px;
+  color: var(--text-dim);
+}
+
+@media (max-width: 720px) {
+  .topbar-organize-label {
+    display: none;
+  }
+}
+
 /* ---------- toast / undo ---------- */
 .toast {
   position: fixed;
