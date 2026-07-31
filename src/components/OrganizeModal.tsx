@@ -13,6 +13,7 @@ interface OrgTask {
   title: string;
   description?: string;
   category?: string;
+  project?: string;
   priority?: number;
   subtasks?: OrgSub[];
   include?: boolean;
@@ -22,6 +23,7 @@ export interface OrganizedTask {
   title: string;
   description: string;
   category: string;
+  project: string;
   priority: number;
   subtasks: { title: string; description: string }[];
 }
@@ -29,10 +31,12 @@ export interface OrganizedTask {
 // AI 整理：貼一段說明 → Claude 整理成主/子任務 → 檢視編輯 → 一鍵建立。
 export default function OrganizeModal({
   categories,
+  projects,
   onCreate,
   onClose,
 }: {
   categories: string[];
+  projects: string[];
   onCreate: (items: OrganizedTask[]) => void;
   onClose: () => void;
 }) {
@@ -49,7 +53,7 @@ export default function OrganizeModal({
       const res = await fetch('/api/organize', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ text, categories }),
+        body: JSON.stringify({ text, categories, projects }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || '整理失敗');
@@ -95,6 +99,7 @@ export default function OrganizeModal({
         title: it.title.trim(),
         description: it.description ?? '',
         category: it.category ?? '',
+        project: it.project ?? '',
         priority: it.priority ?? 0,
         subtasks: (it.subtasks ?? [])
           .filter((s) => s.title.trim())
@@ -141,6 +146,7 @@ export default function OrganizeModal({
                   <div className="org-task-head">
                     <input
                       type="checkbox"
+                      className="org-check"
                       checked={!!it.include}
                       onChange={(e) => patch(i, { include: e.target.checked })}
                     />
@@ -149,6 +155,7 @@ export default function OrganizeModal({
                       value={it.title}
                       onChange={(e) => patch(i, { title: e.target.value })}
                     />
+                    {it.project && <span className="summary-chip org-proj-chip">{it.project}</span>}
                     {it.category && <span className="summary-chip">{it.category}</span>}
                     {!!it.priority && (
                       <span className="summary-chip">

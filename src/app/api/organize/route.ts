@@ -25,6 +25,10 @@ const TASK_TOOL = {
               type: 'string',
               description: '從提供的分類清單擇一，否則空字串',
             },
+            project: {
+              type: 'string',
+              description: '從提供的專案清單擇一（判斷這個任務屬於哪個專案），無法判斷則空字串',
+            },
             priority: {
               type: 'integer',
               description: '0 無 1 低 2 中 3 高 4 緊急',
@@ -67,7 +71,7 @@ export async function POST(request: Request) {
     );
   }
 
-  let body: { text?: string; categories?: string[] };
+  let body: { text?: string; categories?: string[]; projects?: string[] };
   try {
     body = await request.json();
   } catch {
@@ -77,10 +81,12 @@ export async function POST(request: Request) {
   if (!text) return NextResponse.json({ error: '請提供要整理的說明文字' }, { status: 400 });
 
   const cats = (body.categories ?? []).filter(Boolean);
+  const projs = (body.projects ?? []).filter(Boolean);
   const system = `你是一個開發任務整理助手。使用者會給你一段開發相關的說明（可能很長、口語、凌亂）。請把它整理成結構化的任務清單：
 - 找出「主任務」，每個主任務在確實可拆時再拆成子任務；不要過度拆解。
 - 每個任務給簡潔的標題（繁體中文）與必要的說明（description，可用 Markdown，沒有就空字串）。
 - 若有提供分類清單，為每個主任務挑一個最合適的分類名稱（必須是清單其中之一，否則空字串）。可用分類：${cats.length ? cats.join('、') : '（無）'}。
+- 若有提供專案清單，判斷每個主任務屬於哪個專案，挑一個最合適的專案名稱（必須是清單其中之一，否則空字串）。可用專案：${projs.length ? projs.join('、') : '（無）'}。
 - priority：0 無、1 低、2 中、3 高、4 緊急；不確定填 0。
 - 保持忠於原文，不要臆造需求。務必透過 emit_tasks 工具輸出。`;
 

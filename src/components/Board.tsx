@@ -646,6 +646,7 @@ export default function Board({
     let count = 0;
     for (const it of items) {
       const catId = wsCategories.find((c) => c.name === it.category)?.id ?? null;
+      const projId = wsProjects.find((p) => p.name === it.project)?.id ?? null;
       const { data: parent, error } = await supabase
         .from('tasks')
         .insert({
@@ -664,21 +665,36 @@ export default function Board({
         continue;
       }
       count += 1;
+      if (projId) {
+        await supabase
+          .from('task_projects')
+          .insert({ task_id: parent.id, project_id: projId });
+      }
       if (it.subtasks.length) {
-        const { error: e2 } = await supabase.from('tasks').insert(
-          it.subtasks.map((s) => ({
-            workspace_id: currentWs.id,
-            owner_id: userId,
-            parent_id: parent.id,
-            title: s.title,
-            description: s.description || '',
-            status_id: def?.id ?? null,
-            category_id: catId,
-            priority: it.priority ?? 0,
-          }))
-        );
+        const { data: subs, error: e2 } = await supabase
+          .from('tasks')
+          .insert(
+            it.subtasks.map((s) => ({
+              workspace_id: currentWs.id,
+              owner_id: userId,
+              parent_id: parent.id,
+              title: s.title,
+              description: s.description || '',
+              status_id: def?.id ?? null,
+              category_id: catId,
+              priority: it.priority ?? 0,
+            }))
+          )
+          .select('id');
         if (e2) report('建立子任務失敗', e2);
-        else count += it.subtasks.length;
+        else {
+          count += it.subtasks.length;
+          if (projId && subs?.length) {
+            await supabase
+              .from('task_projects')
+              .insert(subs.map((s) => ({ task_id: s.id, project_id: projId })));
+          }
+        }
       }
     }
     setOrganizeOpen(false);
@@ -1724,6 +1740,7 @@ export default function Board({
       {organizeOpen && (
         <OrganizeModal
           categories={wsCategories.map((c) => c.name)}
+          projects={wsProjects.map((p) => p.name)}
           onCreate={createOrganized}
           onClose={() => setOrganizeOpen(false)}
         />
