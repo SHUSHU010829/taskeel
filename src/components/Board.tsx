@@ -1739,8 +1739,8 @@ export default function Board({
 
       {organizeOpen && (
         <OrganizeModal
-          categories={wsCategories.map((c) => c.name)}
-          projects={wsProjects.map((p) => p.name)}
+          categories={wsCategories.map((c) => ({ name: c.name, abbr: c.abbr ?? '' }))}
+          projects={wsProjects.map((p) => ({ name: p.name, abbr: p.abbr ?? '' }))}
           onCreate={createOrganized}
           onClose={() => setOrganizeOpen(false)}
         />

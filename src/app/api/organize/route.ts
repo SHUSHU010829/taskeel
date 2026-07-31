@@ -71,7 +71,11 @@ export async function POST(request: Request) {
     );
   }
 
-  let body: { text?: string; categories?: string[]; projects?: string[] };
+  interface NamedRef {
+    name?: string;
+    abbr?: string;
+  }
+  let body: { text?: string; categories?: NamedRef[]; projects?: NamedRef[] };
   try {
     body = await request.json();
   } catch {
@@ -80,13 +84,19 @@ export async function POST(request: Request) {
   const text = (body.text ?? '').trim();
   if (!text) return NextResponse.json({ error: '請提供要整理的說明文字' }, { status: 400 });
 
-  const cats = (body.categories ?? []).filter(Boolean);
-  const projs = (body.projects ?? []).filter(Boolean);
+  // "名稱（縮寫 XX）" — the abbr is only a matching hint; Claude must return the name.
+  const fmt = (arr?: NamedRef[]) =>
+    (arr ?? [])
+      .filter((x) => x.name)
+      .map((x) => (x.abbr ? `${x.name}（縮寫 ${x.abbr}）` : x.name))
+      .join('、');
+  const cats = fmt(body.categories);
+  const projs = fmt(body.projects);
   const system = `你是一個開發任務整理助手。使用者會給你一段開發相關的說明（可能很長、口語、凌亂）。請把它整理成結構化的任務清單：
 - 找出「主任務」，每個主任務在確實可拆時再拆成子任務；不要過度拆解。
 - 每個任務給簡潔的標題（繁體中文）與必要的說明（description，可用 Markdown，沒有就空字串）。
-- 若有提供分類清單，為每個主任務挑一個最合適的分類名稱（必須是清單其中之一，否則空字串）。可用分類：${cats.length ? cats.join('、') : '（無）'}。
-- 若有提供專案清單，判斷每個主任務屬於哪個專案，挑一個最合適的專案名稱（必須是清單其中之一，否則空字串）。可用專案：${projs.length ? projs.join('、') : '（無）'}。
+- 若有提供分類清單，為每個主任務挑一個最合適的分類（必須是清單其中之一，否則空字串）。清單以「名稱（縮寫）」呈現，縮寫只是方便你比對原文，輸出時一律回傳「名稱」。可用分類：${cats || '（無）'}。
+- 若有提供專案清單，判斷每個主任務屬於哪個專案（原文可能用縮寫或簡稱提到），挑一個最合適的專案（必須是清單其中之一，否則空字串），同樣一律回傳「名稱」。可用專案：${projs || '（無）'}。
 - priority：0 無、1 低、2 中、3 高、4 緊急；不確定填 0。
 - 保持忠於原文，不要臆造需求。務必透過 emit_tasks 工具輸出。`;
 

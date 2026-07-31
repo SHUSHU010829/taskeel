@@ -29,14 +29,19 @@ export interface OrganizedTask {
 }
 
 // AI 整理：貼一段說明 → Claude 整理成主/子任務 → 檢視編輯 → 一鍵建立。
+interface NamedRef {
+  name: string;
+  abbr?: string;
+}
+
 export default function OrganizeModal({
   categories,
   projects,
   onCreate,
   onClose,
 }: {
-  categories: string[];
-  projects: string[];
+  categories: NamedRef[];
+  projects: NamedRef[];
   onCreate: (items: OrganizedTask[]) => void;
   onClose: () => void;
 }) {
