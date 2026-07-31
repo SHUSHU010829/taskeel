@@ -151,6 +151,8 @@ export default function Board({
   // multi-select bulk edit: long-press a row to enter, tap rows to (de)select
   const [selectMode, setSelectMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const selectAnchorRef = useRef<string | null>(null); // last row toggled (Shift range base)
+  const orderedIdsRef = useRef<string[]>([]); // board rows in visual top-to-bottom order
   const captureRef = useRef<HTMLInputElement>(null);
   const seedWsRef = useRef(false);
   const seedingStatusRef = useRef<Set<string>>(new Set());
@@ -849,18 +851,36 @@ export default function Board({
   function exitSelect() {
     setSelectMode(false);
     setSelectedIds(new Set());
+    selectAnchorRef.current = null;
   }
   function enterSelect(id: string) {
     setSelectMode(true);
     setSelectedIds(new Set([id]));
+    selectAnchorRef.current = id;
   }
-  function toggleSelect(id: string) {
+  function toggleSelect(id: string, shift = false) {
+    const order = orderedIdsRef.current;
+    const anchor = selectAnchorRef.current;
+    // Shift+click: select the whole visual range between the anchor and here.
+    if (shift && anchor && anchor !== id && order.includes(anchor) && order.includes(id)) {
+      const a = order.indexOf(anchor);
+      const b = order.indexOf(id);
+      const [lo, hi] = a < b ? [a, b] : [b, a];
+      const range = order.slice(lo, hi + 1);
+      setSelectedIds((prev) => {
+        const n = new Set(prev);
+        range.forEach((x) => n.add(x));
+        return n;
+      });
+      return; // keep the anchor for further range extension
+    }
     setSelectedIds((prev) => {
       const n = new Set(prev);
       if (n.has(id)) n.delete(id);
       else n.add(id);
       return n;
     });
+    selectAnchorRef.current = id;
   }
 
   async function bulkPatch(patch: Partial<Task>, label: string) {
@@ -1553,6 +1573,11 @@ export default function Board({
     if (t) setEditing(t);
   };
 
+  // visual order for Shift range-select = rows as rendered, column by column
+  orderedIdsRef.current = boardStatuses.flatMap((s) =>
+    boardTasks.filter((t) => t.status_id === s.id).map((t) => t.id)
+  );
+
   // keep the keyboard handler pointed at current data + handlers
   kbdRef.current = {
     boardTasks,
@@ -1941,7 +1966,7 @@ function BoardList({
   selectMode: boolean;
   selectedIds: Set<string>;
   onLongPress: (id: string) => void;
-  onToggleSelect: (id: string) => void;
+  onToggleSelect: (id: string, shift: boolean) => void;
   onOpen: (t: TaskWithProjects) => void;
   onOpenTaskId: (id: string) => void;
   onStatus: (t: TaskWithProjects, id: string, r: string | null) => void;
@@ -2014,7 +2039,7 @@ function BoardList({
                   selectMode={selectMode}
                   selected={selectedIds.has(task.id)}
                   onLongPress={() => onLongPress(task.id)}
-                  onToggleSelect={() => onToggleSelect(task.id)}
+                  onToggleSelect={(shift) => onToggleSelect(task.id, shift)}
                   onOpen={() => onOpen(task)}
                   onStatus={(id, r) => onStatus(task, id, r)}
                   onCategory={(c) => onCategory(task, c)}

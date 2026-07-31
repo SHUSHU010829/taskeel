@@ -54,7 +54,7 @@ export default function TaskRow({
   selectMode?: boolean;
   selected?: boolean;
   onLongPress?: () => void;
-  onToggleSelect?: () => void;
+  onToggleSelect?: (shift: boolean) => void;
   onOpenParent?: () => void;
   onOpen: () => void;
   onStatus: (nextId: string, reason: string | null) => void;
@@ -98,12 +98,12 @@ export default function TaskRow({
     if (Math.abs(e.clientX - start.current.x) > 10 || Math.abs(e.clientY - start.current.y) > 10)
       clear();
   };
-  const onRowClick = () => {
+  const onRowClick = (e: React.MouseEvent) => {
     if (fired.current) {
       fired.current = false;
       return; // consumed by long-press
     }
-    if (selectMode) onToggleSelect?.();
+    if (selectMode) onToggleSelect?.(e.shiftKey);
   };
 
   return (
@@ -142,7 +142,7 @@ export default function TaskRow({
           title={`主任務：${parentLabel}`}
           onClick={(e) => {
             e.stopPropagation();
-            if (selectMode) onToggleSelect?.();
+            if (selectMode) onToggleSelect?.(e.shiftKey);
             else onOpenParent?.();
           }}
         >
