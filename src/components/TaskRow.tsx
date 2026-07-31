@@ -1,7 +1,16 @@
 'use client';
 
+import { useRef } from 'react';
 import { useDraggable } from '@dnd-kit/core';
-import { CalendarClock, Check, CornerDownRight, GitBranch, Trash2 } from 'lucide-react';
+import {
+  CalendarClock,
+  Check,
+  CheckSquare,
+  CornerDownRight,
+  GitBranch,
+  Square,
+  Trash2,
+} from 'lucide-react';
 import type { CategoryRow, StatusRow, TaskWithProjects } from '@/lib/types';
 import { dueMeta } from '@/lib/date';
 import type { Project } from '@/lib/types';
@@ -12,7 +21,10 @@ import PriorityControl from './PriorityControl';
 import DueControl from './DueControl';
 import ProjectQuickControl from './ProjectQuickControl';
 
+const LONG_PRESS_MS = 450;
+
 // One task row in the grouped board list. Draggable (dnd-kit) between columns.
+// Long-press enters multi-select; in select mode a tap toggles the row.
 export default function TaskRow({
   task,
   statuses,
@@ -20,6 +32,10 @@ export default function TaskRow({
   projects,
   parentLabel,
   focused,
+  selectMode,
+  selected,
+  onLongPress,
+  onToggleSelect,
   onOpenParent,
   onOpen,
   onStatus,
@@ -35,6 +51,10 @@ export default function TaskRow({
   projects: Project[];
   parentLabel?: string;
   focused?: boolean;
+  selectMode?: boolean;
+  selected?: boolean;
+  onLongPress?: () => void;
+  onToggleSelect?: () => void;
   onOpenParent?: () => void;
   onOpen: () => void;
   onStatus: (nextId: string, reason: string | null) => void;
@@ -46,17 +66,67 @@ export default function TaskRow({
 }) {
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id: task.id,
+    disabled: selectMode,
   });
   const due = dueMeta(task.due_date);
+
+  // long-press detection (own pointer timer; dnd uses mouse/touch events so no clash)
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const start = useRef<{ x: number; y: number } | null>(null);
+  const fired = useRef(false);
+  const clear = () => {
+    if (timer.current) {
+      clearTimeout(timer.current);
+      timer.current = null;
+    }
+    start.current = null;
+  };
+  const onPointerDown = (e: React.PointerEvent) => {
+    if (selectMode) return;
+    if (e.button && e.button !== 0) return;
+    // don't arm on interactive children (status dot, chips, controls…)
+    if ((e.target as HTMLElement).closest('button, input, a, .popover')) return;
+    fired.current = false;
+    start.current = { x: e.clientX, y: e.clientY };
+    timer.current = setTimeout(() => {
+      fired.current = true;
+      onLongPress?.();
+    }, LONG_PRESS_MS);
+  };
+  const onPointerMove = (e: React.PointerEvent) => {
+    if (!start.current) return;
+    if (Math.abs(e.clientX - start.current.x) > 10 || Math.abs(e.clientY - start.current.y) > 10)
+      clear();
+  };
+  const onRowClick = () => {
+    if (fired.current) {
+      fired.current = false;
+      return; // consumed by long-press
+    }
+    if (selectMode) onToggleSelect?.();
+  };
 
   return (
     <div
       ref={setNodeRef}
       id={`task-${task.id}`}
-      className={`task-row${isDragging ? ' dragging' : ''}${focused ? ' focused' : ''}`}
+      className={`task-row${isDragging ? ' dragging' : ''}${focused ? ' focused' : ''}${
+        selectMode ? ' select-mode' : ''
+      }${selected ? ' selected' : ''}`}
       {...attributes}
-      {...listeners}
+      {...(selectMode ? {} : listeners)}
+      onPointerDown={onPointerDown}
+      onPointerMove={onPointerMove}
+      onPointerUp={clear}
+      onPointerLeave={clear}
+      onPointerCancel={clear}
+      onClick={onRowClick}
     >
+      {selectMode && (
+        <span className="row-check" aria-hidden>
+          {selected ? <CheckSquare size={16} /> : <Square size={16} />}
+        </span>
+      )}
       <StatusControl
         statuses={statuses}
         valueId={task.status_id}
@@ -72,16 +142,25 @@ export default function TaskRow({
           title={`主任務：${parentLabel}`}
           onClick={(e) => {
             e.stopPropagation();
-            onOpenParent?.();
+            if (selectMode) onToggleSelect?.();
+            else onOpenParent?.();
           }}
         >
           <CornerDownRight size={13} />
+          <span className="parent-mark-label">{parentLabel}</span>
         </button>
       )}
 
       <PriorityFlag priority={task.priority} />
 
-      <span className="task-title" onClick={onOpen}>
+      <span
+        className="task-title"
+        onClick={(e) => {
+          if (selectMode) return; // row handler toggles selection
+          e.stopPropagation();
+          onOpen();
+        }}
+      >
         {task.title}
       </span>
 

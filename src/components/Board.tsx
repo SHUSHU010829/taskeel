@@ -41,6 +41,7 @@ import DocumentsView from './DocumentsView';
 import DiscussionView, { type CommentWithTask } from './DiscussionView';
 import ConfirmDialog from './ConfirmDialog';
 import OrganizeModal, { type OrganizedTask } from './OrganizeModal';
+import BulkActionBar from './BulkActionBar';
 
 const TASK_SELECT = '*, task_projects(*, project:projects(*))';
 
@@ -133,6 +134,7 @@ export default function Board({
     focusedTaskId: string | null;
     view: View;
     busy: boolean;
+    selectMode: boolean;
     open: (t: TaskWithProjects) => void;
     setFocus: (id: string | null) => void;
     setStatus: (t: TaskWithProjects, id: string) => void;
@@ -146,6 +148,9 @@ export default function Board({
   const [projectFilter, setProjectFilter] = useState<string | null>(null);
   const [focusedTaskId, setFocusedTaskId] = useState<string | null>(null);
   const [deletingTask, setDeletingTask] = useState<TaskWithProjects | null>(null);
+  // multi-select bulk edit: long-press a row to enter, tap rows to (de)select
+  const [selectMode, setSelectMode] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const captureRef = useRef<HTMLInputElement>(null);
   const seedWsRef = useRef(false);
   const seedingStatusRef = useRef<Set<string>>(new Set());
@@ -525,7 +530,7 @@ export default function Board({
         return;
       const k = kbdRef.current;
       // don't drive board navigation while a modal/editor is open or off-board
-      const navOK = k && !k.busy && k.view === 'board';
+      const navOK = k && !k.busy && k.view === 'board' && !k.selectMode;
 
       if (e.key === 'c') {
         e.preventDefault();
@@ -576,6 +581,25 @@ export default function Board({
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, []);
+
+  // ---------- select-mode housekeeping ----------
+  // deselect everything => leave select mode
+  useEffect(() => {
+    if (selectMode && selectedIds.size === 0) setSelectMode(false);
+  }, [selectMode, selectedIds]);
+  // Esc leaves select mode
+  useEffect(() => {
+    if (!selectMode) return;
+    const h = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') exitSelect();
+    };
+    window.addEventListener('keydown', h);
+    return () => window.removeEventListener('keydown', h);
+  }, [selectMode]);
+  // leaving the board (or switching workspace) cancels a selection
+  useEffect(() => {
+    exitSelect();
+  }, [view, currentWs?.id]);
 
   // Parse quick-capture syntax: `#分類 @專案 !p1`. Unmatched tokens stay in the
   // title. Names are matched case-insensitively against the current workspace.
@@ -819,6 +843,63 @@ export default function Board({
     setDeletingTask(null);
     loadTasks();
     showToast('已刪除任務');
+  }
+
+  // ---------- multi-select bulk edit ----------
+  function exitSelect() {
+    setSelectMode(false);
+    setSelectedIds(new Set());
+  }
+  function enterSelect(id: string) {
+    setSelectMode(true);
+    setSelectedIds(new Set([id]));
+  }
+  function toggleSelect(id: string) {
+    setSelectedIds((prev) => {
+      const n = new Set(prev);
+      if (n.has(id)) n.delete(id);
+      else n.add(id);
+      return n;
+    });
+  }
+
+  async function bulkPatch(patch: Partial<Task>, label: string) {
+    const ids = [...selectedIds];
+    if (!ids.length) return;
+    setTasks((prev) => prev.map((t) => (selectedIds.has(t.id) ? { ...t, ...patch } : t)));
+    const { error } = await supabase.from('tasks').update(patch).in('id', ids);
+    if (error) {
+      report(`批次${label}失敗`, error);
+      loadTasks();
+    } else showToast(`已${label} ${ids.length} 項`);
+  }
+  const bulkSetStatus = (statusId: string) =>
+    bulkPatch({ status_id: statusId, blocked_reason: null }, '更新狀態');
+  const bulkSetPriority = (v: number) => bulkPatch({ priority: v }, '更新優先度');
+  const bulkSetDue = (v: string | null) => bulkPatch({ due_date: v }, '更新截止日');
+  const bulkSetCategory = (catId: string | null) => bulkPatch({ category_id: catId }, '更新分類');
+
+  async function bulkAddProject(projectId: string) {
+    const ids = [...selectedIds];
+    if (!ids.length) return;
+    const { error } = await supabase
+      .from('task_projects')
+      .upsert(ids.map((task_id) => ({ task_id, project_id: projectId })), {
+        onConflict: 'task_id,project_id',
+      });
+    if (error) report('批次加專案失敗', error);
+    else showToast(`已為 ${ids.length} 項加上專案`);
+    loadTasks();
+  }
+
+  async function bulkDelete() {
+    const ids = [...selectedIds];
+    if (!ids.length) return;
+    const { error } = await supabase.from('tasks').delete().in('id', ids);
+    if (error) return report('批次刪除失敗', error);
+    exitSelect();
+    loadTasks();
+    showToast(`已刪除 ${ids.length} 項`);
   }
 
   // Manually mark one or more tasks fully deployed from the deploy sheet: stamp
@@ -1485,6 +1566,7 @@ export default function Board({
       deployOpen ||
       paletteOpen ||
       deletingTask !== null,
+    selectMode,
     open: (t) => setEditing(t),
     setFocus: setFocusedTaskId,
     setStatus: (t, id) => setTaskStatus(t, id, t.blocked_reason),
@@ -1633,6 +1715,10 @@ export default function Board({
               projects={wsProjects}
               parentTitleById={titleById}
               focusedTaskId={focusedTaskId}
+              selectMode={selectMode}
+              selectedIds={selectedIds}
+              onLongPress={enterSelect}
+              onToggleSelect={toggleSelect}
               onOpen={setEditing}
               onOpenTaskId={openTaskId}
               onStatus={setTaskStatus}
@@ -1757,6 +1843,24 @@ export default function Board({
         />
       )}
 
+      {selectMode && (
+        <BulkActionBar
+          count={selectedIds.size}
+          statuses={boardStatuses}
+          categories={wsCategories}
+          projects={wsProjects}
+          allSelected={boardTasks.length > 0 && selectedIds.size >= boardTasks.length}
+          onSelectAll={() => setSelectedIds(new Set(boardTasks.map((t) => t.id)))}
+          onStatus={bulkSetStatus}
+          onProject={bulkAddProject}
+          onDue={bulkSetDue}
+          onPriority={bulkSetPriority}
+          onCategory={bulkSetCategory}
+          onDelete={bulkDelete}
+          onClose={exitSelect}
+        />
+      )}
+
       {toast && (
         <div className="toast" key={toast.key}>
           <span className="toast-msg">{toast.message}</span>
@@ -1813,6 +1917,10 @@ function BoardList({
   projects,
   parentTitleById,
   focusedTaskId,
+  selectMode,
+  selectedIds,
+  onLongPress,
+  onToggleSelect,
   onOpen,
   onOpenTaskId,
   onStatus,
@@ -1830,6 +1938,10 @@ function BoardList({
   projects: Project[];
   parentTitleById: Record<string, string>;
   focusedTaskId: string | null;
+  selectMode: boolean;
+  selectedIds: Set<string>;
+  onLongPress: (id: string) => void;
+  onToggleSelect: (id: string) => void;
   onOpen: (t: TaskWithProjects) => void;
   onOpenTaskId: (id: string) => void;
   onStatus: (t: TaskWithProjects, id: string, r: string | null) => void;
@@ -1843,9 +1955,10 @@ function BoardList({
   const [activeId, setActiveId] = useState<string | null>(null);
   const sensors = useSensors(
     // mouse: start after a small move so clicks still work;
-    // touch: press-and-hold so a normal swipe still scrolls the board.
+    // touch: a longer hold than the row's long-press (450ms) so long-press
+    // enters multi-select first, and a normal swipe still scrolls the board.
     useSensor(MouseSensor, { activationConstraint: { distance: 6 } }),
-    useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 8 } })
+    useSensor(TouchSensor, { activationConstraint: { delay: 600, tolerance: 8 } })
   );
 
   if (boardStatuses.length === 0) {
@@ -1866,8 +1979,17 @@ function BoardList({
   return (
     <DndContext
       sensors={sensors}
-      onDragStart={(e) => setActiveId(String(e.active.id))}
-      onDragEnd={onDragEnd}
+      onDragStart={(e) => {
+        if (selectMode) return; // selection gesture, not a drag
+        setActiveId(String(e.active.id));
+      }}
+      onDragEnd={(e) => {
+        if (selectMode) {
+          setActiveId(null);
+          return;
+        }
+        onDragEnd(e);
+      }}
       onDragCancel={() => setActiveId(null)}
     >
       {boardStatuses.map((status) => {
@@ -1889,6 +2011,10 @@ function BoardList({
                   }
                   projects={projects}
                   focused={focusedTaskId === task.id}
+                  selectMode={selectMode}
+                  selected={selectedIds.has(task.id)}
+                  onLongPress={() => onLongPress(task.id)}
+                  onToggleSelect={() => onToggleSelect(task.id)}
                   onOpen={() => onOpen(task)}
                   onStatus={(id, r) => onStatus(task, id, r)}
                   onCategory={(c) => onCategory(task, c)}

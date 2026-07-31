@@ -803,6 +803,31 @@ a {
   opacity: 0.4;
 }
 
+/* multi-select mode: the whole row is a selection target */
+.task-row.select-mode {
+  cursor: pointer;
+}
+
+.task-row.select-mode > *:not(.row-check) {
+  pointer-events: none;
+}
+
+.task-row.selected {
+  background: rgba(94, 106, 210, 0.1);
+  box-shadow: inset 2px 0 0 var(--accent);
+}
+
+.row-check {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  color: var(--text-faint);
+}
+
+.task-row.selected .row-check {
+  color: var(--accent);
+}
+
 .group.drop-target {
   background: rgba(94, 106, 210, 0.08);
   box-shadow: inset 0 0 0 1px var(--accent);
@@ -911,16 +936,27 @@ a {
 
 /* compact subtask marker on a board row */
 .parent-mark {
-  width: 22px;
   height: 22px;
-  flex-shrink: 0;
+  flex-shrink: 1;
+  min-width: 22px;
+  max-width: 180px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  gap: 4px;
+  padding: 0 6px;
   border: 1px solid var(--border);
   border-radius: 6px;
   background: transparent;
   color: var(--text-faint);
+}
+
+.parent-mark-label {
+  font-size: 0.72rem;
+  line-height: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .parent-mark:hover {
@@ -1415,6 +1451,135 @@ a {
 @media (max-width: 720px) {
   .topbar-organize-label {
     display: none;
+  }
+}
+
+/* ---------- multi-select bulk bar ---------- */
+.bulk-bar {
+  position: fixed;
+  bottom: 22px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 82;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 8px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-strong);
+  border-radius: 12px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45);
+  animation: toast-in 0.18s ease;
+  max-width: min(96vw, 720px);
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.bulk-count {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 8px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--accent);
+  white-space: nowrap;
+}
+
+.bulk-sep {
+  width: 1px;
+  align-self: stretch;
+  margin: 2px 2px;
+  background: var(--border-strong);
+}
+
+.bulk-item {
+  position: relative;
+  display: flex;
+}
+
+.bulk-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 10px;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--text-dim);
+  font-size: 0.85rem;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.bulk-btn:hover:not(:disabled) {
+  background: var(--bg-active);
+  color: var(--text);
+}
+
+.bulk-btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.bulk-btn.bulk-del:hover {
+  background: rgba(235, 87, 87, 0.14);
+  color: #eb5757;
+}
+
+.bulk-btn.bulk-close {
+  padding: 6px;
+  color: var(--text-faint);
+}
+
+/* popovers open upward from the bar */
+.bulk-pop {
+  bottom: calc(100% + 8px);
+  top: auto;
+  left: 50%;
+  transform: translateX(-50%);
+  min-width: 150px;
+  max-height: 260px;
+  overflow-y: auto;
+}
+
+.bulk-pop-due {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px;
+}
+
+.bulk-pop-due .text-input {
+  width: 100%;
+}
+
+.bulk-confirm {
+  padding: 12px;
+  min-width: 220px;
+  left: auto;
+  right: 0;
+  transform: none;
+}
+
+.bulk-confirm-msg {
+  font-size: 0.85rem;
+  color: var(--text);
+  margin-bottom: 10px;
+}
+
+.bulk-confirm-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+@media (max-width: 560px) {
+  .bulk-bar {
+    gap: 2px;
+    padding: 6px;
+  }
+  .bulk-btn {
+    padding: 6px 8px;
   }
 }
 
