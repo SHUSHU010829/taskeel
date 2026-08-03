@@ -1351,11 +1351,16 @@ export default function Board({
   }
 
   // ---------- project mutations ----------
-  async function addProject(name: string, repo: string) {
+  async function addProject(patch: {
+    name: string;
+    repo: string | null;
+    abbr: string | null;
+    color: string;
+  }) {
     if (!currentWs) return;
     const { data, error } = await supabase
       .from('projects')
-      .insert({ workspace_id: currentWs.id, name, repo: repo || null })
+      .insert({ workspace_id: currentWs.id, ...patch })
       .select('*')
       .single();
     if (error || !data) return report('新增專案失敗', error);

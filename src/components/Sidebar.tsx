@@ -93,7 +93,7 @@ export default function Sidebar({
   statuses: StatusRow[];
   view: View;
   onSetView: (v: View) => void;
-  onAddProject: (name: string, repo: string) => void;
+  onAddProject: (patch: ProjectPatch) => void;
   onUpdateProject: (id: string, patch: ProjectPatch) => void;
   onDeleteProject: (id: string) => void;
   width: number;
@@ -109,6 +109,8 @@ export default function Sidebar({
   const [adding, setAdding] = useState(false);
   const [name, setName] = useState('');
   const [repo, setRepo] = useState('');
+  const [addAbbr, setAddAbbr] = useState('');
+  const [addColor, setAddColor] = useState(PRESET_COLORS[0]);
   const [acctOpen, setAcctOpen] = useState(false);
   const acctRef = useRef<HTMLDivElement>(null);
   // inline project settings (was a center modal, now lives in the sidebar)
@@ -153,10 +155,26 @@ export default function Sidebar({
 
   function submitProject() {
     if (!name.trim()) return;
-    onAddProject(name.trim(), repo.trim());
+    onAddProject({
+      name: name.trim(),
+      repo: repo.trim() || null,
+      abbr: addAbbr.trim() || null,
+      color: addColor,
+    });
     setName('');
     setRepo('');
+    setAddAbbr('');
+    setAddColor(PRESET_COLORS[0]);
     setAdding(false);
+  }
+
+  function openAdd() {
+    setEditId(null);
+    setName('');
+    setRepo('');
+    setAddAbbr('');
+    setAddColor(PRESET_COLORS[0]);
+    setAdding((a) => !a);
   }
 
   // Navigate + close the mobile drawer.
@@ -322,7 +340,7 @@ export default function Sidebar({
                   className="icon-btn"
                   style={{ width: 20, height: 20 }}
                   title="新專案"
-                  onClick={() => setAdding((a) => !a)}
+                  onClick={openAdd}
                 >
                   <Plus size={14} />
                 </button>
@@ -423,10 +441,9 @@ export default function Sidebar({
                 </div>
               ))}
               {adding && (
-                <div style={{ padding: '4px 8px' }}>
+                <div className="project-edit-panel">
                   <input
                     className="text-input"
-                    style={{ marginBottom: 4 }}
                     placeholder="專案名稱"
                     autoFocus
                     value={name}
@@ -435,19 +452,44 @@ export default function Sidebar({
                   />
                   <input
                     className="text-input"
-                    style={{ marginBottom: 4 }}
-                    placeholder="repo（選填,如 owner/bibi-bot）"
+                    placeholder="repo（供部署歸檔比對，如 owner/bibi-bot）"
                     value={repo}
                     onChange={(e) => setRepo(e.target.value)}
                     {...enterSubmit(submitProject)}
                   />
-                  <button
-                    className="btn btn-primary"
-                    style={{ width: '100%', justifyContent: 'center' }}
-                    onClick={submitProject}
-                  >
-                    新增
-                  </button>
+                  <input
+                    className="text-input"
+                    placeholder="縮寫（快速捕捉用 @縮寫，如 et）"
+                    value={addAbbr}
+                    onChange={(e) => setAddAbbr(e.target.value)}
+                    {...enterSubmit(submitProject)}
+                  />
+                  <div className="project-edit-colors">
+                    {PRESET_COLORS.map((c) => (
+                      <button
+                        key={c}
+                        className="color-swatch"
+                        onClick={() => setAddColor(c)}
+                        style={{
+                          background: c,
+                          outline: addColor === c ? '2px solid var(--text)' : '2px solid transparent',
+                        }}
+                        title={c}
+                      />
+                    ))}
+                  </div>
+                  <div className="project-edit-actions">
+                    <button
+                      className="btn btn-ghost"
+                      style={{ marginLeft: 'auto' }}
+                      onClick={() => setAdding(false)}
+                    >
+                      取消
+                    </button>
+                    <button className="btn btn-primary" disabled={!name.trim()} onClick={submitProject}>
+                      新增
+                    </button>
+                  </div>
                 </div>
               )}
             </>
