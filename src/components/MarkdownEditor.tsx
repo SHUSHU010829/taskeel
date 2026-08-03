@@ -70,11 +70,59 @@ export default function MarkdownEditor({
     pending.current = [s + prefix.length, s + prefix.length];
   }
 
+  const INDENT = '  '; // one nesting level = 2 spaces
+  const LIST_RE = /^(\s*)([-*+]|\d+[.)])(\s+)/;
+
+  function handleKeyDown(e: KeyboardEvent<HTMLTextAreaElement>) {
+    if (e.nativeEvent.isComposing || e.keyCode === 229) return; // IME confirm
+    if (e.key === 'Tab') {
+      handleTab(e, e.shiftKey);
+      return;
+    }
+    if (e.key === 'Enter') handleEnter(e);
+  }
+
+  // Tab / Shift+Tab nests or un-nests the list line(s) touched by the caret or
+  // selection. Indenting an ordered item resets its number to 1 (start of a
+  // sub-list); the renderer sequences the rest.
+  function handleTab(e: KeyboardEvent<HTMLTextAreaElement>, outdent: boolean) {
+    if (e.metaKey || e.ctrlKey || e.altKey) return;
+    const el = ref.current;
+    if (!el) return;
+    const s = el.selectionStart;
+    const eEnd = el.selectionEnd;
+    const firstLineStart = value.lastIndexOf('\n', s - 1) + 1;
+    const nl = value.indexOf('\n', eEnd);
+    const blockEnd = nl === -1 ? value.length : nl;
+    const lines = value.slice(firstLineStart, blockEnd).split('\n');
+    if (!lines.some((l) => LIST_RE.test(l))) return; // not a list — let Tab do its thing
+
+    e.preventDefault();
+    let firstDelta = 0;
+    const newLines = lines.map((l, idx) => {
+      if (!LIST_RE.test(l)) return l;
+      let next: string;
+      if (outdent) {
+        next = l.replace(/^( {1,2}|\t)/, '');
+      } else {
+        next = (INDENT + l).replace(/^(\s*)(\d+)([.)])/, (_m, ws, _n, dot) => `${ws}1${dot}`);
+      }
+      if (idx === 0) firstDelta = next.length - l.length;
+      return next;
+    });
+    const newBlock = newLines.join('\n');
+    onChange(value.slice(0, firstLineStart) + newBlock + value.slice(blockEnd));
+    if (s === eEnd) {
+      const caret = Math.max(firstLineStart, s + firstDelta);
+      pending.current = [caret, caret];
+    } else {
+      pending.current = [firstLineStart, firstLineStart + newBlock.length];
+    }
+  }
+
   // Enter continues the current list item: `1. ` → `2. `, `- ` → `- `.
   // Pressing Enter on an empty item ends the list (clears the marker).
-  function handleKeyDown(e: KeyboardEvent<HTMLTextAreaElement>) {
-    if (e.key !== 'Enter') return;
-    if (e.nativeEvent.isComposing || e.keyCode === 229) return; // IME confirm
+  function handleEnter(e: KeyboardEvent<HTMLTextAreaElement>) {
     if (e.shiftKey || e.metaKey || e.ctrlKey || e.altKey) return;
     const el = ref.current;
     if (!el) return;
@@ -169,7 +217,7 @@ export default function MarkdownEditor({
       <textarea
         ref={ref}
         className="modal-desc"
-        placeholder="加點說明…（支援 Markdown：# 標題、- 清單、**粗體**）"
+        placeholder="加點說明…（Markdown：# 標題、- 清單、**粗體**；清單按 Enter 續行、Tab 縮排／Shift+Tab 退回）"
         autoFocus
         value={value}
         onChange={(e) => onChange(e.target.value)}
