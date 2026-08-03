@@ -42,6 +42,10 @@ export default function MarkdownEditor({
   const [mode, setMode] = useState<'edit' | 'preview'>(startInEdit ? 'edit' : 'preview');
   const ref = useRef<HTMLTextAreaElement>(null);
   const pending = useRef<[number, number] | null>(null);
+  // latest value for the native beforeinput handler (attached once per edit)
+  const valueRef = useRef(value);
+  valueRef.current = value;
+  const shiftRef = useRef(false); // Shift held on the last keydown
 
   useEffect(() => {
     if (pending.current && ref.current) {
@@ -50,6 +54,23 @@ export default function MarkdownEditor({
       pending.current = null;
     }
   }, [value]);
+
+  // Continue the list on a real line break. Using `beforeinput` (fired only for
+  // an actual newline, *after* an IME commit) sidesteps the flaky
+  // isComposing/keyCode-229 state that made Enter continuation miss after
+  // Chinese input or a paste.
+  useEffect(() => {
+    const el = ref.current;
+    if (mode !== 'edit' || !el) return;
+    const onBeforeInput = (ev: Event) => {
+      const ie = ev as InputEvent;
+      if (ie.inputType !== 'insertLineBreak' && ie.inputType !== 'insertParagraph') return;
+      if (continueList()) ie.preventDefault();
+    };
+    el.addEventListener('beforeinput', onBeforeInput);
+    return () => el.removeEventListener('beforeinput', onBeforeInput);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mode]);
 
   function surround(before: string, after = before) {
     const el = ref.current;
@@ -66,8 +87,12 @@ export default function MarkdownEditor({
     if (!el) return;
     const s = el.selectionStart;
     const lineStart = value.lastIndexOf('\n', s - 1) + 1;
+    const nlEnd = value.indexOf('\n', s);
+    const lineEnd = nlEnd === -1 ? value.length : nlEnd;
     onChange(value.slice(0, lineStart) + prefix + value.slice(lineStart));
-    pending.current = [s + prefix.length, s + prefix.length];
+    // caret to the end of the now-prefixed line so typing (and Enter) continue
+    const end = lineEnd + prefix.length;
+    pending.current = [end, end];
   }
 
   // 3 spaces per level: enough to nest ordered items (`1. ` content starts at
@@ -76,12 +101,12 @@ export default function MarkdownEditor({
   const LIST_RE = /^(\s*)([-*+]|\d+[.)])(\s+)/;
 
   function handleKeyDown(e: KeyboardEvent<HTMLTextAreaElement>) {
+    // remember Shift so the beforeinput handler can treat Shift+Enter as a
+    // plain line break (an escape hatch out of the list)
+    shiftRef.current = e.shiftKey;
     if (e.nativeEvent.isComposing || e.keyCode === 229) return; // IME confirm
-    if (e.key === 'Tab') {
-      handleTab(e, e.shiftKey);
-      return;
-    }
-    if (e.key === 'Enter') handleEnter(e);
+    if (e.key === 'Tab') handleTab(e, e.shiftKey);
+    // Enter/list-continuation is handled via the beforeinput listener above.
   }
 
   // Tab / Shift+Tab nests or un-nests the list line(s) touched by the caret or
@@ -122,37 +147,46 @@ export default function MarkdownEditor({
     }
   }
 
-  // Enter continues the current list item: `1. ` → `2. `, `- ` → `- `.
-  // Pressing Enter on an empty item ends the list (clears the marker).
-  function handleEnter(e: KeyboardEvent<HTMLTextAreaElement>) {
-    if (e.shiftKey || e.metaKey || e.ctrlKey || e.altKey) return;
+  // Continue the current list item on Enter: `1. ` → `2. `, `- ` → `- `.
+  // Works with the caret anywhere inside the item's content (not only at the
+  // line end), so it fires after a paste or a toolbar-inserted marker too.
+  // An empty item ends the list. Returns true if it handled the break.
+  function continueList(): boolean {
+    if (shiftRef.current) return false; // Shift+Enter → plain line break
     const el = ref.current;
-    if (!el) return;
+    if (!el) return false;
     const s = el.selectionStart;
-    if (s !== el.selectionEnd) return;
-    const lineStart = value.lastIndexOf('\n', s - 1) + 1;
-    const nlEnd = value.indexOf('\n', s);
-    const lineEnd = nlEnd === -1 ? value.length : nlEnd;
-    if (s !== lineEnd) return;
-    const line = value.slice(lineStart, lineEnd);
+    if (s !== el.selectionEnd) return false; // a selection: let it replace normally
+    const v = valueRef.current;
+    const lineStart = v.lastIndexOf('\n', s - 1) + 1;
+    const nlEnd = v.indexOf('\n', s);
+    const lineEnd = nlEnd === -1 ? v.length : nlEnd;
+    const line = v.slice(lineStart, lineEnd);
 
-    const ordered = line.match(/^(\s*)(\d+)([.)])\s+(.*)$/);
-    const bullet = line.match(/^(\s*)([-*+])\s+(.*)$/);
-    if (!ordered && !bullet) return;
+    const ordered = line.match(/^(\s*)(\d+)([.)])(\s+)(.*)$/);
+    const bullet = line.match(/^(\s*)([-*+])(\s+)(.*)$/);
+    if (!ordered && !bullet) return false;
 
-    e.preventDefault();
-    const content = (ordered ? ordered[4] : bullet![3]).trim();
-    if (content === '') {
-      onChange(value.slice(0, lineStart) + value.slice(lineEnd));
+    const markerLen = ordered
+      ? ordered[1].length + ordered[2].length + ordered[3].length + ordered[4].length
+      : bullet![1].length + bullet![2].length + bullet![3].length;
+    // caret before the marker's content area — leave the break alone
+    if (s < lineStart + markerLen) return false;
+
+    const itemContent = ordered ? ordered[5] : bullet![4];
+    if (itemContent.trim() === '') {
+      // empty item → end the list
+      onChange(v.slice(0, lineStart) + v.slice(lineEnd));
       pending.current = [lineStart, lineStart];
-      return;
+      return true;
     }
     const marker = ordered
       ? `${ordered[1]}${parseInt(ordered[2], 10) + 1}${ordered[3]} `
       : `${bullet![1]}${bullet![2]} `;
     const insert = `\n${marker}`;
-    onChange(value.slice(0, s) + insert + value.slice(s));
+    onChange(v.slice(0, s) + insert + v.slice(s));
     pending.current = [s + insert.length, s + insert.length];
+    return true;
   }
 
   function save() {
