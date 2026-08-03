@@ -70,7 +70,9 @@ export default function MarkdownEditor({
     pending.current = [s + prefix.length, s + prefix.length];
   }
 
-  const INDENT = '  '; // one nesting level = 2 spaces
+  // 3 spaces per level: enough to nest ordered items (`1. ` content starts at
+  // column 3) as well as bullets in the GFM renderer.
+  const INDENT = '   ';
   const LIST_RE = /^(\s*)([-*+]|\d+[.)])(\s+)/;
 
   function handleKeyDown(e: KeyboardEvent<HTMLTextAreaElement>) {
@@ -103,7 +105,7 @@ export default function MarkdownEditor({
       if (!LIST_RE.test(l)) return l;
       let next: string;
       if (outdent) {
-        next = l.replace(/^( {1,2}|\t)/, '');
+        next = l.replace(/^( {1,3}|\t)/, '');
       } else {
         next = (INDENT + l).replace(/^(\s*)(\d+)([.)])/, (_m, ws, _n, dot) => `${ws}1${dot}`);
       }
