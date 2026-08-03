@@ -2420,6 +2420,26 @@ a {
      spill over the sections below it */
   display: block;
   overflow-y: auto;
+  /* keep content clear of the scrollbar (macOS overlay bars float over the
+     right edge and would otherwise cover the 編輯 / 引用文件 controls) */
+  padding-right: 10px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-strong) transparent;
+}
+
+/* slim, themed scrollbar for the editor body (WebKit) */
+.editor-body::-webkit-scrollbar {
+  width: 8px;
+}
+.editor-body::-webkit-scrollbar-track {
+  background: transparent;
+}
+.editor-body::-webkit-scrollbar-thumb {
+  background: var(--border-strong);
+  border-radius: 4px;
+}
+.editor-body::-webkit-scrollbar-thumb:hover {
+  background: var(--text-faint);
 }
 
 /* settings shown in-place in the description region (not an overlay) */
