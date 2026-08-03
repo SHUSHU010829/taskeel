@@ -12,7 +12,6 @@ import {
   Moon,
   PanelLeft,
   PanelLeftClose,
-  Pencil,
   Pin,
   Plus,
   Rocket,
@@ -21,6 +20,7 @@ import {
 } from 'lucide-react';
 import type { Project, StatusRow, Workspace } from '@/lib/types';
 import { enterSubmit } from '@/lib/useEnterSubmit';
+import ConfirmDialog from './ConfirmDialog';
 import StatusDot from './StatusDot';
 import WorkspaceIcon from './WorkspaceIcon';
 
@@ -32,6 +32,19 @@ const FONT_SIZES = [
   { label: '大', px: 17 },
   { label: '特大', px: 19 },
 ];
+
+const PRESET_COLORS = [
+  '#5E6AD2',
+  '#26B5CE',
+  '#4CB782',
+  '#E5A00D',
+  '#EB5757',
+  '#8A8F98',
+  '#B57EDC',
+  '#F2994A',
+];
+
+type ProjectPatch = { name: string; repo: string | null; color: string; abbr: string | null };
 
 export default function Sidebar({
   open,
@@ -52,7 +65,9 @@ export default function Sidebar({
   view,
   onSetView,
   onAddProject,
-  onEditProject,
+  onUpdateProject,
+  onDeleteProject,
+  width,
   fontPx,
   onSetFont,
   theme,
@@ -79,7 +94,9 @@ export default function Sidebar({
   view: View;
   onSetView: (v: View) => void;
   onAddProject: (name: string, repo: string) => void;
-  onEditProject: (p: Project) => void;
+  onUpdateProject: (id: string, patch: ProjectPatch) => void;
+  onDeleteProject: (id: string) => void;
+  width: number;
   fontPx: number;
   onSetFont: (px: number) => void;
   theme: 'dark' | 'light';
@@ -94,6 +111,32 @@ export default function Sidebar({
   const [repo, setRepo] = useState('');
   const [acctOpen, setAcctOpen] = useState(false);
   const acctRef = useRef<HTMLDivElement>(null);
+  // inline project settings (was a center modal, now lives in the sidebar)
+  const [editId, setEditId] = useState<string | null>(null);
+  const [eName, setEName] = useState('');
+  const [eRepo, setERepo] = useState('');
+  const [eAbbr, setEAbbr] = useState('');
+  const [eColor, setEColor] = useState('#5E6AD2');
+  const [confirmDel, setConfirmDel] = useState<Project | null>(null);
+
+  function openEdit(p: Project) {
+    setAdding(false);
+    setEditId((cur) => (cur === p.id ? null : p.id));
+    setEName(p.name);
+    setERepo(p.repo ?? '');
+    setEAbbr(p.abbr ?? '');
+    setEColor(p.color);
+  }
+  function saveEdit() {
+    if (!editId || !eName.trim()) return;
+    onUpdateProject(editId, {
+      name: eName.trim(),
+      repo: eRepo.trim() || null,
+      abbr: eAbbr.trim() || null,
+      color: eColor,
+    });
+    setEditId(null);
+  }
 
   // A drawer that's explicitly open (mobile) always shows the full layout.
   const rail = collapsed && !open;
@@ -125,7 +168,10 @@ export default function Sidebar({
   return (
     <>
       {open && <div className="sidebar-backdrop" onClick={onClose} />}
-      <aside className={`sidebar${open ? ' open' : ''}${rail ? ' rail' : ''}`}>
+      <aside
+        className={`sidebar${open ? ' open' : ''}${rail ? ' rail' : ''}`}
+        style={{ ['--sidebar-w' as string]: `${width}px` } as React.CSSProperties}
+      >
         <div className="brand">
           {!rail && (
             <>
@@ -282,39 +328,98 @@ export default function Sidebar({
                 </button>
               </div>
               {projects.map((p) => (
-                <div
-                  className={`project-row${projectFilter === p.id ? ' active' : ''}`}
-                  key={p.id}
-                  role="button"
-                  title="只看此專案的任務"
-                  onClick={() => onFilterProject(p.id)}
-                >
-                  <span className="dot" style={{ background: p.color }} />
-                  <span
-                    style={{
-                      flex: 1,
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                      whiteSpace: 'nowrap',
-                    }}
+                <div key={p.id}>
+                  <div
+                    className={`project-row${projectFilter === p.id ? ' active' : ''}${
+                      editId === p.id ? ' editing' : ''
+                    }`}
+                    role="button"
+                    title="只看此專案的任務"
+                    onClick={() => onFilterProject(p.id)}
                   >
-                    {p.name}
-                  </span>
-                  {p.repo && (
-                    <span title={p.repo} style={{ display: 'inline-flex', color: 'var(--text-faint)' }}>
-                      <GitBranch size={12} />
+                    <span className="dot" style={{ background: p.color }} />
+                    <span
+                      style={{
+                        flex: 1,
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap',
+                      }}
+                    >
+                      {p.name}
                     </span>
+                    {p.repo && (
+                      <span title={p.repo} style={{ display: 'inline-flex', color: 'var(--text-faint)' }}>
+                        <GitBranch size={12} />
+                      </span>
+                    )}
+                    <button
+                      className="icon-btn project-edit"
+                      title="專案設定"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        openEdit(p);
+                      }}
+                    >
+                      <Settings size={13} />
+                    </button>
+                  </div>
+
+                  {editId === p.id && (
+                    <div className="project-edit-panel" onClick={(e) => e.stopPropagation()}>
+                      <input
+                        className="text-input"
+                        placeholder="專案名稱"
+                        autoFocus
+                        value={eName}
+                        onChange={(e) => setEName(e.target.value)}
+                        {...enterSubmit(saveEdit)}
+                      />
+                      <input
+                        className="text-input"
+                        placeholder="repo（供部署歸檔比對，如 owner/bibi-bot）"
+                        value={eRepo}
+                        onChange={(e) => setERepo(e.target.value)}
+                        {...enterSubmit(saveEdit)}
+                      />
+                      <input
+                        className="text-input"
+                        placeholder="縮寫（快速捕捉用 @縮寫，如 et）"
+                        value={eAbbr}
+                        onChange={(e) => setEAbbr(e.target.value)}
+                        {...enterSubmit(saveEdit)}
+                      />
+                      <div className="project-edit-colors">
+                        {PRESET_COLORS.map((c) => (
+                          <button
+                            key={c}
+                            className="color-swatch"
+                            onClick={() => setEColor(c)}
+                            style={{
+                              background: c,
+                              outline: eColor === c ? '2px solid var(--text)' : '2px solid transparent',
+                            }}
+                            title={c}
+                          />
+                        ))}
+                      </div>
+                      <div className="project-edit-actions">
+                        <button
+                          className="btn btn-ghost"
+                          style={{ color: '#EB5757', marginRight: 'auto' }}
+                          onClick={() => setConfirmDel(p)}
+                        >
+                          刪除
+                        </button>
+                        <button className="btn btn-ghost" onClick={() => setEditId(null)}>
+                          取消
+                        </button>
+                        <button className="btn btn-primary" disabled={!eName.trim()} onClick={saveEdit}>
+                          儲存
+                        </button>
+                      </div>
+                    </div>
                   )}
-                  <button
-                    className="icon-btn project-edit"
-                    title="編輯專案"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onEditProject(p);
-                    }}
-                  >
-                    <Pencil size={13} />
-                  </button>
                 </div>
               ))}
               {adding && (
@@ -428,6 +533,22 @@ export default function Sidebar({
           </div>
         </div>
       </aside>
+
+      {confirmDel && (
+        <ConfirmDialog
+          title="刪除專案"
+          message={`刪除專案「${confirmDel.name}」？\n該專案在所有任務上的分支關聯也會一併移除（任務本身保留）。`}
+          confirmLabel="刪除"
+          danger
+          onConfirm={() => {
+            const id = confirmDel.id;
+            setConfirmDel(null);
+            setEditId(null);
+            onDeleteProject(id);
+          }}
+          onCancel={() => setConfirmDel(null)}
+        />
+      )}
     </>
   );
 }

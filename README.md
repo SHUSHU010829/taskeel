@@ -78,7 +78,10 @@ npm run dev
 
 Open http://localhost:3000, sign in with a magic link. The 個人 / 工作
 workspaces are created automatically on first login. Add projects from the
-sidebar (`+`), optionally with a `owner/repo` identifier for deploy matching.
+sidebar (`+`), optionally with a `owner/repo` identifier for deploy matching;
+each project's settings (name, repo, abbreviation, colour, delete) open inline
+in the sidebar via its ⚙ gear. Drag the divider between the sidebar and the
+board to resize the sidebar (width is remembered per browser).
 
 ## Deploy automation
 

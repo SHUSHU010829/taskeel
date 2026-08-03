@@ -93,7 +93,7 @@ a {
 }
 
 .sidebar {
-  width: 248px;
+  width: var(--sidebar-w, 248px);
   flex-shrink: 0;
   border-right: 1px solid var(--border);
   background: var(--sidebar-bg);
@@ -102,6 +102,22 @@ a {
   padding: 12px 8px;
   gap: 4px;
   overflow-y: auto;
+}
+
+/* draggable divider between sidebar and content */
+.sidebar-resizer {
+  width: 6px;
+  margin-left: -3px;
+  flex-shrink: 0;
+  cursor: col-resize;
+  background: transparent;
+  z-index: 6;
+  transition: background 0.12s;
+}
+
+.sidebar-resizer:hover,
+.sidebar-resizer:active {
+  background: var(--accent);
 }
 
 .brand {
@@ -427,6 +443,46 @@ a {
 
 .project-row:hover .project-edit {
   opacity: 1;
+}
+
+.project-row.editing {
+  background: var(--bg-active);
+  color: var(--text);
+}
+
+.project-row.editing .project-edit {
+  opacity: 1;
+  color: var(--accent);
+}
+
+/* inline project settings panel (expands under the project row) */
+.project-edit-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px;
+  margin: 2px 0 6px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+  background: var(--bg-elevated);
+  cursor: default;
+}
+
+.project-edit-colors {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 2px 0;
+}
+
+.project-edit-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.project-edit-actions .btn {
+  padding: 5px 10px;
 }
 
 .ws-pin {
@@ -3227,6 +3283,11 @@ a {
 
   .docs-main {
     padding: 16px;
+  }
+
+  /* no drag-resize on mobile (sidebar is an overlay drawer) */
+  .sidebar-resizer {
+    display: none;
   }
 
   /* sidebar becomes a slide-in drawer */

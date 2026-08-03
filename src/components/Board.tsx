@@ -30,7 +30,6 @@ import {
 import Sidebar, { type View } from './Sidebar';
 import TaskRow from './TaskRow';
 import TaskEditor, { type TaskDraft } from './TaskEditor';
-import ProjectEditor from './ProjectEditor';
 import WorkspaceEditor from './WorkspaceEditor';
 import { type StatusManagerHandlers } from './StatusList';
 import { type CategoryHandlers } from './CategoryList';
@@ -114,12 +113,12 @@ export default function Board({
   );
   const [view, setView] = useState<View>('board');
   const [editing, setEditing] = useState<TaskWithProjects | null | 'new'>(null);
-  const [editingProject, setEditingProject] = useState<Project | null>(null);
   const [editingWs, setEditingWs] = useState<Workspace | null | 'new'>(null);
   const [deployOpen, setDeployOpen] = useState(false);
   const [organizeOpen, setOrganizeOpen] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
+  const [sidebarWidth, setSidebarWidth] = useState(248);
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [toast, setToast] = useState<{ key: number; message: string; undo?: () => void } | null>(
@@ -486,6 +485,42 @@ export default function Board({
       }
       return next;
     });
+  }
+
+  // ---------- resizable sidebar width ----------
+  useEffect(() => {
+    try {
+      const w = localStorage.getItem('taskeel.sidebarW');
+      if (w) setSidebarWidth(Math.min(460, Math.max(200, parseInt(w, 10))));
+    } catch {
+      // ignore
+    }
+  }, []);
+
+  function startSidebarResize(e: React.PointerEvent) {
+    e.preventDefault();
+    const startX = e.clientX;
+    const startW = sidebarWidth;
+    let latest = startW;
+    const move = (ev: PointerEvent) => {
+      latest = Math.min(460, Math.max(200, startW + (ev.clientX - startX)));
+      setSidebarWidth(latest);
+    };
+    const up = () => {
+      window.removeEventListener('pointermove', move);
+      window.removeEventListener('pointerup', up);
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+      try {
+        localStorage.setItem('taskeel.sidebarW', String(latest));
+      } catch {
+        // ignore
+      }
+    };
+    document.body.style.cursor = 'col-resize';
+    document.body.style.userSelect = 'none';
+    window.addEventListener('pointermove', move);
+    window.addEventListener('pointerup', up);
   }
 
   function changeFont(px: number) {
@@ -1339,7 +1374,6 @@ export default function Board({
       .single();
     if (error || !data) return report('更新專案失敗', error);
     setProjects((prev) => prev.map((p) => (p.id === id ? (data as Project) : p)));
-    setEditingProject(null);
     loadTasks();
   }
 
@@ -1347,7 +1381,6 @@ export default function Board({
     const { error } = await supabase.from('projects').delete().eq('id', id);
     if (error) return report('刪除專案失敗', error);
     setProjects((prev) => prev.filter((p) => p.id !== id));
-    setEditingProject(null);
     loadTasks();
   }
 
@@ -1586,7 +1619,6 @@ export default function Board({
     view,
     busy:
       editing !== null ||
-      editingProject !== null ||
       editingWs !== null ||
       deployOpen ||
       paletteOpen ||
@@ -1620,7 +1652,9 @@ export default function Board({
         view={view}
         onSetView={setView}
         onAddProject={addProject}
-        onEditProject={setEditingProject}
+        onUpdateProject={updateProject}
+        onDeleteProject={deleteProject}
+        width={sidebarWidth}
         fontPx={fontPx}
         onSetFont={changeFont}
         theme={theme}
@@ -1629,6 +1663,14 @@ export default function Board({
         userAvatar={userAvatar}
         onSignOut={signOut}
       />
+
+      {!collapsed && (
+        <div
+          className="sidebar-resizer"
+          onPointerDown={startSidebarResize}
+          title="拖曳調整側欄寬度"
+        />
+      )}
 
       <div className="main">
         {error && (
@@ -1793,15 +1835,6 @@ export default function Board({
           }
           onClose={() => setEditing(null)}
           onDelete={editing === 'new' ? undefined : deleteTask}
-        />
-      )}
-
-      {editingProject && (
-        <ProjectEditor
-          project={editingProject}
-          onSave={(patch) => updateProject(editingProject.id, patch)}
-          onDelete={() => deleteProject(editingProject.id)}
-          onClose={() => setEditingProject(null)}
         />
       )}
 
