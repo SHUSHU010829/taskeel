@@ -914,8 +914,10 @@ a {
 }
 
 .tg-title {
+  border: none;
   background: transparent;
-  color: var(--text);
+  padding: 0;
+  color: var(--text-dim);
   font-size: 0.85rem;
   font-weight: 500;
   cursor: pointer;
@@ -925,9 +927,12 @@ a {
   white-space: nowrap;
 }
 
+.task-group-head:hover .tg-title {
+  color: var(--text);
+}
+
 .tg-title:hover {
   color: var(--accent);
-  text-decoration: underline;
 }
 
 .tg-count {
