@@ -14,6 +14,22 @@ const DETAILS: { value: Detail; label: string }[] = [
   { value: 'detailed', label: '完整' },
 ];
 
+// one-click direction presets that toggle into the hint field
+const HINT_PRESETS: { label: string; phrase: string }[] = [
+  { label: '前端', phrase: '偏前端' },
+  { label: '後端', phrase: '偏後端' },
+  { label: '含 API', phrase: '請包含 API 介面設計' },
+  { label: '資料結構', phrase: '請包含資料結構／欄位' },
+  { label: 'MVP', phrase: '先做 MVP、範圍精簡' },
+  { label: '含測試', phrase: '請包含測試重點' },
+];
+
+const splitNote = (s: string) =>
+  s
+    .split(/[，,、\n]+/)
+    .map((p) => p.trim())
+    .filter(Boolean);
+
 export default function SpecModal({
   count,
   loading,
@@ -40,6 +56,15 @@ export default function SpecModal({
   }, [spec]);
 
   const regen = () => onRegenerate(detail, note.trim());
+
+  const noteParts = splitNote(note);
+  function toggleHint(phrase: string) {
+    setNote(
+      noteParts.includes(phrase)
+        ? noteParts.filter((p) => p !== phrase).join('、')
+        : [...noteParts, phrase].join('、')
+    );
+  }
 
   async function copy() {
     try {
@@ -95,10 +120,23 @@ export default function SpecModal({
               </div>
               <input
                 className="text-input spec-note"
-                placeholder="方向提示（選填，如：偏前端、請包含 API 設計）"
+                placeholder="方向提示（選填，可用下方標籤或自行輸入）"
                 value={note}
                 onChange={(e) => setNote(e.target.value)}
               />
+            </div>
+
+            <div className="spec-hints">
+              {HINT_PRESETS.map((h) => (
+                <button
+                  key={h.phrase}
+                  className={`spec-hint${noteParts.includes(h.phrase) ? ' on' : ''}`}
+                  onClick={() => toggleHint(h.phrase)}
+                  title={h.phrase}
+                >
+                  {h.label}
+                </button>
+              ))}
             </div>
 
             <div className="spec-tabs">

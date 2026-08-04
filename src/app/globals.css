@@ -1536,6 +1536,34 @@ a {
   min-width: 200px;
 }
 
+.spec-hints {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 2px 0 4px;
+}
+
+.spec-hint {
+  padding: 3px 10px;
+  border: 1px solid var(--border-strong);
+  border-radius: 12px;
+  background: transparent;
+  color: var(--text-dim);
+  font-size: 0.78rem;
+  cursor: pointer;
+}
+
+.spec-hint:hover {
+  background: var(--bg-hover);
+  color: var(--text);
+}
+
+.spec-hint.on {
+  background: rgba(94, 106, 210, 0.14);
+  border-color: color-mix(in srgb, var(--accent) 45%, transparent);
+  color: var(--accent);
+}
+
 .spec-tabs {
   display: flex;
   align-items: center;
