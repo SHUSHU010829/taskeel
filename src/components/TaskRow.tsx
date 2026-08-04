@@ -164,6 +164,21 @@ export default function TaskRow({
         {task.title}
       </span>
 
+      <div className="row-hover-actions">
+        <PriorityControl value={task.priority} onChange={onPriority} />
+        <DueControl value={task.due_date} onChange={onDue} />
+        <button
+          className="row-act row-del"
+          title="刪除任務"
+          onClick={(e) => {
+            e.stopPropagation();
+            onRequestDelete();
+          }}
+        >
+          <Trash2 size={13} />
+        </button>
+      </div>
+
       <div className="task-meta">
         {due && (
           <span className={`due-chip${due.overdue ? ' overdue' : due.soon ? ' soon' : ''}`} title={due.full}>
@@ -195,21 +210,6 @@ export default function TaskRow({
             {link.deploy_status === 'deployed' && <Check size={12} />}
           </span>
         ))}
-      </div>
-
-      <div className="row-hover-actions">
-        <PriorityControl value={task.priority} onChange={onPriority} />
-        <DueControl value={task.due_date} onChange={onDue} />
-        <button
-          className="row-act row-del"
-          title="刪除任務"
-          onClick={(e) => {
-            e.stopPropagation();
-            onRequestDelete();
-          }}
-        >
-          <Trash2 size={13} />
-        </button>
       </div>
 
       <ProjectQuickControl
