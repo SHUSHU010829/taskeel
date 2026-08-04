@@ -1002,7 +1002,7 @@ export default function Board({
 
   // Gather the selected tasks and ask Claude to consolidate them into one
   // development-requirements brief to hand to a coding agent.
-  async function bulkGenerateSpec() {
+  async function bulkGenerateSpec(opts?: { detail?: string; note?: string }) {
     const sel = tasks.filter((t) => selectedIds.has(t.id));
     if (!sel.length) return;
     const nameById: Record<string, string> = {};
@@ -1028,7 +1028,7 @@ export default function Board({
       const res = await fetch('/api/spec', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ tasks: payload }),
+        body: JSON.stringify({ tasks: payload, detail: opts?.detail, note: opts?.note }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || '產生失敗');
@@ -2016,7 +2016,7 @@ export default function Board({
           loading={specLoading}
           error={specError}
           spec={specText}
-          onRegenerate={bulkGenerateSpec}
+          onRegenerate={(detail, note) => bulkGenerateSpec({ detail, note })}
           onClose={() => setSpecOpen(false)}
         />
       )}

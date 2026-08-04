@@ -1488,6 +1488,54 @@ a {
   color: var(--text-dim);
 }
 
+.spec-settings {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin: 10px 0 4px;
+}
+
+.spec-settings-label {
+  font-size: 0.8rem;
+  color: var(--text-dim);
+}
+
+.spec-detail {
+  display: inline-flex;
+  border: 1px solid var(--border-strong);
+  border-radius: 7px;
+  overflow: hidden;
+}
+
+.spec-detail-opt {
+  padding: 5px 12px;
+  background: transparent;
+  color: var(--text-dim);
+  font-size: 0.82rem;
+  cursor: pointer;
+  border-right: 1px solid var(--border-strong);
+}
+
+.spec-detail-opt:last-child {
+  border-right: none;
+}
+
+.spec-detail-opt:hover {
+  background: var(--bg-hover);
+  color: var(--text);
+}
+
+.spec-detail-opt.on {
+  background: var(--accent);
+  color: #fff;
+}
+
+.spec-note {
+  flex: 1;
+  min-width: 200px;
+}
+
 .spec-tabs {
   display: flex;
   align-items: center;

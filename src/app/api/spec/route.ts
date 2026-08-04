@@ -32,7 +32,7 @@ export async function POST(request: Request) {
     );
   }
 
-  let body: { tasks?: SpecTask[]; note?: string };
+  let body: { tasks?: SpecTask[]; note?: string; detail?: string };
   try {
     body = await request.json();
   } catch {
@@ -42,6 +42,17 @@ export async function POST(request: Request) {
   if (tasks.length === 0) {
     return NextResponse.json({ error: '沒有可統整的任務' }, { status: 400 });
   }
+
+  const detail =
+    body.detail === 'concise' || body.detail === 'detailed' ? body.detail : 'standard';
+  const detailInstruction = {
+    concise:
+      '詳細程度：精簡。只輸出「## 需求項目」的逐項條列（每項一句話寫清楚：要做什麼、完成判定），省略其他章節與贅字。',
+    standard:
+      '詳細程度：標準。包含「## 概述」「## 需求項目」（每項含目的與驗收重點）「## 涉及專案與模組」「## 實作注意事項」「## 建議執行順序」。',
+    detailed:
+      '詳細程度：完整。在標準結構之外，額外補上：「## 技術方案建議」、可能的資料結構／欄位、必要的 API 介面草稿、以及邊界情況與錯誤處理。',
+  }[detail];
 
   const listing = tasks
     .map((t, i) => {
@@ -72,7 +83,8 @@ export async function POST(request: Request) {
 - 結構清楚，建議包含：「## 概述」「## 需求項目」（逐項，每項寫清楚：要做什麼、目的、完成判定／驗收重點）「## 涉及專案與模組」「## 實作注意事項」「## 建議執行順序」。
 - 把零散的任務整理成連貫、明確、可執行的敘述；可補齊必要的脈絡，但不要臆造原文沒有的需求。
 - 若任務之間有相依或先後順序，明確標示。
-- 直接輸出這份說明本身，不要加開場白、不要說「以下是」之類的客套。`;
+- 直接輸出這份說明本身，不要加開場白、不要說「以下是」之類的客套。
+- ${detailInstruction}`;
 
   const userText =
     `以下是要統整成開發需求說明的任務：\n\n${listing}` +

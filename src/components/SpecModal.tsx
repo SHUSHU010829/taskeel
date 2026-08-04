@@ -7,6 +7,13 @@ import { Check, Copy, FileText, Loader2, RefreshCw } from 'lucide-react';
 
 // Shows the AI-generated development-requirements brief for the selected tasks.
 // Editable, copyable (paste into Claude Code), and re-runnable.
+type Detail = 'concise' | 'standard' | 'detailed';
+const DETAILS: { value: Detail; label: string }[] = [
+  { value: 'concise', label: '精簡' },
+  { value: 'standard', label: '標準' },
+  { value: 'detailed', label: '完整' },
+];
+
 export default function SpecModal({
   count,
   loading,
@@ -19,16 +26,20 @@ export default function SpecModal({
   loading: boolean;
   error: string | null;
   spec: string | null;
-  onRegenerate: () => void;
+  onRegenerate: (detail: Detail, note: string) => void;
   onClose: () => void;
 }) {
   const [text, setText] = useState(spec ?? '');
   const [view, setView] = useState<'text' | 'preview'>('text');
   const [copied, setCopied] = useState(false);
+  const [detail, setDetail] = useState<Detail>('standard');
+  const [note, setNote] = useState('');
 
   useEffect(() => {
     setText(spec ?? '');
   }, [spec]);
+
+  const regen = () => onRegenerate(detail, note.trim());
 
   async function copy() {
     try {
@@ -62,13 +73,34 @@ export default function SpecModal({
               <button className="btn btn-ghost" onClick={onClose}>
                 關閉
               </button>
-              <button className="btn btn-primary" onClick={onRegenerate}>
+              <button className="btn btn-primary" onClick={regen}>
                 <RefreshCw size={14} /> 重試
               </button>
             </div>
           </>
         ) : (
           <>
+            <div className="spec-settings">
+              <span className="spec-settings-label">詳細程度</span>
+              <div className="spec-detail">
+                {DETAILS.map((d) => (
+                  <button
+                    key={d.value}
+                    className={`spec-detail-opt${detail === d.value ? ' on' : ''}`}
+                    onClick={() => setDetail(d.value)}
+                  >
+                    {d.label}
+                  </button>
+                ))}
+              </div>
+              <input
+                className="text-input spec-note"
+                placeholder="方向提示（選填，如：偏前端、請包含 API 設計）"
+                value={note}
+                onChange={(e) => setNote(e.target.value)}
+              />
+            </div>
+
             <div className="spec-tabs">
               <button
                 className={`spec-tab${view === 'text' ? ' on' : ''}`}
@@ -83,7 +115,7 @@ export default function SpecModal({
                 預覽
               </button>
               <div className="spacer" />
-              <button className="btn btn-ghost" onClick={onRegenerate} title="重新產生">
+              <button className="btn btn-ghost" onClick={regen} title="用目前設定重新產生">
                 <RefreshCw size={14} /> 重新產生
               </button>
               <button className="btn btn-primary" onClick={copy}>
