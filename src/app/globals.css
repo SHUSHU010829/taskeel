@@ -1785,6 +1785,7 @@ a {
   align-items: center;
   gap: 5px;
   padding: 6px 10px;
+  border: none;
   border-radius: 7px;
   background: transparent;
   color: var(--text-dim);
@@ -1810,10 +1811,12 @@ a {
 
 .bulk-btn.bulk-spec {
   color: var(--accent);
+  background: rgba(94, 106, 210, 0.12);
+  font-weight: 500;
 }
 
 .bulk-btn.bulk-spec:hover {
-  background: rgba(94, 106, 210, 0.14);
+  background: rgba(94, 106, 210, 0.2);
   color: var(--accent);
 }
 
