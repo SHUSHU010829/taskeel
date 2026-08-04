@@ -881,6 +881,78 @@ a {
   color: var(--text-faint);
 }
 
+/* ---------- subtask grouping under a parent ---------- */
+.task-group {
+  border-top: 1px solid var(--border);
+}
+
+.task-group:first-child {
+  border-top: none;
+}
+
+.task-group-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 16px;
+  color: var(--text-dim);
+  cursor: pointer;
+  user-select: none;
+}
+
+.task-group-head:hover {
+  background: var(--bg-hover);
+}
+
+.task-group-head > svg {
+  flex-shrink: 0;
+  color: var(--text-faint);
+}
+
+.task-group-head .tg-mark {
+  color: var(--text-faint);
+}
+
+.tg-title {
+  background: transparent;
+  color: var(--text);
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  max-width: 60%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tg-title:hover {
+  color: var(--accent);
+  text-decoration: underline;
+}
+
+.tg-count {
+  font-size: 0.72rem;
+  color: var(--text-faint);
+  background: var(--bg-active);
+  border-radius: 9px;
+  padding: 1px 7px;
+}
+
+/* children indented under a connecting rail */
+.task-group-children {
+  margin-left: 24px;
+  border-left: 2px solid var(--border-strong);
+}
+
+/* rows inside a group: the group border replaces the row's own top border */
+.task-group-children .task-row {
+  border-top: 1px solid var(--border);
+}
+
+.task-group-children .task-row:first-child {
+  border-top: none;
+}
+
 .task-row.selected .row-check {
   color: var(--accent);
 }

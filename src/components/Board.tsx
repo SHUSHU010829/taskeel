@@ -2,7 +2,17 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Menu, Plus, Search, Sparkles, X, TriangleAlert } from 'lucide-react';
+import {
+  ChevronDown,
+  ChevronRight,
+  CornerDownRight,
+  Menu,
+  Plus,
+  Search,
+  Sparkles,
+  X,
+  TriangleAlert,
+} from 'lucide-react';
 import {
   DndContext,
   DragOverlay,
@@ -152,6 +162,8 @@ export default function Board({
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const selectAnchorRef = useRef<string | null>(null); // last row toggled (Shift range base)
   const orderedIdsRef = useRef<string[]>([]); // board rows in visual top-to-bottom order
+  // collapsed subtask groups on the board (by parent id), persisted per browser
+  const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
   const captureRef = useRef<HTMLInputElement>(null);
   const seedWsRef = useRef(false);
   const seedingStatusRef = useRef<Set<string>>(new Set());
@@ -496,6 +508,30 @@ export default function Board({
       // ignore
     }
   }, []);
+
+  // ---------- collapsed subtask groups ----------
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem('taskeel.collapsedGroups');
+      if (raw) setCollapsedGroups(new Set(JSON.parse(raw) as string[]));
+    } catch {
+      // ignore
+    }
+  }, []);
+
+  function toggleGroup(parentId: string) {
+    setCollapsedGroups((prev) => {
+      const n = new Set(prev);
+      if (n.has(parentId)) n.delete(parentId);
+      else n.add(parentId);
+      try {
+        localStorage.setItem('taskeel.collapsedGroups', JSON.stringify([...n]));
+      } catch {
+        // ignore
+      }
+      return n;
+    });
+  }
 
   function startSidebarResize(e: React.PointerEvent) {
     e.preventDefault();
@@ -1787,6 +1823,8 @@ export default function Board({
               projects={wsProjects}
               parentTitleById={titleById}
               focusedTaskId={focusedTaskId}
+              collapsedGroups={collapsedGroups}
+              onToggleGroup={toggleGroup}
               selectMode={selectMode}
               selectedIds={selectedIds}
               onLongPress={enterSelect}
@@ -1980,6 +2018,8 @@ function BoardList({
   projects,
   parentTitleById,
   focusedTaskId,
+  collapsedGroups,
+  onToggleGroup,
   selectMode,
   selectedIds,
   onLongPress,
@@ -2001,6 +2041,8 @@ function BoardList({
   projects: Project[];
   parentTitleById: Record<string, string>;
   focusedTaskId: string | null;
+  collapsedGroups: Set<string>;
+  onToggleGroup: (id: string) => void;
   selectMode: boolean;
   selectedIds: Set<string>;
   onLongPress: (id: string) => void;
@@ -2039,6 +2081,86 @@ function BoardList({
     if (t && t.status_id !== statusId) onMoveToStatus(t, statusId);
   }
 
+  // One board row. `hideParent` drops the ↳ chip for rows shown inside a
+  // subtask group (the group header already names the parent).
+  function renderRow(task: TaskWithProjects, hideParent = false) {
+    return (
+      <TaskRow
+        key={task.id}
+        task={task}
+        statuses={statuses}
+        categories={categories}
+        parentLabel={!hideParent && task.parent_id ? parentTitleById[task.parent_id] : undefined}
+        onOpenParent={
+          !hideParent && task.parent_id ? () => onOpenTaskId(task.parent_id!) : undefined
+        }
+        projects={projects}
+        focused={focusedTaskId === task.id}
+        selectMode={selectMode}
+        selected={selectedIds.has(task.id)}
+        onLongPress={() => onLongPress(task.id)}
+        onToggleSelect={(shift) => onToggleSelect(task.id, shift)}
+        onOpen={() => onOpen(task)}
+        onStatus={(id, r) => onStatus(task, id, r)}
+        onCategory={(c) => onCategory(task, c)}
+        onToggleProject={(pid) => onToggleProject(task, pid)}
+        onPriority={(v) => onPriority(task, v)}
+        onDue={(v) => onDue(task, v)}
+        onRequestDelete={() => onRequestDelete(task)}
+      />
+    );
+  }
+
+  // Build the render sequence for a status column: standalone tasks stay inline;
+  // subtasks are clustered under their parent (a group anchored at the position
+  // of its first child). Selecting all children out empties the group.
+  function renderColumn(items: TaskWithProjects[]) {
+    const done = new Set<string>();
+    const out: React.ReactNode[] = [];
+    for (const t of items) {
+      if (!t.parent_id) {
+        out.push(renderRow(t));
+        continue;
+      }
+      if (done.has(t.parent_id)) continue;
+      done.add(t.parent_id);
+      const children = items.filter((x) => x.parent_id === t.parent_id);
+      const pid = t.parent_id;
+      const collapsed = collapsedGroups.has(pid);
+      const title = parentTitleById[pid] ?? '主任務';
+      out.push(
+        <div className="task-group" key={`g-${pid}`}>
+          <div
+            className="task-group-head"
+            role="button"
+            onClick={() => onToggleGroup(pid)}
+            title={collapsed ? '展開' : '收合'}
+          >
+            {collapsed ? <ChevronRight size={14} /> : <ChevronDown size={14} />}
+            <CornerDownRight size={13} className="tg-mark" />
+            <button
+              className="tg-title"
+              onClick={(e) => {
+                e.stopPropagation();
+                onOpenTaskId(pid);
+              }}
+              title={`開啟主任務：${title}`}
+            >
+              {title}
+            </button>
+            <span className="tg-count">{children.length}</span>
+          </div>
+          {!collapsed && (
+            <div className="task-group-children">
+              {children.map((c) => renderRow(c, true))}
+            </div>
+          )}
+        </div>
+      );
+    }
+    return out;
+  }
+
   return (
     <DndContext
       sensors={sensors}
@@ -2059,35 +2181,7 @@ function BoardList({
         const items = tasks.filter((t) => t.status_id === status.id);
         return (
           <StatusGroup key={status.id} status={status} count={items.length}>
-            {items.length === 0 ? (
-              <div className="empty-row">—</div>
-            ) : (
-              items.map((task) => (
-                <TaskRow
-                  key={task.id}
-                  task={task}
-                  statuses={statuses}
-                  categories={categories}
-                  parentLabel={task.parent_id ? parentTitleById[task.parent_id] : undefined}
-                  onOpenParent={
-                    task.parent_id ? () => onOpenTaskId(task.parent_id!) : undefined
-                  }
-                  projects={projects}
-                  focused={focusedTaskId === task.id}
-                  selectMode={selectMode}
-                  selected={selectedIds.has(task.id)}
-                  onLongPress={() => onLongPress(task.id)}
-                  onToggleSelect={(shift) => onToggleSelect(task.id, shift)}
-                  onOpen={() => onOpen(task)}
-                  onStatus={(id, r) => onStatus(task, id, r)}
-                  onCategory={(c) => onCategory(task, c)}
-                  onToggleProject={(pid) => onToggleProject(task, pid)}
-                  onPriority={(v) => onPriority(task, v)}
-                  onDue={(v) => onDue(task, v)}
-                  onRequestDelete={() => onRequestDelete(task)}
-                />
-              ))
-            )}
+            {items.length === 0 ? <div className="empty-row">—</div> : renderColumn(items)}
           </StatusGroup>
         );
       })}
