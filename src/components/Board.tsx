@@ -925,6 +925,73 @@ export default function Board({
     showToast('已刪除任務');
   }
 
+  // ---------- archive (finish a task that never needs a deploy) ----------
+  async function archiveTasks(taskList: TaskWithProjects[]) {
+    const archive = wsStatuses.find((s) => s.is_archive);
+    if (!archive) {
+      return report(
+        '封存失敗',
+        new Error('此工作區沒有「已歸檔」狀態，請先到工作區設定新增一個封存狀態')
+      );
+    }
+    const ids = taskList.map((t) => t.id);
+    if (!ids.length) return;
+    const now = new Date().toISOString();
+    const snapshot = taskList.map((t) => ({
+      id: t.id,
+      status_id: t.status_id,
+      archived_at: t.archived_at,
+    }));
+    setTasks((prev) =>
+      prev.map((t) => (ids.includes(t.id) ? { ...t, status_id: archive.id, archived_at: now } : t))
+    );
+    const { error } = await supabase
+      .from('tasks')
+      .update({ status_id: archive.id, archived_at: now })
+      .in('id', ids);
+    if (error) {
+      report('封存失敗', error);
+      loadTasks();
+      return;
+    }
+    showToast(`已封存 ${ids.length} 項`, async () => {
+      setTasks((prev) =>
+        prev.map((t) => {
+          const s = snapshot.find((x) => x.id === t.id);
+          return s ? { ...t, status_id: s.status_id, archived_at: s.archived_at } : t;
+        })
+      );
+      for (const s of snapshot) {
+        await supabase
+          .from('tasks')
+          .update({ status_id: s.status_id, archived_at: s.archived_at })
+          .eq('id', s.id);
+      }
+      loadTasks();
+    });
+  }
+
+  async function unarchiveTask(task: TaskWithProjects) {
+    const def =
+      wsStatuses.find((s) => s.is_default) ??
+      wsStatuses.find((s) => !s.is_archive) ??
+      wsStatuses[0];
+    if (!def) return;
+    setTasks((prev) =>
+      prev.map((t) => (t.id === task.id ? { ...t, status_id: def.id, archived_at: null } : t))
+    );
+    const { error } = await supabase
+      .from('tasks')
+      .update({ status_id: def.id, archived_at: null })
+      .eq('id', task.id);
+    if (error) {
+      report('取消封存失敗', error);
+      loadTasks();
+      return;
+    }
+    showToast('已取消封存');
+  }
+
   // ---------- multi-select bulk edit ----------
   function exitSelect() {
     setSelectMode(false);
@@ -1000,6 +1067,13 @@ export default function Board({
     exitSelect();
     loadTasks();
     showToast(`已刪除 ${ids.length} 項`);
+  }
+
+  function bulkArchive() {
+    const sel = tasks.filter((t) => selectedIds.has(t.id));
+    if (!sel.length) return;
+    exitSelect();
+    archiveTasks(sel);
   }
 
   // Open the spec modal in its setup state (pick detail / hints first); the
@@ -1935,6 +2009,22 @@ export default function Board({
           }
           onClose={() => setEditing(null)}
           onDelete={editing === 'new' ? undefined : deleteTask}
+          onArchive={
+            editing === 'new' || !editing
+              ? undefined
+              : () => {
+                  archiveTasks([editing]);
+                  setEditing(null);
+                }
+          }
+          onUnarchive={
+            editing === 'new' || !editing
+              ? undefined
+              : () => {
+                  unarchiveTask(editing);
+                  setEditing(null);
+                }
+          }
         />
       )}
 
@@ -2015,6 +2105,7 @@ export default function Board({
           onPriority={bulkSetPriority}
           onCategory={bulkSetCategory}
           onGenerateSpec={openSpecModal}
+          onArchive={bulkArchive}
           onDelete={bulkDelete}
           onClose={exitSelect}
         />

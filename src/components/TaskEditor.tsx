@@ -2,6 +2,8 @@
 
 import { useState } from 'react';
 import {
+  Archive,
+  ArchiveRestore,
   ArrowUpFromLine,
   Check,
   CornerUpLeft,
@@ -79,6 +81,8 @@ export default function TaskEditor({
   onMoveWorkspace,
   onClose,
   onDelete,
+  onArchive,
+  onUnarchive,
 }: {
   task: TaskWithProjects | null;
   projects: Project[];
@@ -110,8 +114,11 @@ export default function TaskEditor({
   onMoveWorkspace: (wsId: string) => void;
   onClose: () => void;
   onDelete?: () => void;
+  onArchive?: () => void;
+  onUnarchive?: () => void;
 }) {
   const isNew = !task;
+  const isArchived = !!statuses.find((s) => s.id === task?.status_id)?.is_archive;
   const defaultStatus = statuses.find((s) => s.is_default) ?? statuses[0];
 
   const [title, setTitle] = useState(task?.title ?? '');
@@ -713,6 +720,17 @@ export default function TaskEditor({
                   刪除
                 </button>
               )}
+              {isArchived
+                ? onUnarchive && (
+                    <button className="btn btn-ghost" onClick={onUnarchive} title="移回看板">
+                      <ArchiveRestore size={14} /> 取消封存
+                    </button>
+                  )
+                : onArchive && (
+                    <button className="btn btn-ghost" onClick={onArchive} title="不需部署，直接封存">
+                      <Archive size={14} /> 封存
+                    </button>
+                  )}
               <button className="btn btn-primary" onClick={closeEditor}>
                 完成
               </button>

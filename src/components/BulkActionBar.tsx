@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import {
+  Archive,
   CalendarClock,
   CheckSquare,
   Flag,
@@ -34,6 +35,7 @@ export default function BulkActionBar({
   onPriority,
   onCategory,
   onGenerateSpec,
+  onArchive,
   onDelete,
   onClose,
 }: {
@@ -49,6 +51,7 @@ export default function BulkActionBar({
   onPriority: (v: number) => void;
   onCategory: (id: string | null) => void;
   onGenerateSpec: () => void;
+  onArchive: () => void;
   onDelete: () => void;
   onClose: () => void;
 }) {
@@ -231,6 +234,10 @@ export default function BulkActionBar({
 
       <button className="bulk-btn" onClick={onSelectAll} disabled={allSelected}>
         全選
+      </button>
+
+      <button className="bulk-btn" onClick={onArchive} title="不需部署，直接封存">
+        <Archive size={14} /> 封存
       </button>
 
       <div className="bulk-item">
