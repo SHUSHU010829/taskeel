@@ -3,10 +3,8 @@
 import { useEffect, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { Check, Copy, FileText, Loader2, RefreshCw } from 'lucide-react';
+import { Check, Copy, FileText, Loader2, RefreshCw, Sparkles } from 'lucide-react';
 
-// Shows the AI-generated development-requirements brief for the selected tasks.
-// Editable, copyable (paste into Claude Code), and re-runnable.
 type Detail = 'concise' | 'standard' | 'detailed';
 const DETAILS: { value: Detail; label: string }[] = [
   { value: 'concise', label: '精簡' },
@@ -30,19 +28,21 @@ const splitNote = (s: string) =>
     .map((p) => p.trim())
     .filter(Boolean);
 
+// AI development-requirements brief for the selected tasks. Pick detail + hints
+// first, then 產生; the result is editable, copyable, and re-runnable.
 export default function SpecModal({
   count,
   loading,
   error,
   spec,
-  onRegenerate,
+  onGenerate,
   onClose,
 }: {
   count: number;
   loading: boolean;
   error: string | null;
   spec: string | null;
-  onRegenerate: (detail: Detail, note: string) => void;
+  onGenerate: (detail: Detail, note: string) => void;
   onClose: () => void;
 }) {
   const [text, setText] = useState(spec ?? '');
@@ -55,7 +55,7 @@ export default function SpecModal({
     setText(spec ?? '');
   }, [spec]);
 
-  const regen = () => onRegenerate(detail, note.trim());
+  const gen = () => onGenerate(detail, note.trim());
 
   const noteParts = splitNote(note);
   function toggleHint(phrase: string) {
@@ -76,6 +76,8 @@ export default function SpecModal({
     }
   }
 
+  const hasResult = spec != null;
+
   return (
     <div className="overlay" onMouseDown={onClose}>
       <div className="modal spec-modal" onMouseDown={(e) => e.stopPropagation()}>
@@ -84,61 +86,53 @@ export default function SpecModal({
           <span className="spec-sub">從 {count} 個任務統整</span>
         </div>
 
+        {/* settings — chosen before generating, tweakable for re-generating */}
+        <div className="spec-settings">
+          <span className="spec-settings-label">詳細程度</span>
+          <div className="spec-detail">
+            {DETAILS.map((d) => (
+              <button
+                key={d.value}
+                className={`spec-detail-opt${detail === d.value ? ' on' : ''}`}
+                onClick={() => setDetail(d.value)}
+              >
+                {d.label}
+              </button>
+            ))}
+          </div>
+          <input
+            className="text-input spec-note"
+            placeholder="方向提示（選填，可用下方標籤或自行輸入）"
+            value={note}
+            onChange={(e) => setNote(e.target.value)}
+          />
+        </div>
+        <div className="spec-hints">
+          {HINT_PRESETS.map((h) => (
+            <button
+              key={h.phrase}
+              className={`spec-hint${noteParts.includes(h.phrase) ? ' on' : ''}`}
+              onClick={() => toggleHint(h.phrase)}
+              title={h.phrase}
+            >
+              {h.label}
+            </button>
+          ))}
+        </div>
+
+        {error && (
+          <div className="login-msg login-error" style={{ margin: '8px 0 0' }}>
+            {error}
+          </div>
+        )}
+
         {loading ? (
           <div className="spec-loading">
             <Loader2 size={20} className="spin" />
             <span>Claude 正在統整需求…</span>
           </div>
-        ) : error ? (
+        ) : hasResult ? (
           <>
-            <div className="login-msg login-error" style={{ margin: '8px 0' }}>
-              {error}
-            </div>
-            <div className="modal-actions">
-              <button className="btn btn-ghost" onClick={onClose}>
-                關閉
-              </button>
-              <button className="btn btn-primary" onClick={regen}>
-                <RefreshCw size={14} /> 重試
-              </button>
-            </div>
-          </>
-        ) : (
-          <>
-            <div className="spec-settings">
-              <span className="spec-settings-label">詳細程度</span>
-              <div className="spec-detail">
-                {DETAILS.map((d) => (
-                  <button
-                    key={d.value}
-                    className={`spec-detail-opt${detail === d.value ? ' on' : ''}`}
-                    onClick={() => setDetail(d.value)}
-                  >
-                    {d.label}
-                  </button>
-                ))}
-              </div>
-              <input
-                className="text-input spec-note"
-                placeholder="方向提示（選填，可用下方標籤或自行輸入）"
-                value={note}
-                onChange={(e) => setNote(e.target.value)}
-              />
-            </div>
-
-            <div className="spec-hints">
-              {HINT_PRESETS.map((h) => (
-                <button
-                  key={h.phrase}
-                  className={`spec-hint${noteParts.includes(h.phrase) ? ' on' : ''}`}
-                  onClick={() => toggleHint(h.phrase)}
-                  title={h.phrase}
-                >
-                  {h.label}
-                </button>
-              ))}
-            </div>
-
             <div className="spec-tabs">
               <button
                 className={`spec-tab${view === 'text' ? ' on' : ''}`}
@@ -153,7 +147,7 @@ export default function SpecModal({
                 預覽
               </button>
               <div className="spacer" />
-              <button className="btn btn-ghost" onClick={regen} title="用目前設定重新產生">
+              <button className="btn btn-ghost" onClick={gen} title="用目前設定重新產生">
                 <RefreshCw size={14} /> 重新產生
               </button>
               <button className="btn btn-primary" onClick={copy}>
@@ -174,14 +168,23 @@ export default function SpecModal({
                 <ReactMarkdown remarkPlugins={[remarkGfm]}>{text}</ReactMarkdown>
               </div>
             )}
-
-            <div className="modal-actions">
-              <button className="btn btn-ghost" onClick={onClose}>
-                關閉
-              </button>
-            </div>
           </>
+        ) : (
+          <div className="spec-setup">
+            <p className="spec-setup-hint">
+              選好詳細程度與方向後，讓 Claude 把這 {count} 個任務統整成一段開發需求說明。
+            </p>
+            <button className="btn btn-primary spec-go" onClick={gen}>
+              <Sparkles size={15} /> 產生開發需求
+            </button>
+          </div>
         )}
+
+        <div className="modal-actions">
+          <button className="btn btn-ghost" onClick={onClose}>
+            關閉
+          </button>
+        </div>
       </div>
     </div>
   );

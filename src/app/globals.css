@@ -66,6 +66,9 @@ button {
   font-family: inherit;
   font-size: inherit;
   cursor: pointer;
+  /* no UA border by default — components opt in to their own border.
+     (prevents stray boxes on toolbar/tab/segmented buttons) */
+  border: none;
 }
 
 input,
@@ -1514,6 +1517,7 @@ a {
   color: var(--text-dim);
   font-size: 0.82rem;
   cursor: pointer;
+  border: none;
   border-right: 1px solid var(--border-strong);
 }
 
@@ -1573,6 +1577,7 @@ a {
 
 .spec-tab {
   padding: 4px 12px;
+  border: none;
   border-radius: 6px;
   background: transparent;
   color: var(--text-dim);
@@ -1592,7 +1597,7 @@ a {
 
 .spec-text {
   flex: 1;
-  min-height: 300px;
+  min-height: 440px;
   width: 100%;
   resize: vertical;
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
@@ -1600,9 +1605,31 @@ a {
   line-height: 1.55;
 }
 
+/* setup state: pick options, then generate */
+.spec-setup {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  padding: 44px 0;
+}
+
+.spec-setup-hint {
+  color: var(--text-dim);
+  font-size: 0.86rem;
+  text-align: center;
+  max-width: 420px;
+}
+
+.spec-go {
+  padding: 9px 20px;
+  font-size: 0.92rem;
+}
+
 .spec-preview {
   flex: 1;
-  min-height: 300px;
+  min-height: 440px;
   max-height: 56vh;
   overflow-y: auto;
   border: 1px solid var(--border-strong);

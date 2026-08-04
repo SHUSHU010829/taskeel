@@ -1000,6 +1000,17 @@ export default function Board({
     showToast(`已刪除 ${ids.length} 項`);
   }
 
+  // Open the spec modal in its setup state (pick detail / hints first); the
+  // actual generation happens when the user presses 產生 inside the modal.
+  function openSpecModal() {
+    if (!selectedIds.size) return;
+    setSpecCount(selectedIds.size);
+    setSpecText(null);
+    setSpecError(null);
+    setSpecLoading(false);
+    setSpecOpen(true);
+  }
+
   // Gather the selected tasks and ask Claude to consolidate them into one
   // development-requirements brief to hand to a coding agent.
   async function bulkGenerateSpec(opts?: { detail?: string; note?: string }) {
@@ -1019,10 +1030,7 @@ export default function Board({
         .map((s) => ({ title: s.title, description: s.description || '' })),
     }));
 
-    setSpecCount(sel.length);
-    setSpecText(null);
     setSpecError(null);
-    setSpecOpen(true);
     setSpecLoading(true);
     try {
       const res = await fetch('/api/spec', {
@@ -2004,7 +2012,7 @@ export default function Board({
           onDue={bulkSetDue}
           onPriority={bulkSetPriority}
           onCategory={bulkSetCategory}
-          onGenerateSpec={bulkGenerateSpec}
+          onGenerateSpec={openSpecModal}
           onDelete={bulkDelete}
           onClose={exitSelect}
         />
@@ -2016,7 +2024,7 @@ export default function Board({
           loading={specLoading}
           error={specError}
           spec={specText}
-          onRegenerate={(detail, note) => bulkGenerateSpec({ detail, note })}
+          onGenerate={(detail, note) => bulkGenerateSpec({ detail, note })}
           onClose={() => setSpecOpen(false)}
         />
       )}
