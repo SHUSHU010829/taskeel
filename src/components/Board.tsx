@@ -51,6 +51,7 @@ import DiscussionView, { type CommentWithTask } from './DiscussionView';
 import ConfirmDialog from './ConfirmDialog';
 import OrganizeModal, { type OrganizedTask } from './OrganizeModal';
 import BulkActionBar from './BulkActionBar';
+import SpecModal from './SpecModal';
 
 const TASK_SELECT = '*, task_projects(*, project:projects(*))';
 
@@ -164,6 +165,12 @@ export default function Board({
   const orderedIdsRef = useRef<string[]>([]); // board rows in visual top-to-bottom order
   // collapsed subtask groups on the board (by parent id), persisted per browser
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
+  // AI development-spec generation from the current selection
+  const [specOpen, setSpecOpen] = useState(false);
+  const [specLoading, setSpecLoading] = useState(false);
+  const [specText, setSpecText] = useState<string | null>(null);
+  const [specError, setSpecError] = useState<string | null>(null);
+  const [specCount, setSpecCount] = useState(0);
   const captureRef = useRef<HTMLInputElement>(null);
   const seedWsRef = useRef(false);
   const seedingStatusRef = useRef<Set<string>>(new Set());
@@ -991,6 +998,46 @@ export default function Board({
     exitSelect();
     loadTasks();
     showToast(`已刪除 ${ids.length} 項`);
+  }
+
+  // Gather the selected tasks and ask Claude to consolidate them into one
+  // development-requirements brief to hand to a coding agent.
+  async function bulkGenerateSpec() {
+    const sel = tasks.filter((t) => selectedIds.has(t.id));
+    if (!sel.length) return;
+    const nameById: Record<string, string> = {};
+    tasks.forEach((t) => (nameById[t.id] = t.title));
+    const payload = sel.map((t) => ({
+      title: t.title,
+      description: t.description || '',
+      category: wsCategories.find((c) => c.id === t.category_id)?.name || '',
+      projects: t.links.map((l) => l.project.name),
+      priority: t.priority,
+      parent: t.parent_id ? nameById[t.parent_id] || '' : '',
+      subtasks: tasks
+        .filter((s) => s.parent_id === t.id)
+        .map((s) => ({ title: s.title, description: s.description || '' })),
+    }));
+
+    setSpecCount(sel.length);
+    setSpecText(null);
+    setSpecError(null);
+    setSpecOpen(true);
+    setSpecLoading(true);
+    try {
+      const res = await fetch('/api/spec', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ tasks: payload }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || '產生失敗');
+      setSpecText(data.spec ?? '');
+    } catch (e) {
+      setSpecError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setSpecLoading(false);
+    }
   }
 
   // Manually mark one or more tasks fully deployed from the deploy sheet: stamp
@@ -1957,8 +2004,20 @@ export default function Board({
           onDue={bulkSetDue}
           onPriority={bulkSetPriority}
           onCategory={bulkSetCategory}
+          onGenerateSpec={bulkGenerateSpec}
           onDelete={bulkDelete}
           onClose={exitSelect}
+        />
+      )}
+
+      {specOpen && (
+        <SpecModal
+          count={specCount}
+          loading={specLoading}
+          error={specError}
+          spec={specText}
+          onRegenerate={bulkGenerateSpec}
+          onClose={() => setSpecOpen(false)}
         />
       )}
 

@@ -1462,6 +1462,78 @@ a {
   width: 680px;
 }
 
+/* ---------- AI development-spec modal ---------- */
+.spec-modal {
+  width: 760px;
+  max-width: 96vw;
+  display: flex;
+  flex-direction: column;
+  max-height: 88vh;
+}
+
+.spec-sub {
+  margin-left: auto;
+  font-size: 0.78rem;
+  font-weight: 400;
+  color: var(--text-faint);
+}
+
+.spec-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 56px 0;
+  color: var(--text-dim);
+}
+
+.spec-tabs {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 10px 0 8px;
+}
+
+.spec-tab {
+  padding: 4px 12px;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-dim);
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.spec-tab:hover {
+  background: var(--bg-hover);
+  color: var(--text);
+}
+
+.spec-tab.on {
+  background: var(--bg-active);
+  color: var(--text);
+}
+
+.spec-text {
+  flex: 1;
+  min-height: 300px;
+  width: 100%;
+  resize: vertical;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.82rem;
+  line-height: 1.55;
+}
+
+.spec-preview {
+  flex: 1;
+  min-height: 300px;
+  max-height: 56vh;
+  overflow-y: auto;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+}
+
 .organize-input {
   width: 100%;
   min-height: 180px;
@@ -1658,6 +1730,15 @@ a {
 .bulk-btn.bulk-del:hover {
   background: rgba(235, 87, 87, 0.14);
   color: #eb5757;
+}
+
+.bulk-btn.bulk-spec {
+  color: var(--accent);
+}
+
+.bulk-btn.bulk-spec:hover {
+  background: rgba(94, 106, 210, 0.14);
+  color: var(--accent);
 }
 
 .bulk-btn.bulk-close {

@@ -6,6 +6,7 @@ import {
   CheckSquare,
   Flag,
   FolderPlus,
+  Sparkles,
   Tag,
   Trash2,
   X,
@@ -32,6 +33,7 @@ export default function BulkActionBar({
   onDue,
   onPriority,
   onCategory,
+  onGenerateSpec,
   onDelete,
   onClose,
 }: {
@@ -46,6 +48,7 @@ export default function BulkActionBar({
   onDue: (v: string | null) => void;
   onPriority: (v: number) => void;
   onCategory: (id: string | null) => void;
+  onGenerateSpec: () => void;
   onDelete: () => void;
   onClose: () => void;
 }) {
@@ -217,6 +220,12 @@ export default function BulkActionBar({
           </div>
         )}
       </div>
+
+      <div className="bulk-sep" />
+
+      <button className="bulk-btn bulk-spec" onClick={onGenerateSpec} title="用 AI 統整成開發需求說明">
+        <Sparkles size={14} /> 產生需求
+      </button>
 
       <div className="bulk-sep" />
 
