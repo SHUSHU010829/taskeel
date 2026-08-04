@@ -1967,6 +1967,7 @@ export default function Board({
               onToggleProject={toggleTaskProject}
               onPriority={setTaskPriority}
               onDue={setTaskDue}
+              onArchive={(t) => archiveTasks([t])}
               onRequestDelete={setDeletingTask}
               onMoveToStatus={(t, statusId) => setTaskStatus(t, statusId, t.blocked_reason)}
             />
@@ -2191,6 +2192,7 @@ function BoardList({
   onToggleProject,
   onPriority,
   onDue,
+  onArchive,
   onRequestDelete,
   onMoveToStatus,
 }: {
@@ -2214,6 +2216,7 @@ function BoardList({
   onToggleProject: (t: TaskWithProjects, projectId: string) => void;
   onPriority: (t: TaskWithProjects, v: number) => void;
   onDue: (t: TaskWithProjects, v: string | null) => void;
+  onArchive: (t: TaskWithProjects) => void;
   onRequestDelete: (t: TaskWithProjects) => void;
   onMoveToStatus: (t: TaskWithProjects, statusId: string) => void;
 }) {
@@ -2266,6 +2269,7 @@ function BoardList({
         onToggleProject={(pid) => onToggleProject(task, pid)}
         onPriority={(v) => onPriority(task, v)}
         onDue={(v) => onDue(task, v)}
+        onArchive={() => onArchive(task)}
         onRequestDelete={() => onRequestDelete(task)}
       />
     );

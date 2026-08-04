@@ -3,6 +3,7 @@
 import { useRef } from 'react';
 import { useDraggable } from '@dnd-kit/core';
 import {
+  Archive,
   CalendarClock,
   Check,
   CheckSquare,
@@ -43,6 +44,7 @@ export default function TaskRow({
   onToggleProject,
   onPriority,
   onDue,
+  onArchive,
   onRequestDelete,
 }: {
   task: TaskWithProjects;
@@ -62,6 +64,7 @@ export default function TaskRow({
   onToggleProject: (projectId: string) => void;
   onPriority: (v: number) => void;
   onDue: (v: string | null) => void;
+  onArchive?: () => void;
   onRequestDelete: () => void;
 }) {
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
@@ -167,6 +170,18 @@ export default function TaskRow({
       <div className="row-hover-actions">
         <PriorityControl value={task.priority} onChange={onPriority} />
         <DueControl value={task.due_date} onChange={onDue} />
+        {onArchive && (
+          <button
+            className="row-act"
+            title="封存（不需部署，直接完成）"
+            onClick={(e) => {
+              e.stopPropagation();
+              onArchive();
+            }}
+          >
+            <Archive size={13} />
+          </button>
+        )}
         <button
           className="row-act row-del"
           title="刪除任務"
