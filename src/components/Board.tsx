@@ -965,6 +965,7 @@ export default function Board({
     const ids = [...selectedIds];
     if (!ids.length) return;
     setTasks((prev) => prev.map((t) => (selectedIds.has(t.id) ? { ...t, ...patch } : t)));
+    exitSelect(); // one action done → drop the selection
     const { error } = await supabase.from('tasks').update(patch).in('id', ids);
     if (error) {
       report(`批次${label}失敗`, error);
@@ -980,6 +981,7 @@ export default function Board({
   async function bulkAddProject(projectId: string) {
     const ids = [...selectedIds];
     if (!ids.length) return;
+    exitSelect(); // one action done → drop the selection
     const { error } = await supabase
       .from('task_projects')
       .upsert(ids.map((task_id) => ({ task_id, project_id: projectId })), {
