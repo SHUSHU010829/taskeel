@@ -8,6 +8,7 @@ import {
   CornerDownRight,
   Menu,
   Plus,
+  Rocket,
   Search,
   Sparkles,
   X,
@@ -1889,14 +1890,16 @@ export default function Board({
             <>
               <button className="btn topbar-organize" title="用 AI 把一段說明整理成任務" onClick={() => setOrganizeOpen(true)}>
                 <Sparkles size={14} />
-                <span className="topbar-organize-label">整理</span>
+                <span className="topbar-label">整理</span>
               </button>
-              <button className="btn" onClick={() => setDeployOpen(true)}>
-                部署
+              <button className="btn topbar-deploy" title="部署" onClick={() => setDeployOpen(true)}>
+                <Rocket size={14} />
+                <span className="topbar-label">部署</span>
                 {pendingDeployCount > 0 && <span className="badge-count">{pendingDeployCount}</span>}
               </button>
-              <button className="btn btn-primary" onClick={() => setEditing('new')}>
-                新任務
+              <button className="btn btn-primary topbar-new" title="新任務" onClick={() => setEditing('new')}>
+                <Plus size={15} />
+                <span className="topbar-label">新任務</span>
               </button>
             </>
           )}

@@ -1757,12 +1757,6 @@ a {
   color: var(--text-dim);
 }
 
-@media (max-width: 720px) {
-  .topbar-organize-label {
-    display: none;
-  }
-}
-
 /* ---------- multi-select bulk bar ---------- */
 .bulk-bar {
   position: fixed;
@@ -1784,6 +1778,11 @@ a {
   justify-content: center;
 }
 
+.bulk-lead {
+  display: inline-flex;
+  align-items: center;
+}
+
 .bulk-count {
   display: inline-flex;
   align-items: center;
@@ -1793,6 +1792,11 @@ a {
   font-weight: 500;
   color: var(--accent);
   white-space: nowrap;
+}
+
+/* the header close is mobile-only; desktop uses the trailing one */
+.bulk-close-m {
+  display: none;
 }
 
 .bulk-sep {
@@ -1894,13 +1898,65 @@ a {
   gap: 8px;
 }
 
-@media (max-width: 560px) {
+/* mobile: full-width bottom sheet instead of a floating centred pill */
+@media (max-width: 640px) {
   .bulk-bar {
-    gap: 2px;
-    padding: 6px;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    transform: none;
+    width: 100%;
+    max-width: none;
+    border-radius: 16px 16px 0 0;
+    border-bottom: none;
+    padding: 12px 12px calc(12px + env(safe-area-inset-bottom, 0));
+    gap: 8px 6px;
+    justify-content: flex-start;
+    box-shadow: 0 -10px 32px rgba(0, 0, 0, 0.5);
+  }
+  /* count + close on their own top row */
+  .bulk-lead {
+    flex: 1 0 100%;
+    justify-content: space-between;
+  }
+  .bulk-close-m {
+    display: inline-flex;
+  }
+  .bulk-close-d {
+    display: none;
+  }
+  /* dividers look wrong once actions wrap */
+  .bulk-sep {
+    display: none;
+  }
+  /* actions fill the width in a comfortable grid */
+  .bulk-item {
+    flex: 1 1 28%;
   }
   .bulk-btn {
-    padding: 6px 8px;
+    flex: 1 1 28%;
+    justify-content: center;
+    padding: 10px 8px;
+    background: var(--bg-active);
+    font-size: 0.88rem;
+  }
+  .bulk-item .bulk-btn {
+    width: 100%;
+  }
+  .bulk-btn.bulk-spec {
+    flex-basis: 100%;
+  }
+  .bulk-count {
+    font-size: 0.9rem;
+  }
+  /* popovers open centred above the sheet, not clipped at screen edges */
+  .bulk-pop {
+    left: 0;
+    transform: none;
+  }
+  .bulk-confirm {
+    right: auto;
+    left: 0;
   }
 }
 
@@ -1932,6 +1988,8 @@ a {
 .toast-msg {
   font-size: 0.9rem;
   color: var(--text);
+  flex: 1;
+  min-width: 0;
 }
 
 .toast-undo {
@@ -3547,10 +3605,27 @@ a {
     display: none;
   }
 
-  /* keep the topbar search compact on phones — icon only */
+  /* keep the topbar buttons icon-only on phones so the title never wraps */
   .topbar-search-label,
-  .topbar-search .kbd {
+  .topbar-search .kbd,
+  .topbar-label {
     display: none;
+  }
+
+  .breadcrumb {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    min-width: 0;
+  }
+
+  /* icon-only topbar buttons: compact, no leftover label gap */
+  .topbar-deploy,
+  .topbar-new,
+  .topbar-organize,
+  .topbar-search {
+    gap: 4px;
+    padding: 6px 8px;
   }
 
   /* documents: stack the list above the editor on phones */

@@ -75,9 +75,15 @@ export default function BulkActionBar({
 
   return (
     <div className="bulk-bar" ref={ref}>
-      <span className="bulk-count">
-        <CheckSquare size={15} /> 已選 {count} 項
-      </span>
+      <div className="bulk-lead">
+        <span className="bulk-count">
+          <CheckSquare size={15} /> 已選 {count} 項
+        </span>
+        {/* mobile-only close in the header row */}
+        <button className="bulk-btn bulk-close bulk-close-m" title="結束多選" onClick={onClose}>
+          <X size={16} />
+        </button>
+      </div>
 
       <div className="bulk-sep" />
 
@@ -265,7 +271,7 @@ export default function BulkActionBar({
         )}
       </div>
 
-      <button className="bulk-btn bulk-close" title="結束多選（Esc）" onClick={onClose}>
+      <button className="bulk-btn bulk-close bulk-close-d" title="結束多選（Esc）" onClick={onClose}>
         <X size={15} />
       </button>
     </div>
