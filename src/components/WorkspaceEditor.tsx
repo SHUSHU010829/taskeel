@@ -41,6 +41,7 @@ export default function WorkspaceEditor({
   const [color, setColor] = useState(workspace?.color ?? '#5E6AD2');
   const [icon, setIcon] = useState<string | null>(workspace?.icon ?? 'diamond');
   const [confirming, setConfirming] = useState(false);
+  const [tab, setTab] = useState<'general' | 'status' | 'category'>('general');
 
   function create() {
     if (!name.trim()) return;
@@ -69,72 +70,102 @@ export default function WorkspaceEditor({
   return (
     <div className="overlay" onMouseDown={onClose}>
       <div
-        className="modal"
-        style={{ width: workspace ? 620 : 420 }}
+        className="modal ws-editor"
+        style={{ width: workspace ? 640 : 420 }}
         onMouseDown={(e) => e.stopPropagation()}
       >
-        <div className="modal-heading" style={{ marginBottom: 12 }}>
-          {workspace ? '工作區設定' : '新增工作區'}
-        </div>
+        <div className="modal-heading">{workspace ? '工作區設定' : '新增工作區'}</div>
 
-        <input
-          className="text-input"
-          autoFocus
-          placeholder="工作區名稱"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          onBlur={commitName}
-          {...enterSubmit(isNew ? create : commitName)}
-        />
-
-        <div className="field">
-          <div className="field-label">顏色</div>
-          <div className="option-row">
-            {STATUS_COLORS.map((c) => (
-              <button
-                key={c}
-                className="color-swatch"
-                onClick={() => chooseColor(c)}
-                style={{
-                  background: c,
-                  outline: color === c ? '2px solid var(--text)' : '2px solid transparent',
-                }}
-                title={c}
-              />
-            ))}
-          </div>
-        </div>
-
-        <div className="field">
-          <div className="field-label">圖示（收合側欄時代表此工作區）</div>
-          <div className="icon-grid">
-            {WS_ICON_KEYS.map((key) => (
-              <button
-                key={key}
-                className={`icon-swatch${icon === key ? ' on' : ''}`}
-                style={icon === key ? { color, borderColor: color } : undefined}
-                onClick={() => chooseIcon(key)}
-                title={key}
-              >
-                <WorkspaceIcon icon={key} size={16} />
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {workspace && statusHandlers && (
-          <div className="field">
-            <div className="field-label">狀態（此工作區）</div>
-            <StatusList statuses={statuses} handlers={statusHandlers} />
+        {workspace && (
+          <div className="ws-tabs">
+            <button
+              className={`ws-tab${tab === 'general' ? ' on' : ''}`}
+              onClick={() => setTab('general')}
+            >
+              一般
+            </button>
+            <button
+              className={`ws-tab${tab === 'status' ? ' on' : ''}`}
+              onClick={() => setTab('status')}
+            >
+              狀態
+            </button>
+            <button
+              className={`ws-tab${tab === 'category' ? ' on' : ''}`}
+              onClick={() => setTab('category')}
+            >
+              分類
+            </button>
           </div>
         )}
 
-        {workspace && categoryHandlers && (
-          <div className="field">
-            <div className="field-label">分類（此工作區）</div>
-            <CategoryList categories={categories} handlers={categoryHandlers} />
-          </div>
-        )}
+        <div className="ws-tab-body">
+          {tab === 'general' && (
+            <>
+              <div className="field">
+                <div className="field-label">名稱</div>
+                <input
+                  className="text-input"
+                  autoFocus
+                  placeholder="工作區名稱"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  onBlur={commitName}
+                  {...enterSubmit(isNew ? create : commitName)}
+                />
+              </div>
+
+              <div className="field">
+                <div className="field-label">顏色</div>
+                <div className="option-row">
+                  {STATUS_COLORS.map((c) => (
+                    <button
+                      key={c}
+                      className="color-swatch"
+                      onClick={() => chooseColor(c)}
+                      style={{
+                        background: c,
+                        outline: color === c ? '2px solid var(--text)' : '2px solid transparent',
+                      }}
+                      title={c}
+                    />
+                  ))}
+                </div>
+              </div>
+
+              <div className="field">
+                <div className="field-label">圖示（收合側欄時代表此工作區）</div>
+                <div className="icon-grid">
+                  {WS_ICON_KEYS.map((key) => (
+                    <button
+                      key={key}
+                      className={`icon-swatch${icon === key ? ' on' : ''}`}
+                      style={icon === key ? { color, borderColor: color } : undefined}
+                      onClick={() => chooseIcon(key)}
+                      title={key}
+                    >
+                      <WorkspaceIcon icon={key} size={16} />
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </>
+          )}
+
+          {tab === 'status' && workspace && statusHandlers && (
+            <div className="field">
+              <div className="field-hint">拖曳排序；點顏色換色，右側可設角色與刪除。</div>
+              <StatusList statuses={statuses} handlers={statusHandlers} />
+            </div>
+          )}
+
+          {tab === 'category' && workspace && categoryHandlers && (
+            <div className="field">
+              <div className="field-hint">★ 設為預設分類（新任務自動歸入）；縮寫供快速捕捉 #縮寫。</div>
+              <CategoryList categories={categories} handlers={categoryHandlers} />
+            </div>
+          )}
+        </div>
 
         <div className="modal-actions">
           {isNew ? (

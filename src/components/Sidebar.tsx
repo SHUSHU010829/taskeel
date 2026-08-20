@@ -253,17 +253,6 @@ export default function Sidebar({
                   >
                     <Pin size={14} fill={pinnedWsId === ws.id ? 'currentColor' : 'none'} />
                   </button>
-                  <button
-                    className="icon-btn ws-edit"
-                    title="工作區設定"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onEditWorkspace(ws);
-                      setMenuOpen(false);
-                    }}
-                  >
-                    <Settings size={14} />
-                  </button>
                 </div>
               ))}
               <button
@@ -313,6 +302,19 @@ export default function Sidebar({
           <MessagesSquare size={15} />
           {!rail && '討論'}
         </button>
+        {currentWorkspace && (
+          <button
+            className="nav-item"
+            title={rail ? '工作區設定' : undefined}
+            onClick={() => {
+              onEditWorkspace(currentWorkspace);
+              onClose();
+            }}
+          >
+            <Settings size={15} />
+            {!rail && '工作區設定'}
+          </button>
+        )}
 
         {/* projects */}
         <div className="sidebar-section">
