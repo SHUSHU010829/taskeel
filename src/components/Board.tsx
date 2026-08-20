@@ -1771,6 +1771,15 @@ export default function Board({
       return a.created_at < b.created_at ? 1 : -1;
     });
   const filteredProject = projects.find((p) => p.id === projectFilter) ?? null;
+  const defaultCategory = wsCategories.find((c) => c.is_default) ?? null;
+  // show where a captured task will land (default category / filtered project)
+  const captureLandingBits = [
+    filteredProject ? `@${filteredProject.name}` : null,
+    defaultCategory ? `#${defaultCategory.name}` : null,
+  ].filter(Boolean);
+  const capturePlaceholder = captureLandingBits.length
+    ? `打一行字丟入…（自動歸入 ${captureLandingBits.join(' ')}）`
+    : '快速捕捉：打一行字…（#分類 @專案 !p1）';
   const deployIds = new Set(wsStatuses.filter((s) => s.is_deploy).map((s) => s.id));
   const pendingDeployCount = leafTasks.filter(
     (t) =>
@@ -1953,7 +1962,7 @@ export default function Board({
             <input
               ref={captureRef}
               value={capture}
-              placeholder="快速捕捉：打一行字…（#分類 @專案 !p1）"
+              placeholder={capturePlaceholder}
               onChange={(e) => setCapture(e.target.value)}
               {...enterSubmit(submitCapture)}
             />
