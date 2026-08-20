@@ -117,11 +117,13 @@ export default function Board({
   const [editingComments, setEditingComments] = useState<Comment[]>([]);
   const [editingDocuments, setEditingDocuments] = useState<DocumentRow[]>([]);
   const [wsComments, setWsComments] = useState<CommentWithTask[]>([]);
-  const [currentWs, setCurrentWs] = useState<Workspace | null>(initialWorkspaces[0] ?? null);
+  // SSR already landed on the pinned workspace (via cookie) and loaded its
+  // tasks — start there so there's no wrong-workspace flash or re-fetch.
+  const [currentWs, setCurrentWs] = useState<Workspace | null>(
+    initialWorkspaces.find((w) => w.id === initialTasksWorkspaceId) ?? initialWorkspaces[0] ?? null
+  );
   const [tasks, setTasks] = useState<TaskWithProjects[]>(() =>
-    initialTasksWorkspaceId && initialTasksWorkspaceId === (initialWorkspaces[0]?.id ?? null)
-      ? mapTaskRows(initialTaskRows)
-      : []
+    initialTasksWorkspaceId ? mapTaskRows(initialTaskRows) : []
   );
   const [view, setView] = useState<View>('board');
   const [editing, setEditing] = useState<TaskWithProjects | null | 'new'>(null);
@@ -176,12 +178,9 @@ export default function Board({
   const seedWsRef = useRef(false);
   const seedingStatusRef = useRef<Set<string>>(new Set());
   const seedingCategoryRef = useRef<Set<string>>(new Set());
-  // SSR already delivered the first workspace's tasks — skip the redundant
+  // SSR already delivered the landing workspace's tasks — skip the redundant
   // client re-fetch on mount so the board paints instantly with no reload.
-  const skipFirstTaskLoadRef = useRef(
-    !!initialTasksWorkspaceId &&
-      initialTasksWorkspaceId === (initialWorkspaces[0]?.id ?? null)
-  );
+  const skipFirstTaskLoadRef = useRef(!!initialTasksWorkspaceId);
 
   const showToast = useCallback((message: string, undo?: () => void) => {
     if (toastTimer.current) clearTimeout(toastTimer.current);
@@ -298,12 +297,16 @@ export default function Board({
   // ---------- data loading ----------
   const loadTasks = useCallback(async () => {
     if (!currentWs) return;
-    const run = () =>
-      supabase
-        .from('tasks')
-        .select(TASK_SELECT)
-        .eq('workspace_id', currentWs.id)
-        .order('created_at', { ascending: false });
+    // Board never renders archived tasks — leave the whole archive out of the
+    // hot query (it's loaded lazily for the history view instead).
+    const archiveIds = statuses
+      .filter((s) => s.workspace_id === currentWs.id && s.is_archive)
+      .map((s) => s.id);
+    const run = () => {
+      let q = supabase.from('tasks').select(TASK_SELECT).eq('workspace_id', currentWs.id);
+      if (archiveIds.length) q = q.or(`status_id.is.null,status_id.not.in.(${archiveIds.join(',')})`);
+      return q.order('created_at', { ascending: false });
+    };
 
     let { data, error } = await run();
     if (error) {
@@ -314,7 +317,31 @@ export default function Board({
     // keep whatever is shown if it still failed, rather than blanking out
     if (error) return report('載入任務失敗', error);
     if (data) setTasks(mapTaskRows(data));
-  }, [supabase, currentWs, report]);
+  }, [supabase, currentWs, statuses, report]);
+
+  // Archived tasks power only the history view — loaded on demand.
+  const [archivedTasks, setArchivedTasks] = useState<TaskWithProjects[]>([]);
+  const [archivedLoading, setArchivedLoading] = useState(false);
+  const loadArchived = useCallback(async () => {
+    if (!currentWs) return;
+    const archiveIds = statuses
+      .filter((s) => s.workspace_id === currentWs.id && s.is_archive)
+      .map((s) => s.id);
+    if (!archiveIds.length) {
+      setArchivedTasks([]);
+      return;
+    }
+    setArchivedLoading(true);
+    const { data } = await supabase
+      .from('tasks')
+      .select(TASK_SELECT)
+      .eq('workspace_id', currentWs.id)
+      .in('status_id', archiveIds)
+      .order('archived_at', { ascending: false })
+      .limit(500);
+    if (data) setArchivedTasks(mapTaskRows(data));
+    setArchivedLoading(false);
+  }, [supabase, currentWs, statuses]);
 
   const loadStatuses = useCallback(async () => {
     const { data } = await supabase.from('task_statuses').select('*').order('position');
@@ -343,6 +370,11 @@ export default function Board({
     }
     loadTasks();
   }, [loadTasks]);
+
+  // fetch the archive only when the history view is open
+  useEffect(() => {
+    if (view === 'history') loadArchived();
+  }, [view, loadArchived]);
 
   // Documents are only needed in the 文件 view and the task editor's picker —
   // keep them off the initial critical path.
@@ -463,7 +495,11 @@ export default function Board({
       if (!p) return;
       setPinnedWsId(p);
       const ws = initialWorkspaces.find((w) => w.id === p);
-      if (ws) setCurrentWs(ws);
+      if (ws) setCurrentWs(ws); // no-op when SSR already landed here (same ref)
+      // heal the SSR cookie for pins set before it existed
+      if (!document.cookie.includes('taskeel_pinned_ws=')) {
+        document.cookie = `taskeel_pinned_ws=${p}; path=/; max-age=31536000; SameSite=Lax`;
+      }
     } catch {
       // ignore
     }
@@ -475,6 +511,10 @@ export default function Board({
     try {
       if (next) localStorage.setItem('taskeel.pinnedWs', next);
       else localStorage.removeItem('taskeel.pinnedWs');
+      // also a cookie so SSR can land on the pinned workspace directly
+      document.cookie = next
+        ? `taskeel_pinned_ws=${next}; path=/; max-age=31536000; SameSite=Lax`
+        : 'taskeel_pinned_ws=; path=/; max-age=0; SameSite=Lax';
     } catch {
       // ignore
     }
@@ -1975,12 +2015,16 @@ export default function Board({
 
         <div className="content">
           {view === 'history' ? (
-            <DeployHistory
-              tasks={leafTasks}
-              projects={wsProjects}
-              statuses={wsStatuses}
-              categories={wsCategories}
-            />
+            archivedLoading && archivedTasks.length === 0 ? (
+              <div className="empty">載入部署歷史…</div>
+            ) : (
+              <DeployHistory
+                tasks={archivedTasks}
+                projects={wsProjects}
+                statuses={wsStatuses}
+                categories={wsCategories}
+              />
+            )
           ) : view === 'docs' ? (
             <DocumentsView
               documents={wsDocuments}

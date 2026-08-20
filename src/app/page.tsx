@@ -1,4 +1,5 @@
 import { redirect } from 'next/navigation';
+import { cookies } from 'next/headers';
 import { createClient } from '@/lib/supabase/server';
 import type { CategoryRow, Project, StatusRow, Workspace } from '@/lib/types';
 import Board from '@/components/Board';
@@ -28,14 +29,24 @@ export default async function HomePage() {
       supabase.from('categories').select('*').order('position', { ascending: true }),
     ]);
 
-  const firstWs = (workspaces ?? [])[0];
+  // Land on the pinned workspace (persisted in a cookie) so SSR loads the right
+  // workspace's tasks directly — no wrong-workspace flash or client re-fetch.
+  const pinnedId = (await cookies()).get('taskeel_pinned_ws')?.value;
+  const list = workspaces ?? [];
+  const landingWs = list.find((w) => w.id === pinnedId) ?? list[0];
+
   let initialTasks: unknown[] = [];
-  if (firstWs) {
-    const { data: tasks } = await supabase
-      .from('tasks')
-      .select(TASK_SELECT)
-      .eq('workspace_id', firstWs.id)
-      .order('created_at', { ascending: false });
+  if (landingWs) {
+    // The board never shows archived tasks — exclude them so the (blocking)
+    // initial query stays bounded to active work instead of the whole archive.
+    const archiveIds = (statuses ?? [])
+      .filter((s) => s.workspace_id === landingWs.id && s.is_archive)
+      .map((s) => s.id);
+    let q = supabase.from('tasks').select(TASK_SELECT).eq('workspace_id', landingWs.id);
+    if (archiveIds.length) {
+      q = q.or(`status_id.is.null,status_id.not.in.(${archiveIds.join(',')})`);
+    }
+    const { data: tasks } = await q.order('created_at', { ascending: false });
     initialTasks = tasks ?? [];
   }
 
@@ -54,7 +65,7 @@ export default async function HomePage() {
       initialStatuses={(statuses ?? []) as StatusRow[]}
       initialCategories={(cats ?? []) as CategoryRow[]}
       initialTaskRows={initialTasks}
-      initialTasksWorkspaceId={firstWs?.id ?? null}
+      initialTasksWorkspaceId={landingWs?.id ?? null}
     />
   );
 }

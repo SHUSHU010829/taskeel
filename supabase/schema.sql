@@ -137,6 +137,8 @@ create trigger documents_touch before update on documents
 
 -- ---------- INDEXES ----------
 create index on tasks (workspace_id, status_id);
+create index on tasks (workspace_id, created_at desc);
+create index on tasks (workspace_id, archived_at desc);
 create index on tasks (parent_id);
 create index on tasks (origin_id);
 create index on tasks (bundle_id);
