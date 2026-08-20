@@ -57,9 +57,11 @@ create table categories (
   color        text not null default '#5E6AD2',
   position     int  not null default 0,
   abbr         text,                       -- 快速捕捉縮寫（#abbr）
+  is_default   boolean not null default false, -- 新任務預設分類
   created_at   timestamptz not null default now()
 );
 create index on categories (workspace_id, position);
+create unique index categories_ws_one_default on categories (workspace_id) where is_default;
 
 -- ---------- TASKS ----------
 create table tasks (

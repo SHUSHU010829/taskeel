@@ -2870,6 +2870,14 @@ a {
   flex-shrink: 0;
 }
 
+.cat-default {
+  color: var(--text-faint);
+}
+
+.cat-default.on {
+  color: var(--accent);
+}
+
 .icon-grid {
   display: flex;
   flex-wrap: wrap;

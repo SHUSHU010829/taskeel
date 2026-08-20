@@ -83,6 +83,8 @@ export default function TaskEditor({
   onDelete,
   onArchive,
   onUnarchive,
+  defaultCategoryId,
+  defaultProjectId,
 }: {
   task: TaskWithProjects | null;
   projects: Project[];
@@ -116,6 +118,8 @@ export default function TaskEditor({
   onDelete?: () => void;
   onArchive?: () => void;
   onUnarchive?: () => void;
+  defaultCategoryId?: string | null;
+  defaultProjectId?: string | null;
 }) {
   const isNew = !task;
   const isArchived = !!statuses.find((s) => s.id === task?.status_id)?.is_archive;
@@ -127,7 +131,9 @@ export default function TaskEditor({
   const [statusId, setStatusId] = useState<string | null>(
     task?.status_id ?? defaultStatus?.id ?? null
   );
-  const [categoryId, setCategoryId] = useState<string | null>(task?.category_id ?? null);
+  const [categoryId, setCategoryId] = useState<string | null>(
+    task?.category_id ?? (isNew ? defaultCategoryId ?? null : null)
+  );
   const [priority, setPriority] = useState<number>(task?.priority ?? 0);
   const [dueDate, setDueDate] = useState<string>(task?.due_date ?? '');
   const [blockedReason, setBlockedReason] = useState(task?.blocked_reason ?? '');
@@ -137,6 +143,8 @@ export default function TaskEditor({
   const [branches, setBranches] = useState<Record<string, string>>(() => {
     const m: Record<string, string> = {};
     task?.links.forEach((l) => (m[l.project_id] = l.branch ?? ''));
+    // new task while a project is filtered → pre-select that project
+    if (isNew && defaultProjectId) m[defaultProjectId] = '';
     return m;
   });
   const [showSettings, setShowSettings] = useState(false);

@@ -7,7 +7,7 @@ Linear (deep-grey base, hairline borders, restrained purple accent).
 
 ## What it does
 
-- **Quick capture** — type a line, press Enter, it lands in the workspace inbox. Press `c` anywhere to focus the capture box. Inline tokens file it in one line: `#分類 @專案 !p1` (priority `!p0`–`!p3`). Projects and categories can each carry a short **abbreviation** (project/category editor) so `@et` matches "Easytax 後台".
+- **Quick capture** — type a line, press Enter, it lands in the workspace inbox. Press `c` anywhere to focus the capture box. Inline tokens file it in one line: `#分類 @專案 !p1` (priority `!p0`–`!p3`). Projects and categories can each carry a short **abbreviation** (project/category editor) so `@et` matches "Easytax 後台". A category can be flagged **default** (★ in the category editor) so new tasks land in it when no `#分類` is given; and while the board is **filtered to one project**, new tasks (quick capture or the new-task form) auto-join that project.
 - **Search / command palette** — `⌘K` (or `/`) opens a fuzzy search over the workspace's tasks; Enter jumps to one, or create a task from the typed text.
 - **Keyboard & hover** — on the board: `c` capture, `n` new task, `j`/`k` move focus, `e`/`Enter` open, `1`–`9` set status, `x` delete. Hovering a row reveals quick priority / due-date / delete controls. Destructive/deploy actions surface an undo toast.
 - **Priority & due dates** — tasks carry a priority (無/低/中/高/緊急) and an optional due date; rows show a flag and a due chip (soon/overdue coloured) and columns sort by priority → due → recency.
@@ -42,7 +42,7 @@ publication, and the `archive_branch(repo, branch, owner)` function.
 with an icon), `0003` (statuses per workspace), `0004` (categories per
 workspace, editable), `0005` (subtasks / parent_id), `0006` (workspace icon),
 `0007` (deploy bundles / bundle_id), `0008` (priority + due_date), `0009` (project/category abbr), `0010` (documents / task_documents /
-comments), `0011` (task origin_id). Fresh installs just run `schema.sql`.
+comments), `0011` (task origin_id), `0012` (default category). Fresh installs just run `schema.sql`.
 
 Statuses and categories are per-workspace and edited in the workspace settings
 (sidebar **工作區設定** or the switcher pencil). Light/dark theme, font size, and

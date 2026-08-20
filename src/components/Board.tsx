@@ -716,6 +716,11 @@ export default function Board({
     if (!raw.trim() || !currentWs) return;
     const { title, priority, category_id, projectIds } = parseCapture(raw);
     const def = wsStatuses.find((s) => s.is_default) ?? wsStatuses[0];
+    // no #分類 given → fall back to the workspace's default category
+    const catId = category_id ?? wsCategories.find((c) => c.is_default)?.id ?? null;
+    // viewing a single project → the new task joins that project too
+    const projectIdsFinal = [...projectIds];
+    if (projectFilter && !projectIdsFinal.includes(projectFilter)) projectIdsFinal.push(projectFilter);
     const { data, error } = await supabase
       .from('tasks')
       .insert({
@@ -724,15 +729,15 @@ export default function Board({
         title,
         status_id: def?.id ?? null,
         priority,
-        category_id,
+        category_id: catId,
       })
       .select('id')
       .single();
     if (error || !data) return report('新增任務失敗', error);
-    if (projectIds.length) {
+    if (projectIdsFinal.length) {
       await supabase
         .from('task_projects')
-        .insert(projectIds.map((project_id) => ({ task_id: data.id, project_id })));
+        .insert(projectIdsFinal.map((project_id) => ({ task_id: data.id, project_id })));
     }
     loadTasks();
   }
@@ -1677,6 +1682,40 @@ export default function Board({
     loadTasks(); // tasks using it become uncategorised (FK on delete set null)
   }
 
+  // Toggle a category as the workspace default (new tasks land in it). At most
+  // one default per workspace, so clear the others before setting this one.
+  async function setDefaultCategory(wsId: string, id: string, makeDefault: boolean) {
+    setCategories((prev) =>
+      prev.map((c) =>
+        c.workspace_id === wsId ? { ...c, is_default: makeDefault && c.id === id } : c
+      )
+    );
+    if (makeDefault) {
+      const { error: e1 } = await supabase
+        .from('categories')
+        .update({ is_default: false })
+        .eq('workspace_id', wsId)
+        .neq('id', id);
+      const { error: e2 } = await supabase
+        .from('categories')
+        .update({ is_default: true })
+        .eq('id', id);
+      if (e1 || e2) {
+        report('設定預設分類失敗', e1 ?? e2);
+        loadCategories();
+      }
+    } else {
+      const { error } = await supabase
+        .from('categories')
+        .update({ is_default: false })
+        .eq('id', id);
+      if (error) {
+        report('取消預設分類失敗', error);
+        loadCategories();
+      }
+    }
+  }
+
   async function reorderCategories(ids: string[]) {
     setCategories((prev) =>
       prev.map((c) => (ids.includes(c.id) ? { ...c, position: ids.indexOf(c.id) } : c))
@@ -1699,6 +1738,7 @@ export default function Board({
         updateCategory,
         deleteCategory,
         reorderCategories,
+        setDefault: (id, makeDefault) => setDefaultCategory(editedWs.id, id, makeDefault),
       }
     : null;
 
@@ -2013,6 +2053,8 @@ export default function Board({
           }
           onClose={() => setEditing(null)}
           onDelete={editing === 'new' ? undefined : deleteTask}
+          defaultCategoryId={wsCategories.find((c) => c.is_default)?.id ?? null}
+          defaultProjectId={projectFilter}
           onArchive={
             editing === 'new' || !editing
               ? undefined

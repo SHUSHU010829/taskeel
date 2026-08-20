@@ -59,6 +59,7 @@ export interface CategoryRow {
   color: string;
   position: number;
   abbr: string | null; // quick-capture alias (#abbr)
+  is_default: boolean; // new tasks default to this category
   created_at: string;
 }
 

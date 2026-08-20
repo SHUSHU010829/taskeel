@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { GripVertical, X } from 'lucide-react';
+import { GripVertical, Star, X } from 'lucide-react';
 import { STATUS_COLORS, type CategoryRow } from '@/lib/types';
 import { enterSubmit } from '@/lib/useEnterSubmit';
 import ConfirmDialog from './ConfirmDialog';
@@ -11,6 +11,7 @@ export interface CategoryHandlers {
   updateCategory: (id: string, patch: Partial<CategoryRow>) => void;
   deleteCategory: (id: string) => void;
   reorderCategories: (orderedIds: string[]) => void;
+  setDefault: (id: string, makeDefault: boolean) => void;
 }
 
 function reordered(ids: string[], dragId: string, targetId: string) {
@@ -142,6 +143,13 @@ export default function CategoryList({
               if (v !== (c.abbr ?? '')) handlers.updateCategory(c.id, { abbr: v || null });
             }}
           />
+          <button
+            className={`icon-btn cat-default${c.is_default ? ' on' : ''}`}
+            title={c.is_default ? '預設分類（新任務自動歸入）' : '設為預設分類'}
+            onClick={() => handlers.setDefault(c.id, !c.is_default)}
+          >
+            <Star size={15} fill={c.is_default ? 'currentColor' : 'none'} />
+          </button>
           <button
             className="icon-btn"
             title="刪除"
