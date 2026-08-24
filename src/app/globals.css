@@ -2323,22 +2323,51 @@ a {
   overflow: visible;
 }
 
-/* clear, consistent separation between the editor's stacked sections */
-.editor-body > * {
+/* two-column editor: content (說明/討論) on the left, everything else right */
+.editor-split {
+  display: flex;
+  align-items: stretch;
+  gap: 28px;
+}
+
+.editor-col-main {
+  flex: 1.5;
+  min-width: 0;
+}
+
+.editor-col-side {
+  flex: 0 0 320px;
+  min-width: 0;
+  border-left: 1px solid var(--border);
+  padding-left: 28px;
+}
+
+.editor-col-side:empty {
+  display: none;
+}
+
+/* consistent separation between stacked sections within each column */
+.editor-col-main > * + *,
+.editor-col-side > * + * {
   margin-top: 18px;
   padding-top: 18px;
   border-top: 1px solid var(--border);
 }
-.editor-body > *:first-child {
-  margin-top: 0;
-  padding-top: 0;
-  border-top: none;
-}
-/* settings view is a single block — no divider needed */
-.editor-body > .settings-inline {
-  margin-top: 0;
-  padding-top: 0;
-  border-top: none;
+
+@media (max-width: 860px) {
+  .editor-split {
+    flex-direction: column;
+    gap: 0;
+  }
+  .editor-col-side {
+    flex: none;
+    width: 100%;
+    border-left: none;
+    padding-left: 0;
+    margin-top: 18px;
+    padding-top: 18px;
+    border-top: 1px solid var(--border);
+  }
 }
 
 .ed-section {
@@ -2790,6 +2819,8 @@ a {
 .editor-modal {
   display: flex;
   flex-direction: column;
+  width: 920px;
+  max-width: calc(100vw - 32px);
   max-height: 88vh;
   overflow: hidden;
 }

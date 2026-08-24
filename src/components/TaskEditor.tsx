@@ -640,33 +640,36 @@ export default function TaskEditor({
                 )}
             </div>
           ) : (
-            <>
-              {/* description — the primary content, top */}
-              <MarkdownEditor
-                value={description}
-                onChange={setDescription}
-                onSave={() => commit({ description })}
-                startInEdit={isNew}
-              />
+            <div className="editor-split">
+              {/* left: the content — description + discussion */}
+              <div className="editor-col-main">
+                <MarkdownEditor
+                  value={description}
+                  onChange={setDescription}
+                  onSave={() => commit({ description })}
+                  startInEdit={isNew}
+                />
+                {task && (
+                  <TaskComments
+                    comments={comments}
+                    onAdd={onAddComment}
+                    onDelete={onDeleteComment}
+                  />
+                )}
+              </div>
 
-              {subtaskBlock}
-
-              {task && (
-                <>
+              {/* right: everything else — subtasks, references, spin-off */}
+              <div className="editor-col-side">
+                {subtaskBlock}
+                {task && (
                   <TaskDocuments
                     bound={boundDocuments}
                     candidates={docCandidates}
                     onBind={onBindDocument}
                     onUnbind={onUnbindDocument}
                   />
-
-                  <TaskComments
-                    comments={comments}
-                    onAdd={onAddComment}
-                    onDelete={onDeleteComment}
-                  />
-
-                  {/* spin-off — least used, compact, at the bottom */}
+                )}
+                {task && (
                   <div className="ed-section">
                     {originTask && (
                       <div className="ed-parent" style={{ marginBottom: 10 }}>
@@ -709,9 +712,9 @@ export default function TaskEditor({
                       </div>
                     )}
                   </div>
-                </>
-              )}
-            </>
+                )}
+              </div>
+            </div>
           )}
         </div>
 
