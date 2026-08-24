@@ -2817,6 +2817,8 @@ a {
   /* keep content clear of the scrollbar (macOS overlay bars float over the
      right edge and would otherwise cover the 編輯 / 引用文件 controls) */
   padding-right: 10px;
+  /* breathing room below the last section before the footer */
+  padding-bottom: 20px;
   scrollbar-width: thin;
   scrollbar-color: var(--border-strong) transparent;
 }
