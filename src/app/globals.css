@@ -2374,6 +2374,144 @@ a {
   flex-shrink: 0;
 }
 
+/* always-visible task attributes (status / priority / due / category) */
+.ed-props {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.ed-prop-label {
+  font-size: 0.73rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-faint);
+  font-weight: 500;
+  margin-bottom: 6px;
+}
+
+.ed-prop-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+}
+
+.ed-prop-inline {
+  min-width: 0;
+}
+
+/* ---------- date picker (react-day-picker) ---------- */
+.datepicker {
+  position: relative;
+  display: inline-flex;
+}
+
+.datepicker-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+  background: transparent;
+  color: var(--text-dim);
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.datepicker-btn:hover {
+  border-color: var(--accent);
+  color: var(--text);
+}
+
+.datepicker-btn.has {
+  color: var(--text);
+}
+
+.datepicker-clear {
+  display: inline-flex;
+  padding: 1px;
+  border-radius: 4px;
+  color: var(--text-faint);
+}
+
+.datepicker-clear:hover {
+  color: var(--text);
+  background: var(--bg-hover);
+}
+
+.datepicker-pop {
+  top: calc(100% + 6px);
+  left: 0;
+  padding: 6px;
+  color: var(--text);
+  min-width: 0;
+}
+
+.datepicker-pop.right {
+  left: auto;
+  right: 0;
+}
+
+.datepicker-pop .rdp-root {
+  --rdp-accent-color: var(--accent);
+  --rdp-accent-background-color: rgba(94, 106, 210, 0.16);
+  --rdp-today-color: var(--accent);
+  --rdp-day-width: 36px;
+  --rdp-day-height: 36px;
+  --rdp-day_button-width: 34px;
+  --rdp-day_button-height: 34px;
+  --rdp-day_button-border-radius: 8px;
+  --rdp-selected-border: none;
+  margin: 0;
+  font-size: 0.85rem;
+}
+
+.datepicker-pop .rdp-month_caption,
+.datepicker-pop .rdp-caption_label {
+  color: var(--text);
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.datepicker-pop .rdp-weekday {
+  color: var(--text-faint);
+  font-weight: 500;
+}
+
+.datepicker-pop .rdp-day_button {
+  color: var(--text);
+  border: none;
+}
+
+.datepicker-pop .rdp-day_button:hover {
+  background: var(--bg-hover);
+}
+
+.datepicker-pop .rdp-outside .rdp-day_button {
+  color: var(--text-faint);
+}
+
+.datepicker-pop .rdp-selected .rdp-day_button {
+  background: var(--accent);
+  color: #fff;
+  font-weight: 600;
+}
+
+.datepicker-pop .rdp-today:not(.rdp-selected) .rdp-day_button {
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.datepicker-pop .rdp-chevron {
+  fill: var(--text-dim);
+}
+
+.datepicker-pop .rdp-button_previous:hover .rdp-chevron,
+.datepicker-pop .rdp-button_next:hover .rdp-chevron {
+  fill: var(--text);
+}
+
 .ed-parent {
   display: flex;
   align-items: center;

@@ -30,6 +30,7 @@ import StatusDot from './StatusDot';
 import PriorityFlag from './PriorityFlag';
 import ConfirmDialog from './ConfirmDialog';
 import MarkdownEditor from './MarkdownEditor';
+import DatePicker from './DatePicker';
 import TaskDocuments from './TaskDocuments';
 import TaskComments from './TaskComments';
 
@@ -156,7 +157,6 @@ export default function TaskEditor({
 
   const selected = statuses.find((s) => s.id === statusId);
   const isBlocked = selected?.style === 'cross';
-  const selectedCategory = categories.find((c) => c.id === categoryId);
   const selectedProjects = projects.filter((p) => p.id in branches);
 
   const linksArray = (b: Record<string, string>) =>
@@ -264,6 +264,85 @@ export default function TaskEditor({
     ? bundleCandidates.filter((c) => c.title.toLowerCase().includes(bundleFilter.trim().toLowerCase()))
     : bundleCandidates;
   const boundCandidates = bundleCandidates.filter((c) => boundIds.includes(c.id));
+
+  // The common task attributes, pulled out of the 設定 panel so they're always
+  // visible and editable (status / priority / due date / category).
+  const propertiesBlock = (
+    <div className="ed-props">
+      <div className="ed-prop">
+        <div className="ed-prop-label">狀態</div>
+        <div className="option-row">
+          {statuses.map((s) => (
+            <button
+              key={s.id}
+              className={`option${statusId === s.id ? ' selected' : ''}`}
+              onClick={() => chooseStatus(s.id)}
+            >
+              <StatusDot color={s.color} style={s.style} sm />
+              {s.name}
+            </button>
+          ))}
+        </div>
+        {isBlocked && (
+          <input
+            className="text-input"
+            style={{ marginTop: 8 }}
+            placeholder="卡在什麼？（如：等 Twitch API 回覆）"
+            value={blockedReason}
+            onChange={(e) => setBlockedReason(e.target.value)}
+            onBlur={() => commit({ blocked_reason: blockedReason || null })}
+          />
+        )}
+      </div>
+
+      <div className="ed-prop ed-prop-row">
+        <div className="ed-prop-inline">
+          <div className="ed-prop-label">優先度</div>
+          <div className="option-row">
+            {PRIORITIES.filter((p) => p.value > 0).map((p) => (
+              <button
+                key={p.value}
+                className={`option${priority === p.value ? ' selected' : ''}`}
+                onClick={() => choosePriority(p.value)}
+              >
+                <PriorityFlag priority={p.value} size={12} />
+                {p.label}
+              </button>
+            ))}
+          </div>
+        </div>
+        <div className="ed-prop-inline">
+          <div className="ed-prop-label">截止日</div>
+          <DatePicker
+            value={dueDate || null}
+            onChange={(v) => changeDue(v ?? '')}
+            placeholder="設定截止日"
+          />
+        </div>
+      </div>
+
+      <div className="ed-prop">
+        <div className="ed-prop-label">分類</div>
+        <div className="option-row">
+          {categories.map((c) => (
+            <button
+              key={c.id}
+              className={`option${categoryId === c.id ? ' selected' : ''}`}
+              onClick={() => chooseCategory(c.id)}
+            >
+              <span className="cat-dot" style={{ background: c.color }} />
+              {c.name}
+            </button>
+          ))}
+          {categories.length === 0 && (
+            <span style={{ color: 'var(--text-faint)', fontSize: '0.8rem' }}>
+              尚無分類，可到工作區設定新增。
+            </span>
+          )}
+        </div>
+      </div>
+    </div>
+  );
 
   // Subtasks / parent link — shown next to the description (commonly used).
   const subtaskBlock =
@@ -380,27 +459,6 @@ export default function TaskEditor({
             <Settings2 size={14} /> 設定
           </button>
           <div className="settings-summary">
-            {selected && (
-              <span className="summary-chip">
-                <StatusDot color={selected.color} style={selected.style} sm />
-                {selected.name}
-              </span>
-            )}
-            {priority > 0 && (
-              <span className="summary-chip">
-                <PriorityFlag priority={priority} size={11} />
-                {PRIORITIES.find((p) => p.value === priority)?.label}
-              </span>
-            )}
-            {selectedCategory && (
-              <span className="summary-chip">
-                <span
-                  className="dot"
-                  style={{ background: selectedCategory.color, width: 6, height: 6 }}
-                />
-                {selectedCategory.name}
-              </span>
-            )}
             {selectedProjects.map((p) => (
               <span className="summary-chip" key={p.id}>
                 <span className="dot" style={{ background: p.color, width: 6, height: 6 }} />
@@ -439,83 +497,6 @@ export default function TaskEditor({
                     </div>
                   </div>
                 )}
-
-                {/* status */}
-                <div className="field" style={task && workspaces.length > 1 ? {} : { marginTop: 0 }}>
-                  <div className="field-label">狀態</div>
-                  <div className="option-row">
-                    {statuses.map((s) => (
-                      <button
-                        key={s.id}
-                        className={`option${statusId === s.id ? ' selected' : ''}`}
-                        onClick={() => chooseStatus(s.id)}
-                      >
-                        <StatusDot color={s.color} style={s.style} sm />
-                        {s.name}
-                      </button>
-                    ))}
-                  </div>
-                  {isBlocked && (
-                    <input
-                      className="text-input"
-                      style={{ marginTop: 8 }}
-                      placeholder="卡在什麼？（如：等 Twitch API 回覆）"
-                      value={blockedReason}
-                      onChange={(e) => setBlockedReason(e.target.value)}
-                      onBlur={() => commit({ blocked_reason: blockedReason || null })}
-                    />
-                  )}
-                </div>
-
-                {/* category */}
-                <div className="field">
-                  <div className="field-label">分類</div>
-                  <div className="option-row">
-                    {categories.map((c) => (
-                      <button
-                        key={c.id}
-                        className={`option${categoryId === c.id ? ' selected' : ''}`}
-                        onClick={() => chooseCategory(c.id)}
-                      >
-                        <span className="cat-dot" style={{ background: c.color }} />
-                        {c.name}
-                      </button>
-                    ))}
-                    {categories.length === 0 && (
-                      <span style={{ color: 'var(--text-faint)', fontSize: '0.8rem' }}>
-                        尚無分類，可到工作區設定新增。
-                      </span>
-                    )}
-                  </div>
-                </div>
-
-                {/* priority + due date */}
-                <div className="field">
-                  <div className="field-label">優先度</div>
-                  <div className="option-row">
-                    {PRIORITIES.filter((p) => p.value > 0).map((p) => (
-                      <button
-                        key={p.value}
-                        className={`option${priority === p.value ? ' selected' : ''}`}
-                        onClick={() => choosePriority(p.value)}
-                      >
-                        <PriorityFlag priority={p.value} size={12} />
-                        {p.label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="field">
-                  <div className="field-label">截止日</div>
-                  <input
-                    className="text-input"
-                    type="date"
-                    style={{ maxWidth: 200 }}
-                    value={dueDate}
-                    onChange={(e) => changeDue(e.target.value)}
-                  />
-                </div>
 
                 {/* projects + per-project branch */}
                 <div className="field">
@@ -658,8 +639,9 @@ export default function TaskEditor({
                 )}
               </div>
 
-              {/* right: everything else — subtasks, references, spin-off */}
+              {/* right: attributes + everything else */}
               <div className="editor-col-side">
+                {propertiesBlock}
                 {subtaskBlock}
                 {task && (
                   <TaskDocuments
