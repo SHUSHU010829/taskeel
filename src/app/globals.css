@@ -3290,6 +3290,47 @@ a {
 }
 
 /* ---------- deploy history ---------- */
+/* a deployment = tasks archived together, shown as one grouped card */
+.deploy-group {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  margin-bottom: 12px;
+  overflow: hidden;
+}
+
+.deploy-group-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  background: var(--bg-hover);
+  border-bottom: 1px solid var(--border);
+  color: var(--text-dim);
+}
+
+.deploy-group-head > svg {
+  color: var(--accent);
+}
+
+.deploy-group-time {
+  font-size: 0.82rem;
+  font-weight: 500;
+  color: var(--text);
+}
+
+.deploy-group-count {
+  margin-left: auto;
+  font-size: 0.72rem;
+  color: var(--text-faint);
+  background: var(--bg-active);
+  border-radius: 9px;
+  padding: 1px 8px;
+}
+
+.deploy-group .history-row:last-child {
+  border-bottom: none;
+}
+
 .history-row {
   padding: 14px 16px;
   border-bottom: 1px solid var(--border);
