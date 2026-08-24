@@ -356,15 +356,18 @@ export default function TaskEditor({
             {...enterSubmit(commitTitle)}
           />
         ) : (
-          <div className="editor-title-view">
+          <div
+            className="editor-title-view"
+            role="button"
+            tabIndex={0}
+            title="點擊編輯標題"
+            onClick={() => setEditingTitle(true)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') setEditingTitle(true);
+            }}
+          >
             <h2 className="editor-title-text">{title}</h2>
-            <button
-              className="icon-btn"
-              title="編輯標題"
-              onClick={() => setEditingTitle(true)}
-            >
-              <Pencil size={15} />
-            </button>
+            <Pencil size={14} className="editor-title-pencil" />
           </div>
         )}
 
@@ -638,56 +641,16 @@ export default function TaskEditor({
             </div>
           ) : (
             <>
-              {subtaskBlock}
-              {task && (
-                <div className="ed-section">
-                  {originTask && (
-                    <div className="ed-parent" style={{ marginBottom: 10 }}>
-                      <span className="field-label" style={{ margin: 0 }}>
-                        延伸自
-                      </span>
-                      <button className="parent-chip lg" onClick={() => onOpenTask(originTask)}>
-                        <GitFork size={13} />
-                        {originTask.title}
-                      </button>
-                    </div>
-                  )}
-                  <div style={{ display: 'flex', alignItems: 'center' }}>
-                    <span className="field-label" style={{ flex: 1, margin: 0 }}>
-                      延伸出的任務{derivedTasks.length > 0 ? `（${derivedTasks.length}）` : ''}
-                    </span>
-                    <button className="doc-add-btn" onClick={onSpinOff}>
-                      <GitFork size={13} /> 延伸出新任務
-                    </button>
-                  </div>
-                  {derivedTasks.length > 0 && (
-                    <div style={{ marginTop: 6 }}>
-                      {derivedTasks.map((d) => {
-                        const s = statuses.find((x) => x.id === d.status_id);
-                        return (
-                          <button
-                            key={d.id}
-                            className="subtask-item"
-                            onClick={() => onOpenTask(d)}
-                          >
-                            {s && <StatusDot color={s.color} style={s.style} sm />}
-                            <span className="subtask-title">{d.title}</span>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  )}
-                  <div style={{ color: 'var(--text-faint)', fontSize: '0.78rem', marginTop: 6 }}>
-                    「延伸」會建立一個獨立的新任務，並記住是從此任務分支出來的。
-                  </div>
-                </div>
-              )}
+              {/* description — the primary content, top */}
               <MarkdownEditor
                 value={description}
                 onChange={setDescription}
                 onSave={() => commit({ description })}
                 startInEdit={isNew}
               />
+
+              {subtaskBlock}
+
               {task && (
                 <>
                   <TaskDocuments
@@ -696,11 +659,56 @@ export default function TaskEditor({
                     onBind={onBindDocument}
                     onUnbind={onUnbindDocument}
                   />
+
                   <TaskComments
                     comments={comments}
                     onAdd={onAddComment}
                     onDelete={onDeleteComment}
                   />
+
+                  {/* spin-off — least used, compact, at the bottom */}
+                  <div className="ed-section">
+                    {originTask && (
+                      <div className="ed-parent" style={{ marginBottom: 10 }}>
+                        <span className="field-label" style={{ margin: 0 }}>
+                          延伸自
+                        </span>
+                        <button className="parent-chip lg" onClick={() => onOpenTask(originTask)}>
+                          <GitFork size={13} />
+                          {originTask.title}
+                        </button>
+                      </div>
+                    )}
+                    <div style={{ display: 'flex', alignItems: 'center' }}>
+                      <span className="field-label" style={{ flex: 1, margin: 0 }}>
+                        延伸出的任務{derivedTasks.length > 0 ? `（${derivedTasks.length}）` : ''}
+                      </span>
+                      <button
+                        className="doc-add-btn"
+                        onClick={onSpinOff}
+                        title="建立一個獨立的新任務，並記住是從此任務分支出來的"
+                      >
+                        <GitFork size={13} /> 延伸出新任務
+                      </button>
+                    </div>
+                    {derivedTasks.length > 0 && (
+                      <div style={{ marginTop: 6 }}>
+                        {derivedTasks.map((d) => {
+                          const s = statuses.find((x) => x.id === d.status_id);
+                          return (
+                            <button
+                              key={d.id}
+                              className="subtask-item"
+                              onClick={() => onOpenTask(d)}
+                            >
+                              {s && <StatusDot color={s.color} style={s.style} sm />}
+                              <span className="subtask-title">{d.title}</span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
                 </>
               )}
             </>

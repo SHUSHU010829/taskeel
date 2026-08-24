@@ -2236,7 +2236,14 @@ a {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 4px 0;
+  padding: 4px 6px 4px 0;
+  margin: -4px -6px 0 0;
+  border-radius: var(--radius);
+  cursor: text;
+}
+
+.editor-title-view:hover {
+  background: var(--bg-hover);
 }
 
 .editor-title-text {
@@ -2249,13 +2256,15 @@ a {
   word-break: break-word;
 }
 
-.editor-title-view .icon-btn {
+.editor-title-pencil {
   flex-shrink: 0;
   color: var(--text-faint);
+  opacity: 0;
+  transition: opacity 0.12s;
 }
 
-.editor-title-view .icon-btn:hover {
-  color: var(--text);
+.editor-title-view:hover .editor-title-pencil {
+  opacity: 1;
 }
 
 .md-desc-label {
@@ -2314,12 +2323,26 @@ a {
   overflow: visible;
 }
 
-/* subtask / parent section shown above the description */
+/* clear, consistent separation between the editor's stacked sections */
+.editor-body > * {
+  margin-top: 18px;
+  padding-top: 18px;
+  border-top: 1px solid var(--border);
+}
+.editor-body > *:first-child {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: none;
+}
+/* settings view is a single block — no divider needed */
+.editor-body > .settings-inline {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: none;
+}
+
 .ed-section {
   flex-shrink: 0;
-  padding-bottom: 12px;
-  margin-bottom: 10px;
-  border-bottom: 1px solid var(--border);
 }
 
 .ed-parent {
