@@ -649,6 +649,9 @@ export default function Board({
       const tag = (e.target as HTMLElement)?.tagName;
       if (tag === 'INPUT' || tag === 'TEXTAREA' || (e.target as HTMLElement)?.isContentEditable)
         return;
+      // let the browser handle copy/paste/select-all/etc. — don't hijack the
+      // single-key shortcuts (c / x / …) when a modifier is held
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
       const k = kbdRef.current;
       // don't drive board navigation while a modal/editor is open or off-board
       const navOK = k && !k.busy && k.view === 'board' && !k.selectMode;
