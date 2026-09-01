@@ -62,6 +62,7 @@ create table categories (
 );
 create index on categories (workspace_id, position);
 create unique index categories_ws_one_default on categories (workspace_id) where is_default;
+create unique index categories_ws_name_unique on categories (workspace_id, name);
 
 -- ---------- TASKS ----------
 create table tasks (

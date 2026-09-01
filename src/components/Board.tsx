@@ -256,9 +256,21 @@ export default function Board({
           position: i,
           ...s,
         }));
+        // re-check the DB so a reload/second tab doesn't seed a duplicate set
+        const { data: existing } = await supabase
+          .from('task_statuses')
+          .select('*')
+          .eq('workspace_id', w.id);
+        if (existing && existing.length) {
+          setStatuses((prev) => {
+            const seen = new Set(prev.map((s) => s.id));
+            return [...prev, ...(existing as StatusRow[]).filter((s) => !seen.has(s.id))];
+          });
+          continue;
+        }
         const { data, error } = await supabase.from('task_statuses').insert(rows).select('*');
         if (error) {
-          report('建立狀態失敗', error);
+          if (error.code !== '23505') report('建立狀態失敗', error);
           seedingStatusRef.current.delete(w.id);
         } else if (data) {
           setStatuses((prev) => [...prev, ...(data as StatusRow[])]);
@@ -283,9 +295,22 @@ export default function Board({
           position: i,
           ...c,
         }));
+        // client state can be briefly stale — re-check the DB so a reload/second
+        // tab doesn't seed a duplicate set of defaults
+        const { data: existing } = await supabase
+          .from('categories')
+          .select('*')
+          .eq('workspace_id', w.id);
+        if (existing && existing.length) {
+          setCategories((prev) => {
+            const seen = new Set(prev.map((c) => c.id));
+            return [...prev, ...(existing as CategoryRow[]).filter((c) => !seen.has(c.id))];
+          });
+          continue;
+        }
         const { data, error } = await supabase.from('categories').insert(rows).select('*');
         if (error) {
-          report('建立分類失敗', error);
+          if (error.code !== '23505') report('建立分類失敗', error); // ignore dup-key race
           seedingCategoryRef.current.delete(w.id);
         } else if (data) {
           setCategories((prev) => [...prev, ...(data as CategoryRow[])]);

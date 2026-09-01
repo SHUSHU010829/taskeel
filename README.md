@@ -42,7 +42,7 @@ publication, and the `archive_branch(repo, branch, owner)` function.
 with an icon), `0003` (statuses per workspace), `0004` (categories per
 workspace, editable), `0005` (subtasks / parent_id), `0006` (workspace icon),
 `0007` (deploy bundles / bundle_id), `0008` (priority + due_date), `0009` (project/category abbr), `0010` (documents / task_documents /
-comments), `0011` (task origin_id), `0012` (default category), `0013` (task-load indexes). Fresh installs just run `schema.sql`.
+comments), `0011` (task origin_id), `0012` (default category), `0013` (task-load indexes), `0014` (de-duplicate categories + unique name). Fresh installs just run `schema.sql`.
 
 Statuses and categories are per-workspace and edited in the workspace settings
 (sidebar **工作區設定** or the switcher pencil). Light/dark theme, font size, and
